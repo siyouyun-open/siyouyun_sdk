@@ -6,12 +6,6 @@ import (
 
 type SiyouFaasApi map[string]func(iris.Context)
 
-func NewSiyouyunApi() SiyouFaasApi {
-	var api SiyouFaasApi
-	// maybe do something
-	return api
-}
-
 func (api SiyouFaasApi) Get(uri string, f func(iris.Context)) {
 	api[iris.MethodGet+" "+uri] = f
 }

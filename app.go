@@ -27,19 +27,23 @@ func NewApp() *App {
 
 	var app App
 	app.init()
+	app.Api = make(SiyouFaasApi)
 
 	return &app
 }
 
 func (a *App) init() {
+	var err error
 	appCode := os.Getenv(AppCodeEnvKey)
-	a.AppInfo = gateway.GetAppInfo(appCode)
-
+	a.AppInfo, err = gateway.GetAppInfo(appCode)
+	if err != nil {
+		panic(err)
+	}
 	db, _ := gorm.Open(mysql.Open(a.AppInfo.DSN), &gorm.Config{})
 	a.db = db
 }
 
-func (a *App) DBExec(ctx iris.Context, f func(*gorm.DB) error) error {
+func (a *App) Exec(ctx iris.Context, f func(*gorm.DB) error) error {
 	un := utils.NewUserNamespaceFromIris(ctx)
 	err := a.db.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := un.DatabaseName()

@@ -1,24 +1,28 @@
 package gateway
 
 import (
+	"errors"
 	"fmt"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/entity"
+	"github.com/siyouyun-open/siyouyun_sdk/restclient"
 )
 
-const (
-	rootUser        = ""
-	rootPasswd      = ""
-	defaultDatabase = "siyou_common"
-	mysqlDSNTmpl    = "%s:%s@tcp(127.0.0.1:3306)/%s?charset=utf8mb4&parseTime=True&loc=Local"
-)
+const LocalhostAddress = "http://localhost"
+const OSHTTPPort = 40000
+const CoreHTTPPort = 40100
 
-func GetAppInfo(code string) *entity.AppRegisterInfo {
-	return &entity.AppRegisterInfo{
-		AppCode:          "1",
-		AppName:          "2",
-		AppDesc:          "3",
-		AppVersion:       "4",
-		DSN:              fmt.Sprintf(mysqlDSNTmpl, rootUser, rootPasswd, defaultDatabase),
-		RegisterUserList: []string{"zhangsan"},
+var appGatewayAddr = fmt.Sprintf("%s:%d/%s", LocalhostAddress, OSHTTPPort, "faas")
+
+func GetAppInfo(code string) (*entity.AppRegisterInfo, error) {
+	api := appGatewayAddr + "/app/info"
+	response := restclient.GetRequest[entity.AppRegisterInfo](api, map[string]string{"appCode": code})
+	if response.Code != sdkconst.Success {
+		return nil, errors.New(response.Msg)
 	}
+	data := response.Data
+	if data == nil {
+		return nil, nil
+	}
+	return response.Data, nil
 }
