@@ -1,4 +1,4 @@
-module siyouyunsdk
+module github.com/siyouyun-open/siyouyun_sdk
 
 go 1.18
 
