@@ -13,6 +13,26 @@ import (
 	"strconv"
 )
 
+//goland:noinspection GoCommentStart
+const (
+	// mimeType main
+	FileTypeAll      FileType = "all"
+	FileTypeText     FileType = "text"
+	FileTypeImage    FileType = "image"
+	FileTypeAudio    FileType = "audio"
+	FileTypeVideo    FileType = "video"
+	FileTypeMessage  FileType = "message"
+	FileTypeCompress FileType = "compress"
+
+	// other type
+	FileTypeImageVideo FileType = "image-video"
+	FileTypeDoc        FileType = "doc"
+	FileTypeBt         FileType = "bt"
+	FileTypeEbook      FileType = "ebook"
+	FileTypeSoftware   FileType = "software"
+	FileTypeOther      FileType = "other"
+)
+
 const (
 	FileEventAdd = iota + 1
 	FileEventDelete
