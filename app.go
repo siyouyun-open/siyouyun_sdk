@@ -17,6 +17,7 @@ const (
 )
 
 type App struct {
+	AppCode string
 	Api     SiyouFaasApi
 	AppInfo *entity.AppRegisterInfo
 
@@ -35,8 +36,8 @@ func NewApp() *App {
 
 func (a *App) init() {
 	var err error
-	appCode := os.Getenv(AppCodeEnvKey)
-	a.AppInfo, err = gateway.GetAppInfo(appCode)
+	a.AppCode = os.Getenv(AppCodeEnvKey)
+	a.AppInfo, err = gateway.GetAppInfo(a.AppCode)
 	if err != nil {
 		panic(err)
 	}
