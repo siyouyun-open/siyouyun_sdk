@@ -1,7 +1,7 @@
 package entity
 
 type AppRegisterInfo struct {
-	AppCode          string   `json:"app_code"`
+	AppCode          string   `json:"appCode"`
 	AppName          string   `json:"appName"`
 	AppDesc          string   `json:"appDesc"`
 	AppVersion       string   `json:"appVersion"`

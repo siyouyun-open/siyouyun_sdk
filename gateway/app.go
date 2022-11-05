@@ -8,7 +8,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
 )
 
-const LocalhostAddress = "http://localhost"
+const LocalhostAddress = "http://10.62.0.1"
 const OSHTTPPort = 40000
 const CoreHTTPPort = 40100
 
@@ -16,6 +16,7 @@ var appGatewayAddr = fmt.Sprintf("%s:%d/%s", LocalhostAddress, OSHTTPPort, "faas
 
 func GetAppInfo(code string) (*entity.AppRegisterInfo, error) {
 	api := appGatewayAddr + "/app/info"
+	fmt.Println(api)
 	response := restclient.GetRequest[entity.AppRegisterInfo](api, map[string]string{"appCode": code})
 	if response.Code != sdkconst.Success {
 		return nil, errors.New(response.Msg)
