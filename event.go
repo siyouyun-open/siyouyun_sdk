@@ -65,8 +65,9 @@ type PreferOptions struct {
 }
 
 // NewEventHolder 初始化事件监听器
-func NewEventHolder(appName string) *EventHolder {
+func NewEventHolder(appName string, app *App) *EventHolder {
 	return &EventHolder{
+		app:  app,
 		name: appName,
 	}
 }
