@@ -1,4 +1,4 @@
-package mysql
+package siyoumysql
 
 import (
 	"gorm.io/gorm/logger"

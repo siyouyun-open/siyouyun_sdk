@@ -21,4 +21,6 @@ const (
 	PrivateNamespace     = "private"
 	CommonNamespace      = "common"
 	SiyouFSMysqlDBPrefix = "siyou"
+
+	FaasMntPrefix = "/siyouyun"
 )
