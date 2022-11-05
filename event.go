@@ -10,12 +10,11 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/entity"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
-	"log"
 	"strconv"
 )
 
+// 偏好设置可以关注的文件类型，上半部分为独立类型文件，下半部分为混合类型文件
 const (
-	// mimeType main
 	FileTypeAll      FileType = "all"
 	FileTypeText     FileType = "text"
 	FileTypeImage    FileType = "image"
@@ -24,7 +23,6 @@ const (
 	FileTypeMessage  FileType = "message"
 	FileTypeCompress FileType = "compress"
 
-	// other type
 	FileTypeImageVideo FileType = "image-video"
 	FileTypeDoc        FileType = "doc"
 	FileTypeBt         FileType = "bt"
@@ -33,11 +31,13 @@ const (
 	FileTypeOther      FileType = "other"
 )
 
+// 文件事件类型，文件创建与文件删除
 const (
 	FileEventAdd = iota + 1
 	FileEventDelete
 )
 
+// 处理任务的状态
 const (
 	EventStatusError  = 3
 	EventStatusFinish = 4
@@ -54,7 +54,6 @@ type FileEvent struct {
 
 type EventHolder struct {
 	app     *App
-	name    string
 	options []PreferOptions
 }
 
@@ -65,11 +64,10 @@ type PreferOptions struct {
 	Handler       func(fs *FS) error
 }
 
-// NewEventHolder 初始化事件监听器
-func NewEventHolder(appName string, app *App) *EventHolder {
-	return &EventHolder{
-		app:  app,
-		name: appName,
+// WithEventHolder 初始化事件监听器
+func (a *App) WithEventHolder() {
+	a.Event = &EventHolder{
+		app: a,
 	}
 }
 
@@ -83,14 +81,13 @@ func (e *EventHolder) Listen() {
 	//启动监听event
 	nc := getNats()
 	if nc == nil {
-		log.Print("链接nats失败")
 		return
 	}
 	go func() {
 		e.cleanAppRegisterInfo()
 		for i := range e.options {
 			var ari = &entity.ActionAppRegisterInfo{
-				AppCodeName: e.name,
+				AppCodeName: e.app.AppCode,
 				EventType:   e.options[i].FileEventType,
 				FileType:    string(e.options[i].FileType),
 				Description: e.options[i].Description,
@@ -121,8 +118,7 @@ func (e *EventHolder) Listen() {
 				if err != nil {
 					return
 				}
-				log.Printf("%v", fe)
-				fs := newEventFSFromFileEvent(ari.AppCodeName, &fe)
+				fs := e.app.newEventFSFromFileEvent(&fe)
 				err = e.options[j].Handler(fs)
 				if err != nil {
 					_ = nc.Publish(msg.Reply, []byte(strconv.Itoa(EventStatusError)))
@@ -139,7 +135,7 @@ func (e *EventHolder) cleanAppRegisterInfo() {
 		return db.Where("app_code_name = ?", appName).Delete(&entity.ActionAppRegisterInfo{}).Error
 	}
 	e.app.execByEvent(utils.NewUserNamespace("", sdkconst.CommonNamespace), func(db *gorm.DB) error {
-		err := doClean(db, e.name)
+		err := doClean(db, e.app.AppCode)
 		if err != nil {
 			return err
 		}
@@ -148,14 +144,14 @@ func (e *EventHolder) cleanAppRegisterInfo() {
 	var ul = e.app.AppInfo.RegisterUserList
 	for i := range ul {
 		e.app.execByEvent(utils.NewUserNamespace(ul[i], sdkconst.MainNamespace), func(db *gorm.DB) error {
-			err := doClean(db, e.name)
+			err := doClean(db, e.app.AppCode)
 			if err != nil {
 				return err
 			}
 			return nil
 		})
 		e.app.execByEvent(utils.NewUserNamespace(ul[i], sdkconst.PrivateNamespace), func(db *gorm.DB) error {
-			err := doClean(db, e.name)
+			err := doClean(db, e.app.AppCode)
 			if err != nil {
 				return err
 			}

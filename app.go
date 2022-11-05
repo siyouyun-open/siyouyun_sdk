@@ -20,6 +20,7 @@ type App struct {
 	AppCode string
 	Api     SiyouFaasApi
 	AppInfo *entity.AppRegisterInfo
+	Event   *EventHolder
 
 	db *gorm.DB
 }
