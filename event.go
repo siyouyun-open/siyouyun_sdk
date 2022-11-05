@@ -13,7 +13,6 @@ import (
 	"strconv"
 )
 
-//goland:noinspection GoCommentStart
 const (
 	// mimeType main
 	FileTypeAll      FileType = "all"
