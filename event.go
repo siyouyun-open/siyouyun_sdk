@@ -10,6 +10,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/entity"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
+	"log"
 	"strconv"
 )
 
@@ -79,6 +80,12 @@ func (e *EventHolder) SetPrefer(options ...PreferOptions) {
 
 // Listen 开始监听器工作
 func (e *EventHolder) Listen() {
+	//启动监听event
+	nc := getNats()
+	if nc == nil {
+		log.Print("链接nats失败")
+		return
+	}
 	go func() {
 		e.cleanAppRegisterInfo()
 		for i := range e.options {
@@ -102,8 +109,6 @@ func (e *EventHolder) Listen() {
 					return e.registerIfHaveApp(db, ari)
 				})
 			}
-			//启动监听event
-			nc := getNats()
 			j := i
 			_, _ = nc.Subscribe(ari.Code, func(msg *nats.Msg) {
 				var fe FileEvent
@@ -116,6 +121,7 @@ func (e *EventHolder) Listen() {
 				if err != nil {
 					return
 				}
+				log.Printf("%v", fe)
 				fs := newEventFSFromFileEvent(ari.AppCodeName, &fe)
 				err = e.options[j].Handler(fs)
 				if err != nil {
