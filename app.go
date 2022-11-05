@@ -4,7 +4,6 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/siyouyun-open/siyouyun_sdk/entity"
 	"github.com/siyouyun-open/siyouyun_sdk/gateway"
-	siyoumysql "github.com/siyouyun-open/siyouyun_sdk/mysql"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/driver/mysql"
@@ -41,7 +40,7 @@ func (a *App) init() {
 		panic(err)
 	}
 	db, _ := gorm.Open(mysql.Open(a.AppInfo.DSN), &gorm.Config{
-		Logger: siyoumysql.NewLogger(),
+		//Logger: siyoumysql.NewLogger(),
 	})
 	a.db = db
 }
