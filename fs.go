@@ -77,7 +77,7 @@ func (a *App) newEventFSFromFileEvent(fe *FileEvent) *FS {
 }
 
 func (a *App) exec(un *utils.UserNamespace, f func(*gorm.DB) error) error {
-	err := a.db.Transaction(func(tx *gorm.DB) (err error) {
+	err := a.DB.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := un.DatabaseName()
 		if dbname == "" {
 			return

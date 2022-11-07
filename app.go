@@ -23,7 +23,7 @@ type App struct {
 	Event   *EventHolder
 	Model   []interface{}
 
-	db *gorm.DB
+	DB *gorm.DB
 }
 
 func NewApp() *App {
@@ -46,12 +46,12 @@ func (a *App) init() {
 	db, _ := gorm.Open(mysql.Open(a.AppInfo.DSN), &gorm.Config{
 		Logger: siyoumysql.NewLogger(),
 	})
-	a.db = db
+	a.DB = db
 }
 
 func (a *App) Exec(ctx iris.Context, f func(*gorm.DB) error) error {
 	un := utils.NewUserNamespaceFromIris(ctx)
-	err := a.db.Transaction(func(tx *gorm.DB) (err error) {
+	err := a.DB.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := un.DatabaseName()
 		if dbname == "" {
 			return
