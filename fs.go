@@ -347,7 +347,7 @@ func (fs *FS) OpenEventFile() (*os.File, error) {
 	return os.OpenFile(filepath.Join(fs.mntPath, path), os.O_RDONLY, 0)
 }
 
-// Exec fs执行sql
+// Exec  fs执行sql
 func (fs *FS) Exec(f func(*gorm.DB) error) error {
 	err := fs.app.DB.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := fs.UserNamespace.DatabaseName()
