@@ -346,3 +346,26 @@ func (fs *FS) OpenEventFile() (*os.File, error) {
 	path := fs.InodeToPath(fs.EventFileInode)
 	return os.OpenFile(filepath.Join(fs.mntPath, path), os.O_RDONLY, 0)
 }
+
+// Exec fs执行sql
+func (fs *FS) Exec(f func(*gorm.DB) error) error {
+	err := fs.app.DB.Transaction(func(tx *gorm.DB) (err error) {
+		dbname := fs.UserNamespace.DatabaseName()
+		if dbname == "" {
+			return
+		}
+		err = tx.Exec("use " + dbname).Error
+		if err != nil {
+			return err
+		}
+		err = f(tx)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
