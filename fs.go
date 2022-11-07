@@ -1,7 +1,6 @@
 package siyouyunfaas
 
 import (
-	"errors"
 	"fmt"
 	"github.com/kataras/iris/v12"
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
@@ -208,7 +207,7 @@ func (fs *FS) InodeToPath(inode int64) string {
 	return resPath
 }
 
-func (fs *FS) InodeToFileInfo(inode string) *FileInfoRes {
+func (fs *FS) InodeToFileInfo(inode int64) *FileInfoRes {
 	selectSql := fmt.Sprintf(`
 		SELECT %v FROM jfs_edge AS e 
         LEFT JOIN siyou_basic_fileinfo AS fi ON fi.inode = e.inode 
@@ -235,13 +234,17 @@ func (fs *FS) InodeToFileInfo(inode string) *FileInfoRes {
 	return &res
 }
 
-func (fs *FS) InodesToFileInfos(inodes ...string) []FileInfoRes {
+func (fs *FS) InodesToFileInfos(inodes ...int64) []FileInfoRes {
+	var inodesStr []string
+	for i := range inodes {
+		inodesStr = append(inodesStr, strconv.FormatInt(inodes[i], 10))
+	}
 	selectSql := fmt.Sprintf(`
 		SELECT %v FROM jfs_edge AS e 
         LEFT JOIN siyou_basic_fileinfo AS fi ON fi.inode = e.inode 
         LEFT JOIN jfs_node AS n ON n.inode = e.inode 
         WHERE e.inode in (%v)`,
-		fileInfoColumn, strings.Join(inodes, ","))
+		fileInfoColumn, strings.Join(inodesStr, ","))
 	var res []FileInfoRes
 	var fis []entity.FileInfo
 	err := fs.app.exec(fs.UserNamespace, func(db *gorm.DB) error {
@@ -320,15 +323,6 @@ func (fs *FS) checkThumbnail(fi *entity.FileInfo) bool {
 	return false
 }
 
-func (fs *FS) EnsureDirExist(ps ...string) {
-	for _, p := range ps {
-		err := os.MkdirAll(p, os.ModePerm)
-		if err != nil && !errors.Is(err, os.ErrExist) {
-			return
-		}
-	}
-}
-
 // FileExists 文件是否存在
 func (fs *FS) FileExists(path string) bool {
 	var prefixPath = fs.mntPath
@@ -344,5 +338,11 @@ func (fs *FS) FileExists(path string) bool {
 
 // Open 只读权限打开用户空间文件
 func (fs *FS) Open(path string) (*os.File, error) {
+	return os.OpenFile(filepath.Join(fs.mntPath, path), os.O_RDONLY, 0)
+}
+
+// OpenEventFile 只读权限打开事件触发文件
+func (fs *FS) OpenEventFile() (*os.File, error) {
+	path := fs.InodeToPath(fs.EventFileInode)
 	return os.OpenFile(filepath.Join(fs.mntPath, path), os.O_RDONLY, 0)
 }
