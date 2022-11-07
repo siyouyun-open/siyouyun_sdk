@@ -21,6 +21,7 @@ type App struct {
 	Api     SiyouFaasApi
 	AppInfo *entity.AppRegisterInfo
 	Event   *EventHolder
+	Model   []interface{}
 
 	db *gorm.DB
 }

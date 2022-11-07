@@ -18,7 +18,7 @@ func PathToInode(app *App, un *utils.UserNamespace, fullpath string) int64 {
 	for _, path := range paths {
 		strings.ReplaceAll(strings.TrimSpace(path), "/", "")
 		var thisEdge Edge
-		err := app.execByEvent(un, func(db *gorm.DB) error {
+		err := app.execByUn(un, func(db *gorm.DB) error {
 			return db.Model(&Edge{Name: path, Parent: resInode}).First(&thisEdge).Error
 		})
 		if err != nil {
@@ -32,7 +32,7 @@ func PathToInode(app *App, un *utils.UserNamespace, fullpath string) int64 {
 // InodeToPath inode转fullpath
 func InodeToPath(app *App, un *utils.UserNamespace, inode int64) string {
 	var edge Edge
-	err := app.execByEvent(un, func(db *gorm.DB) error {
+	err := app.execByUn(un, func(db *gorm.DB) error {
 		return db.Where("inode = ?", inode).First(&edge).Error
 	})
 	if err != nil {
@@ -46,7 +46,7 @@ func InodeToPath(app *App, un *utils.UserNamespace, inode int64) string {
 		if ino == 1 {
 			continue
 		}
-		err = app.execByEvent(un, func(db *gorm.DB) error {
+		err = app.execByUn(un, func(db *gorm.DB) error {
 			return db.Where("inode = ?", ino).First(&thisEdge).Error
 		})
 		if err != nil {
@@ -57,7 +57,7 @@ func InodeToPath(app *App, un *utils.UserNamespace, inode int64) string {
 	return resPath
 }
 
-func (a *App) execByEvent(un *utils.UserNamespace, f func(*gorm.DB) error) error {
+func (a *App) execByUn(un *utils.UserNamespace, f func(*gorm.DB) error) error {
 	err := a.db.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := un.DatabaseName()
 		if dbname == "" {

@@ -2,6 +2,7 @@ package simpleapp
 
 import (
 	"github.com/siyouyun-open/siyouyun_sdk"
+	"siyoufaasdemo/model"
 )
 
 var app *siyouyunfaas.App
@@ -9,10 +10,10 @@ var app *siyouyunfaas.App
 func Init() {
 	app = siyouyunfaas.NewApp()
 	AddRouter()
+	app.WithModel(model.SDKDemo{})
 }
 
 func AddRouter() {
-	app.Api = make(siyouyunfaas.SiyouFaasApi)
 	app.Api.Get("/test/un", TestUN)
 	app.Api.Post("/test/un", TestUN)
 	app.Api.Put("/test/un", TestUN)

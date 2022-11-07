@@ -94,15 +94,15 @@ func (e *EventHolder) Listen() {
 			}
 			ari.Code = getAppRegisterInfoCode(ari)
 			// 处理用户的event注册信息
-			e.app.execByEvent(utils.NewUserNamespace("", sdkconst.CommonNamespace), func(db *gorm.DB) error {
+			e.app.execByUn(utils.NewUserNamespace("", sdkconst.CommonNamespace), func(db *gorm.DB) error {
 				return e.registerIfHaveApp(db, ari)
 			})
 			var ul = e.app.AppInfo.RegisterUserList
 			for i := range ul {
-				e.app.execByEvent(utils.NewUserNamespace(ul[i], sdkconst.MainNamespace), func(db *gorm.DB) error {
+				e.app.execByUn(utils.NewUserNamespace(ul[i], sdkconst.MainNamespace), func(db *gorm.DB) error {
 					return e.registerIfHaveApp(db, ari)
 				})
-				e.app.execByEvent(utils.NewUserNamespace(ul[i], sdkconst.PrivateNamespace), func(db *gorm.DB) error {
+				e.app.execByUn(utils.NewUserNamespace(ul[i], sdkconst.PrivateNamespace), func(db *gorm.DB) error {
 					return e.registerIfHaveApp(db, ari)
 				})
 			}
@@ -134,7 +134,7 @@ func (e *EventHolder) cleanAppRegisterInfo() {
 	doClean := func(db *gorm.DB, appName string) error {
 		return db.Where("app_code_name = ?", appName).Delete(&entity.ActionAppRegisterInfo{}).Error
 	}
-	e.app.execByEvent(utils.NewUserNamespace("", sdkconst.CommonNamespace), func(db *gorm.DB) error {
+	e.app.execByUn(utils.NewUserNamespace("", sdkconst.CommonNamespace), func(db *gorm.DB) error {
 		err := doClean(db, e.app.AppCode)
 		if err != nil {
 			return err
@@ -143,14 +143,14 @@ func (e *EventHolder) cleanAppRegisterInfo() {
 	})
 	var ul = e.app.AppInfo.RegisterUserList
 	for i := range ul {
-		e.app.execByEvent(utils.NewUserNamespace(ul[i], sdkconst.MainNamespace), func(db *gorm.DB) error {
+		e.app.execByUn(utils.NewUserNamespace(ul[i], sdkconst.MainNamespace), func(db *gorm.DB) error {
 			err := doClean(db, e.app.AppCode)
 			if err != nil {
 				return err
 			}
 			return nil
 		})
-		e.app.execByEvent(utils.NewUserNamespace(ul[i], sdkconst.PrivateNamespace), func(db *gorm.DB) error {
+		e.app.execByUn(utils.NewUserNamespace(ul[i], sdkconst.PrivateNamespace), func(db *gorm.DB) error {
 			err := doClean(db, e.app.AppCode)
 			if err != nil {
 				return err

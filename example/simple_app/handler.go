@@ -19,7 +19,7 @@ func TestPage(ctx iris.Context) {
 }
 
 func TestUseDB(ctx iris.Context) {
-	err := app.DBExec(ctx, func(db *gorm.DB) error {
+	err := app.Exec(ctx, func(db *gorm.DB) error {
 		var apps []Apps
 		err := db.Find(&apps).Error
 		if err != nil {
