@@ -3,8 +3,10 @@ package siyouyunsdk
 import (
 	"github.com/kataras/iris/v12"
 	"github.com/siyouyun-open/siyouyun_sdk/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
+	"net"
 	"os"
 )
 
@@ -12,26 +14,30 @@ import (
 type FS struct {
 	AppCodeName string
 
+	unixConnMap map[string]*net.UnixConn
+
 	api *gateway.StorageApi
-	app *app
+	App *AppStruct
 	*utils.UserNamespace
 }
 
-func (a *app) NewFSFromCtx(ctx iris.Context) *FS {
+func (a *AppStruct) NewFSFromCtx(ctx iris.Context) *FS {
 	un := utils.NewUserNamespaceFromIris(ctx)
 	fs := &FS{
 		AppCodeName:   a.AppCode,
-		app:           a,
-		UserNamespace: un,
+		unixConnMap:   make(map[string]*net.UnixConn),
 		api:           gateway.NewStorageApi(un),
+		App:           a,
+		UserNamespace: un,
 	}
 	return fs
 }
 
-func (a *app) NewFSFromUserNamespace(un *utils.UserNamespace) *FS {
+func (a *AppStruct) NewFSFromUserNamespace(un *utils.UserNamespace) *FS {
 	fs := &FS{
 		AppCodeName:   a.AppCode,
-		app:           a,
+		unixConnMap:   make(map[string]*net.UnixConn),
+		App:           a,
 		UserNamespace: un,
 		api:           gateway.NewStorageApi(un),
 	}
@@ -40,12 +46,22 @@ func (a *app) NewFSFromUserNamespace(un *utils.UserNamespace) *FS {
 
 // Open  打开文件
 func (fs *FS) Open(path string) (*os.File, error) {
-	return fs.api.Open(path)
+	file, conn, usfp, err := fs.api.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	fs.unixConnMap[usfp] = conn
+	return file, nil
 }
 
 // OpenFile 打开或创建文件
 func (fs *FS) OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
-	return fs.api.OpenFile(path, flag, perm)
+	file, conn, usfp, err := fs.api.OpenFile(path, flag, perm)
+	if err != nil {
+		return nil, err
+	}
+	fs.unixConnMap[usfp] = conn
+	return file, nil
 }
 
 // MkdirAll 递归创建目录
@@ -84,18 +100,18 @@ func (fs *FS) InodeToPath(inode int64) string {
 }
 
 // InodeToFileInfo inode转fileInfo
-func (fs *FS) InodeToFileInfo(inode int64) *gateway.FileInfoRes {
+func (fs *FS) InodeToFileInfo(inode int64) *dto.FileInfoRes {
 	return fs.api.InodeToFileInfo(inode)
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (fs *FS) InodesToFileInfos(inodes ...int64) map[string]gateway.FileInfoRes {
+func (fs *FS) InodesToFileInfos(inodes ...int64) map[string]dto.FileInfoRes {
 	return fs.api.InodesToFileInfos(inodes...)
 }
 
 // Exec  fs执行sql
 func (fs *FS) Exec(f func(*gorm.DB) error) error {
-	err := fs.app.DB.Transaction(func(tx *gorm.DB) (err error) {
+	err := fs.App.DB.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := fs.UserNamespace.DatabaseName()
 		if dbname == "" {
 			return

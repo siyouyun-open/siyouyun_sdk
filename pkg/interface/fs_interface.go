@@ -1,15 +1,16 @@
-package pkg
+package siyouinterface
 
 import (
-	"github.com/siyouyun-open/siyouyun_sdk/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	"net"
 	"os"
 )
 
 type FSApi interface {
 	// Open  打开文件
-	Open(path string) (*os.File, error)
+	Open(path string) (*os.File, *net.UnixConn, string, error)
 	// OpenFile 打开或创建文件
-	OpenFile(path string, flag int, perm os.FileMode) (*os.File, error)
+	OpenFile(path string, flag int, perm os.FileMode) (*os.File, *net.UnixConn, string, error)
 	// MkdirAll 递归创建目录
 	MkdirAll(path string) error
 	// Remove 删除文件
@@ -25,7 +26,7 @@ type FSApi interface {
 	// InodeToPath inode转path
 	InodeToPath(inode int64) string
 	// InodeToFileInfo inode转fileInfo
-	InodeToFileInfo(inode int64) *gateway.FileInfoRes
+	InodeToFileInfo(inode int64) *dto.FileInfoRes
 	// InodesToFileInfos inodes转fileInfos
-	InodesToFileInfos(inodes ...int64) map[string]gateway.FileInfoRes
+	InodesToFileInfos(inodes ...int64) map[string]dto.FileInfoRes
 }

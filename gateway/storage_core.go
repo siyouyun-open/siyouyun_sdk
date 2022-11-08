@@ -3,6 +3,7 @@ package gateway
 import (
 	"fmt"
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"strconv"
@@ -54,9 +55,9 @@ func (sc storageCoreApi) InodeToPath(inode int64) string {
 }
 
 // InodeToFileInfo inode转fileInfo
-func (sc storageCoreApi) InodeToFileInfo(inode int64) *FileInfoRes {
+func (sc storageCoreApi) InodeToFileInfo(inode int64) *dto.FileInfoRes {
 	api := sc.Host + "/inode/to/fileinfo"
-	response := restclient.PostRequest[FileInfoRes](
+	response := restclient.PostRequest[dto.FileInfoRes](
 		sc.UserNamespace,
 		api,
 		map[string]string{"inode": strconv.FormatInt(inode, 10)},
@@ -69,13 +70,13 @@ func (sc storageCoreApi) InodeToFileInfo(inode int64) *FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (sc storageCoreApi) InodesToFileInfos(inodes ...int64) map[string]FileInfoRes {
+func (sc storageCoreApi) InodesToFileInfos(inodes ...int64) map[string]dto.FileInfoRes {
 	var inodesStr []string
 	for i := range inodes {
 		inodesStr = append(inodesStr, strconv.FormatInt(inodes[i], 10))
 	}
 	api := sc.Host + "/inodes/to/fileinfos"
-	response := restclient.PostRequest[map[string]FileInfoRes](
+	response := restclient.PostRequest[map[string]dto.FileInfoRes](
 		sc.UserNamespace,
 		api,
 		map[string]string{

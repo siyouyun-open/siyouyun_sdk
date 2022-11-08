@@ -1,7 +1,9 @@
 package gateway
 
 import (
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
+	"net"
 	"os"
 )
 
@@ -17,37 +19,13 @@ func NewStorageApi(un *utils.UserNamespace) *StorageApi {
 	}
 }
 
-type FileInfoRes struct {
-	Id           int64       `json:"id"`
-	HasThumbnail bool        `json:"hasThumbnail"`
-	Name         string      `json:"name"`
-	Size         int64       `json:"size"`
-	ParentPath   string      `json:"parentPath"`
-	FullPath     string      `json:"fullPath"`
-	IsDir        bool        `json:"isDir"`
-	Tag          string      `json:"tag"`
-	Md5          string      `json:"md5"`
-	Extension    string      `json:"extension"`
-	Mime         string      `json:"mime"`
-	Owner        string      `json:"owner"`
-	Atime        int64       `json:"atime"`
-	Mtime        int64       `json:"mtime"`
-	Ctime        int64       `json:"ctime"`
-	Tags         interface{} `json:"tags"`
-	Ext0         interface{} `json:"ext0"`
-	Ext1         interface{} `json:"ext1"`
-	Ext2         interface{} `json:"ext2"`
-
-	EventList interface{} `json:"eventList,omitempty"`
-}
-
 // Open  打开文件
-func (s StorageApi) Open(path string) (*os.File, error) {
+func (s StorageApi) Open(path string) (*os.File, *net.UnixConn, string, error) {
 	return s.storageOSApi.Open(path)
 }
 
 // OpenFile 打开或创建文件
-func (s StorageApi) OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
+func (s StorageApi) OpenFile(path string, flag int, perm os.FileMode) (*os.File, *net.UnixConn, string, error) {
 	return s.storageOSApi.OpenFile(path, flag, perm)
 }
 
@@ -87,11 +65,11 @@ func (s StorageApi) InodeToPath(inode int64) string {
 }
 
 // InodeToFileInfo inode转fileInfo
-func (s StorageApi) InodeToFileInfo(inode int64) *FileInfoRes {
+func (s StorageApi) InodeToFileInfo(inode int64) *dto.FileInfoRes {
 	return s.storageCoreApi.InodeToFileInfo(inode)
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (s StorageApi) InodesToFileInfos(inodes ...int64) map[string]FileInfoRes {
+func (s StorageApi) InodesToFileInfos(inodes ...int64) map[string]dto.FileInfoRes {
 	return s.storageCoreApi.InodesToFileInfos(inodes...)
 }

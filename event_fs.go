@@ -11,7 +11,7 @@ type EventFS struct {
 	AppFS          *AppFS
 }
 
-func (a *app) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
+func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
 	un := &utils.UserNamespace{
 		Username:  fe.Username,
 		Namespace: fe.Namespace,

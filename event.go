@@ -55,7 +55,7 @@ type FileEvent struct {
 }
 
 type EventHolder struct {
-	app     *app
+	app     *AppStruct
 	options []PreferOptions
 }
 
@@ -67,7 +67,7 @@ type PreferOptions struct {
 }
 
 // WithEventHolder 初始化事件监听器
-func (a *app) WithEventHolder() {
+func (a *AppStruct) WithEventHolder() {
 	a.Event = &EventHolder{
 		app: a,
 	}

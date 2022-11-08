@@ -3,7 +3,7 @@ package siyouyunsdk
 import (
 	"github.com/kataras/iris/v12"
 	"github.com/siyouyun-open/siyouyun_sdk/const"
-	"github.com/siyouyun-open/siyouyun_sdk/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"os"
 	"path/filepath"
@@ -15,7 +15,7 @@ type AppFS struct {
 	fs            *FS
 }
 
-func (a *app) NewAppFSFromCtx(ctx iris.Context) *AppFS {
+func (a *AppStruct) NewAppFSFromCtx(ctx iris.Context) *AppFS {
 	afs := &AppFS{
 		fs: a.NewFSFromCtx(ctx),
 	}
@@ -23,7 +23,7 @@ func (a *app) NewAppFSFromCtx(ctx iris.Context) *AppFS {
 	return afs
 }
 
-func (a *app) NewAppFSFromUserNamespace(un *utils.UserNamespace) *AppFS {
+func (a *AppStruct) NewAppFSFromUserNamespace(un *utils.UserNamespace) *AppFS {
 	afs := &AppFS{
 		fs: a.NewFSFromUserNamespace(un),
 	}
@@ -112,11 +112,11 @@ func (afs *AppFS) InodeToPath(inode int64) string {
 }
 
 // InodeToFileInfo inode转fileInfo
-func (afs *AppFS) InodeToFileInfo(inode int64) *gateway.FileInfoRes {
+func (afs *AppFS) InodeToFileInfo(inode int64) *dto.FileInfoRes {
 	return afs.fs.InodeToFileInfo(inode)
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (afs *AppFS) InodesToFileInfos(inodes ...int64) map[string]gateway.FileInfoRes {
+func (afs *AppFS) InodesToFileInfos(inodes ...int64) map[string]dto.FileInfoRes {
 	return afs.fs.InodesToFileInfos(inodes...)
 }

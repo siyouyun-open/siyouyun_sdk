@@ -15,7 +15,7 @@ const (
 	AppCodeEnvKey = "AppCode"
 )
 
-type app struct {
+type AppStruct struct {
 	AppCode string
 	Api     SiyouFaasApi
 	AppInfo *entity.AppRegisterInfo
@@ -25,9 +25,9 @@ type app struct {
 	DB *gorm.DB
 }
 
-var App *app
+var App *AppStruct
 
-func NewApp() *app {
+func NewApp() *AppStruct {
 	var err error
 
 	// init http client
@@ -53,7 +53,7 @@ func NewApp() *app {
 	return App
 }
 
-func (a *app) exec(un *utils.UserNamespace, f func(*gorm.DB) error) error {
+func (a *AppStruct) exec(un *utils.UserNamespace, f func(*gorm.DB) error) error {
 	err := a.DB.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := un.DatabaseName()
 		if dbname == "" {
