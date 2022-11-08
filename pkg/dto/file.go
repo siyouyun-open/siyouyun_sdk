@@ -1,4 +1,4 @@
-package dto
+package sdkdto
 
 type FileInfoRes struct {
 	Id           int64       `json:"id"`

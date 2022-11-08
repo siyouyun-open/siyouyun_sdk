@@ -123,9 +123,13 @@ func (e *EventHolder) Listen() {
 				fs := e.app.newEventFSFromFileEvent(&fe)
 				err = e.options[j].Handler(fs)
 				if err != nil {
+					fs.Destroy()
 					_ = nc.Publish(msg.Reply, []byte(strconv.Itoa(EventStatusError)))
+					return
+				} else {
+					fs.Destroy()
+					_ = nc.Publish(msg.Reply, []byte(strconv.Itoa(EventStatusFinish)))
 				}
-				_ = nc.Publish(msg.Reply, []byte(strconv.Itoa(EventStatusFinish)))
 			})
 		}
 	}()
