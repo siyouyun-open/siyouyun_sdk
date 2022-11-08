@@ -106,12 +106,12 @@ func (fs *FS) InodeToPath(inode int64) string {
 }
 
 // InodeToFileInfo inode转fileInfo
-func (fs *FS) InodeToFileInfo(inode int64) *dto.FileInfoRes {
+func (fs *FS) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
 	return fs.api.InodeToFileInfo(inode)
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (fs *FS) InodesToFileInfos(inodes ...int64) map[int64]dto.FileInfoRes {
+func (fs *FS) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
 	return fs.api.InodesToFileInfos(inodes...)
 }
 

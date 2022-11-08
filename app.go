@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	AppCodeEnvKey = "AppCode"
+	AppCodeEnvKey = "APPCODE"
 )
 
 type AppStruct struct {

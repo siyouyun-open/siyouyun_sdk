@@ -29,7 +29,7 @@ type FSApi interface {
 	// InodeToPath inode转path
 	InodeToPath(inode int64) string
 	// InodeToFileInfo inode转fileInfo
-	InodeToFileInfo(inode int64) *dto.FileInfoRes
+	InodeToFileInfo(inode int64) *sdkdto.FileInfoRes
 	// InodesToFileInfos inodes转fileInfos
-	InodesToFileInfos(inodes ...int64) map[string]dto.FileInfoRes
+	InodesToFileInfos(inodes ...int64) map[string]sdkdto.FileInfoRes
 }

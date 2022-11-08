@@ -55,9 +55,9 @@ func (sc storageCoreApi) InodeToPath(inode int64) string {
 }
 
 // InodeToFileInfo inode转fileInfo
-func (sc storageCoreApi) InodeToFileInfo(inode int64) *dto.FileInfoRes {
+func (sc storageCoreApi) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
 	api := sc.Host + "/inode/to/fileinfo"
-	response := restclient.PostRequest[dto.FileInfoRes](
+	response := restclient.PostRequest[sdkdto.FileInfoRes](
 		sc.UserNamespace,
 		api,
 		map[string]string{"inode": strconv.FormatInt(inode, 10)},
@@ -70,13 +70,13 @@ func (sc storageCoreApi) InodeToFileInfo(inode int64) *dto.FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (sc storageCoreApi) InodesToFileInfos(inodes ...int64) map[int64]dto.FileInfoRes {
+func (sc storageCoreApi) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
 	var inodesStr []string
 	for i := range inodes {
 		inodesStr = append(inodesStr, strconv.FormatInt(inodes[i], 10))
 	}
 	api := sc.Host + "/inodes/to/fileinfos"
-	response := restclient.PostRequest[map[int64]dto.FileInfoRes](
+	response := restclient.PostRequest[map[int64]sdkdto.FileInfoRes](
 		sc.UserNamespace,
 		api,
 		map[string]string{

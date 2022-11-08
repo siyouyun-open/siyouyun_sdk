@@ -118,12 +118,12 @@ func (afs *AppFS) InodeToPath(inode int64) string {
 }
 
 // InodeToFileInfo inode转fileInfo
-func (afs *AppFS) InodeToFileInfo(inode int64) *dto.FileInfoRes {
+func (afs *AppFS) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
 	return afs.fs.InodeToFileInfo(inode)
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (afs *AppFS) InodesToFileInfos(inodes ...int64) map[int64]dto.FileInfoRes {
+func (afs *AppFS) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
 	return afs.fs.InodesToFileInfos(inodes...)
 }
 

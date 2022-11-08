@@ -71,11 +71,11 @@ func (s StorageApi) InodeToPath(inode int64) string {
 }
 
 // InodeToFileInfo inode转fileInfo
-func (s StorageApi) InodeToFileInfo(inode int64) *dto.FileInfoRes {
+func (s StorageApi) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
 	return s.storageCoreApi.InodeToFileInfo(inode)
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (s StorageApi) InodesToFileInfos(inodes ...int64) map[int64]dto.FileInfoRes {
+func (s StorageApi) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
 	return s.storageCoreApi.InodesToFileInfos(inodes...)
 }
