@@ -5,6 +5,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"net"
 	"os"
+	"time"
 )
 
 type StorageApi struct {
@@ -42,6 +43,11 @@ func (s StorageApi) Remove(path string) error {
 // Rename 重命名文件
 func (s StorageApi) Rename(oldPath, newPath string) error {
 	return s.storageOSApi.Rename(oldPath, newPath)
+}
+
+// Chtimes 修改文件时间
+func (s StorageApi) Chtimes(path string, atime time.Time, mtime time.Time) error {
+	return s.storageOSApi.Chtimes(path, atime, mtime)
 }
 
 // FileExists 文件是否存在

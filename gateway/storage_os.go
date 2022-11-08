@@ -218,6 +218,26 @@ func (sos *storageOSApi) Rename(oldPath, newPath string) error {
 	return nil
 }
 
+// Chtimes 修改文件时间
+func (sos *storageOSApi) Chtimes(path string, atime time.Time, mtime time.Time) error {
+	api := sos.Host + "/fs/chtimes"
+	response := restclient.PostRequest[any](
+		sos.UserNamespace,
+		api,
+		map[string]string{
+			"parentPath": filepath.Dir(path),
+			"name":       filepath.Base(path),
+			"atime":      strconv.FormatInt(atime.UnixMilli(), 10),
+			"mtime":      strconv.FormatInt(mtime.UnixMilli(), 10),
+		},
+		nil,
+	)
+	if response.Code != sdkconst.Success {
+		return errors.New(response.Msg)
+	}
+	return nil
+}
+
 // FileExists 文件是否存在
 func (sos *storageOSApi) FileExists(path string) bool {
 	api := sos.Host + "/fs/object/exists"

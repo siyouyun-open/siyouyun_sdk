@@ -4,6 +4,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"net"
 	"os"
+	"time"
 )
 
 type FSApi interface {
@@ -17,7 +18,8 @@ type FSApi interface {
 	Remove(path string) error
 	// Rename 重命名文件
 	Rename(oldPath, newPath string) error
-	// chtime
+	// Chtimes 修改文件时间信息
+	Chtimes(name string, atime time.Time, mtime time.Time) error
 	// FileExists 文件是否存在
 	FileExists(path string) bool
 	// EnsureDirExist 确保目录存在

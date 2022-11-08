@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type AppFS struct {
@@ -85,6 +86,11 @@ func (afs *AppFS) Remove(path string) error {
 // Rename 重命名文件
 func (afs *AppFS) Rename(oldPath, newPath string) error {
 	return afs.fs.Rename(filepath.Join(afs.appNormalPath, oldPath), filepath.Join(afs.appNormalPath, newPath))
+}
+
+// Chtimes 修改文件时间
+func (afs *AppFS) Chtimes(path string, atime time.Time, mtime time.Time) error {
+	return afs.fs.Chtimes(filepath.Join(afs.appNormalPath, path), atime, mtime)
 }
 
 // FileExists 文件是否存在

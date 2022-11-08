@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 	"net"
 	"os"
+	"time"
 )
 
 // FS fs
@@ -77,6 +78,11 @@ func (fs *FS) Remove(path string) error {
 // Rename 重命名文件
 func (fs *FS) Rename(oldPath, newPath string) error {
 	return fs.api.Rename(oldPath, newPath)
+}
+
+// Chtimes 修改文件时间
+func (fs *FS) Chtimes(path string, atime time.Time, mtime time.Time) error {
+	return fs.api.Chtimes(path, atime, mtime)
 }
 
 // FileExists 文件是否存在
