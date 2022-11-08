@@ -70,13 +70,13 @@ func (sc storageCoreApi) InodeToFileInfo(inode int64) *dto.FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (sc storageCoreApi) InodesToFileInfos(inodes ...int64) map[string]dto.FileInfoRes {
+func (sc storageCoreApi) InodesToFileInfos(inodes ...int64) map[int64]dto.FileInfoRes {
 	var inodesStr []string
 	for i := range inodes {
 		inodesStr = append(inodesStr, strconv.FormatInt(inodes[i], 10))
 	}
 	api := sc.Host + "/inodes/to/fileinfos"
-	response := restclient.PostRequest[map[string]dto.FileInfoRes](
+	response := restclient.PostRequest[map[int64]dto.FileInfoRes](
 		sc.UserNamespace,
 		api,
 		map[string]string{

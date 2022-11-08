@@ -117,6 +117,10 @@ func (afs *AppFS) InodeToFileInfo(inode int64) *dto.FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (afs *AppFS) InodesToFileInfos(inodes ...int64) map[string]dto.FileInfoRes {
+func (afs *AppFS) InodesToFileInfos(inodes ...int64) map[int64]dto.FileInfoRes {
 	return afs.fs.InodesToFileInfos(inodes...)
+}
+
+func (afs *AppFS) Destroy() {
+	afs.fs.Destroy()
 }

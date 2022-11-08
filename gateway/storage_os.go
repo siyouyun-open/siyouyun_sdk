@@ -33,7 +33,6 @@ func newStorageOSApi(un *utils.UserNamespace) *storageOSApi {
 // Open  打开文件
 func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ string, err error) {
 	// 建立unix socket文件,链接并监听
-	// 发送开启文件请求
 	usuuid := uuid.New().String() + "-" + strconv.FormatInt(time.Now().UnixMilli(), 10)
 	usuuidFp := filepath.Join(UnixSocketPrefix, usuuid)
 	// todo 验证存在时重新计算uuid
@@ -41,6 +40,7 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
+	// 发送开启文件请求
 	api := sos.Host + "/open"
 	response := restclient.PostRequest[any](
 		sos.UserNamespace,
@@ -100,19 +100,66 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 // OpenFile 打开或创建文件
 func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *os.File, _ *net.UnixConn, _ string, err error) {
 	// 建立unix socket文件,链接并监听
+	usuuid := uuid.New().String() + "-" + strconv.FormatInt(time.Now().UnixMilli(), 10)
+	usuuidFp := filepath.Join(UnixSocketPrefix, usuuid)
+	// todo 验证存在时重新计算uuid
+	_, err = os.Create(usuuidFp)
+	if err != nil {
+		return nil, nil, usuuidFp, err
+	}
 	// 发送开启文件请求
-	api := sos.Host + "/open"
+	api := sos.Host + "/open/file"
 	_ = restclient.PostRequest[any](
 		sos.UserNamespace,
 		api,
 		map[string]string{
 			"parentPath": filepath.Dir(path),
 			"name":       filepath.Base(path),
+			"usuuid":     usuuid,
+			"flag":       strconv.Itoa(flag),
+			"perm":       strconv.Itoa(int(perm)),
 		},
 		nil,
 	)
-	// 返回file对象
-	return nil, nil, "", nil
+	err = syscall.Unlink(usuuidFp)
+	if err != nil {
+		return nil, nil, usuuidFp, err
+	}
+	laddr, err := net.ResolveUnixAddr("unix", usuuidFp)
+	if err != nil {
+		return nil, nil, usuuidFp, err
+	}
+	l, err := net.ListenUnix("unix", laddr)
+	if err != nil {
+		return nil, nil, usuuidFp, err
+	}
+	conn, err := l.AcceptUnix()
+	if err != nil {
+		return nil, nil, usuuidFp, err
+	}
+	// msg分为两部分数据
+	buf := make([]byte, 32)
+	oob := make([]byte, 32)
+	_, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
+	if err != nil {
+		return nil, nil, usuuidFp, err
+	}
+	// 解出SocketControlMessage数组
+	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
+	if err != nil {
+		return nil, nil, usuuidFp, err
+	}
+	if len(scms) == 0 {
+		return nil, nil, usuuidFp, errors.New("scms is 0")
+	}
+	// 从SocketControlMessage中得到UnixRights
+	fds, err := syscall.ParseUnixRights(&(scms[0]))
+	if err != nil {
+		panic(err)
+	}
+	// os.NewFile()将文件描述符转为 *os.File对象, 并不创建新文件, 通常很少使用到
+	f := os.NewFile(uintptr(fds[0]), "")
+	return f, conn, usuuidFp, nil
 }
 
 // MkdirAll 递归创建目录

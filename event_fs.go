@@ -29,3 +29,8 @@ func (efs *EventFS) OpenEventFile() (*os.File, error) {
 	path := efs.FS.InodeToPath(efs.EventFileInode)
 	return efs.FS.Open(path)
 }
+
+func (efs *EventFS) Destroy() {
+	efs.FS.Destroy()
+	efs.AppFS.Destroy()
+}

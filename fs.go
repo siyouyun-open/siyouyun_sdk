@@ -105,8 +105,17 @@ func (fs *FS) InodeToFileInfo(inode int64) *dto.FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (fs *FS) InodesToFileInfos(inodes ...int64) map[string]dto.FileInfoRes {
+func (fs *FS) InodesToFileInfos(inodes ...int64) map[int64]dto.FileInfoRes {
 	return fs.api.InodesToFileInfos(inodes...)
+}
+
+func (fs *FS) Destroy() {
+	for s := range fs.unixConnMap {
+		if v, ok := fs.unixConnMap[s]; ok {
+			v.Close()
+		}
+		os.RemoveAll(s)
+	}
 }
 
 // Exec  fs执行sql

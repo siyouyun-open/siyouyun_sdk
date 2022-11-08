@@ -17,6 +17,7 @@ type FSApi interface {
 	Remove(path string) error
 	// Rename 重命名文件
 	Rename(oldPath, newPath string) error
+	// chtime
 	// FileExists 文件是否存在
 	FileExists(path string) bool
 	// EnsureDirExist 确保目录存在

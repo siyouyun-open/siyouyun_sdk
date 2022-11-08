@@ -5,6 +5,6 @@ type TableDefine struct {
 	Defines []string
 }
 
-func (a *app) WithModel(defs []TableDefine) {
+func (a *AppStruct) WithModel(defs []TableDefine) {
 
 }

@@ -70,6 +70,6 @@ func (s StorageApi) InodeToFileInfo(inode int64) *dto.FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (s StorageApi) InodesToFileInfos(inodes ...int64) map[string]dto.FileInfoRes {
+func (s StorageApi) InodesToFileInfos(inodes ...int64) map[int64]dto.FileInfoRes {
 	return s.storageCoreApi.InodesToFileInfos(inodes...)
 }
