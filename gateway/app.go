@@ -8,10 +8,6 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
 )
 
-const LocalhostAddress = "http://10.62.0.1"
-const OSHTTPPort = 40000
-const CoreHTTPPort = 40100
-
 var appGatewayAddr = fmt.Sprintf("%s:%d/%s", LocalhostAddress, OSHTTPPort, "faas")
 
 func GetAppInfo(code string) (*entity.AppRegisterInfo, error) {

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/nats-io/nats.go"
-	"github.com/siyouyun-open/siyouyun_sdk/const"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/entity"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
@@ -39,8 +39,10 @@ const (
 
 // 处理任务的状态
 const (
-	EventStatusError  = 3
-	EventStatusFinish = 4
+	EventStatusAppend = iota + 1
+	EventStatusRunning
+	EventStatusError
+	EventStatusFinish
 )
 
 type FileType string
@@ -61,7 +63,7 @@ type PreferOptions struct {
 	FileType      FileType
 	FileEventType int
 	Description   string
-	Handler       func(fs *FS) error
+	Handler       func(fs *EventFS) error
 }
 
 // WithEventHolder 初始化事件监听器

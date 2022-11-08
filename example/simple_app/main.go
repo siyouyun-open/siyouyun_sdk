@@ -2,7 +2,6 @@ package simpleapp
 
 import (
 	"github.com/siyouyun-open/siyouyun_sdk"
-	"siyoufaasdemo/model"
 )
 
 var app *siyouyunfaas.App
@@ -10,7 +9,6 @@ var app *siyouyunfaas.App
 func Init() {
 	app = siyouyunfaas.NewApp()
 	AddRouter()
-	app.WithModel(model.SDKDemo{})
 }
 
 func AddRouter() {
@@ -20,4 +18,5 @@ func AddRouter() {
 	app.Api.Delete("/test/un", TestUN)
 	app.Api.Get("/test/page", TestPage)
 	app.Api.Get("/test/use/db", TestUseDB)
+	app.Api.Get("/test/use/file", TestUseFile)
 }

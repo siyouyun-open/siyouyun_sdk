@@ -19,7 +19,8 @@ func TestPage(ctx iris.Context) {
 }
 
 func TestUseDB(ctx iris.Context) {
-	err := app.Exec(ctx, func(db *gorm.DB) error {
+	fs := app.NewFSFromCtx(ctx)
+	err := fs.Exec(func(db *gorm.DB) error {
 		var apps []Apps
 		err := db.Find(&apps).Error
 		if err != nil {
@@ -33,6 +34,13 @@ func TestUseDB(ctx iris.Context) {
 		return
 	}
 	ctx.JSON(restjson.SuccessResJson("success"))
+}
+
+func TestUseFile(ctx iris.Context) {
+	fs := app.NewFSFromCtx(ctx)
+
+	open, err := fs.Open("download-1.jpg")
+
 }
 
 type Model struct {

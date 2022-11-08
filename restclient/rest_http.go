@@ -6,6 +6,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/restjson"
+	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"net"
 	"net/http"
 	"strings"
@@ -18,7 +19,7 @@ func InitHttpClient() {
 }
 
 // PostRequest 发起rest post请求
-func PostRequest[T any](fullApi string, query map[string]string, body any) restjson.Response[T] {
+func PostRequest[T any](un *utils.UserNamespace, fullApi string, query map[string]string, body any) restjson.Response[T] {
 	if query == nil {
 		query = map[string]string{}
 	}
@@ -26,7 +27,9 @@ func PostRequest[T any](fullApi string, query map[string]string, body any) restj
 	_, err := Client.R().
 		SetQueryParams(query).
 		SetHeaders(map[string]string{
-			"Accept": "application/json",
+			"Accept":      "application/json",
+			"x-username":  un.Username,
+			"x-namespace": un.Namespace,
 		}).
 		SetBody(body).
 		SetResult(&resp).
@@ -38,7 +41,7 @@ func PostRequest[T any](fullApi string, query map[string]string, body any) restj
 }
 
 // GetRequest 发起rest get请求
-func GetRequest[T any](fullApi string, query map[string]string) restjson.Response[T] {
+func GetRequest[T any](un *utils.UserNamespace, fullApi string, query map[string]string) restjson.Response[T] {
 	if query == nil {
 		query = map[string]string{}
 	}
@@ -46,7 +49,9 @@ func GetRequest[T any](fullApi string, query map[string]string) restjson.Respons
 	_, err := Client.R().
 		SetQueryParams(query).
 		SetHeaders(map[string]string{
-			"Accept": "application/json",
+			"Accept":      "application/json",
+			"x-username":  un.Username,
+			"x-namespace": un.Namespace,
 		}).
 		SetResult(&resp).
 		Get(fullApi)
