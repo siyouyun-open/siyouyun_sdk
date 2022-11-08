@@ -23,14 +23,16 @@ func PostRequest[T any](un *utils.UserNamespace, fullApi string, query map[strin
 	if query == nil {
 		query = map[string]string{}
 	}
+	header := make(map[string]string)
+	header["Accept"] = "application/json"
+	if un != nil {
+		header["x-username"] = un.Username
+		header["x-namespace"] = un.Namespace
+	}
 	resp := restjson.Response[T]{}
 	_, err := Client.R().
 		SetQueryParams(query).
-		SetHeaders(map[string]string{
-			"Accept":      "application/json",
-			"x-username":  un.Username,
-			"x-namespace": un.Namespace,
-		}).
+		SetHeaders(header).
 		SetBody(body).
 		SetResult(&resp).
 		Post(fullApi)
@@ -45,14 +47,16 @@ func GetRequest[T any](un *utils.UserNamespace, fullApi string, query map[string
 	if query == nil {
 		query = map[string]string{}
 	}
+	header := make(map[string]string)
+	header["Accept"] = "application/json"
+	if un != nil {
+		header["x-username"] = un.Username
+		header["x-namespace"] = un.Namespace
+	}
 	resp := restjson.Response[T]{}
 	_, err := Client.R().
 		SetQueryParams(query).
-		SetHeaders(map[string]string{
-			"Accept":      "application/json",
-			"x-username":  un.Username,
-			"x-namespace": un.Namespace,
-		}).
+		SetHeaders(header).
 		SetResult(&resp).
 		Get(fullApi)
 	if err != nil {

@@ -13,7 +13,7 @@ var appGatewayAddr = fmt.Sprintf("%s:%d/%s", LocalhostAddress, OSHTTPPort, "faas
 func GetAppInfo(code string) (*entity.AppRegisterInfo, error) {
 	api := appGatewayAddr + "/app/info"
 	fmt.Println(api)
-	response := restclient.GetRequest[entity.AppRegisterInfo](api, map[string]string{"appCode": code})
+	response := restclient.GetRequest[entity.AppRegisterInfo](nil, api, map[string]string{"appCode": code})
 	if response.Code != sdkconst.Success {
 		return nil, errors.New(response.Msg)
 	}

@@ -3,9 +3,11 @@ package simpleapp
 import (
 	"fmt"
 	"github.com/kataras/iris/v12"
+	siyouyunsdk "github.com/siyouyun-open/siyouyun_sdk"
 	"github.com/siyouyun-open/siyouyun_sdk/restjson"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
+	"io"
 )
 
 func TestUN(ctx iris.Context) {
@@ -19,7 +21,7 @@ func TestPage(ctx iris.Context) {
 }
 
 func TestUseDB(ctx iris.Context) {
-	fs := app.NewFSFromCtx(ctx)
+	fs := siyouyunsdk.App.NewFSFromCtx(ctx)
 	err := fs.Exec(func(db *gorm.DB) error {
 		var apps []Apps
 		err := db.Find(&apps).Error
@@ -37,10 +39,11 @@ func TestUseDB(ctx iris.Context) {
 }
 
 func TestUseFile(ctx iris.Context) {
-	fs := app.NewFSFromCtx(ctx)
-
-	open, err := fs.Open("download-1.jpg")
-
+	fs := siyouyunsdk.App.NewFSFromCtx(ctx)
+	appfs := siyouyunsdk.App.NewAppFSFromCtx(ctx)
+	f1, _ := fs.Open("download-1.jpg")
+	f2, _ := appfs.Open("123")
+	io.Copy(f2, f1)
 }
 
 type Model struct {

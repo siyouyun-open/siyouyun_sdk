@@ -1,4 +1,4 @@
-package siyouyunfaas
+package siyouyunsdk
 
 import (
 	"github.com/kataras/iris/v12"

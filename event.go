@@ -1,4 +1,4 @@
-package siyouyunfaas
+package siyouyunsdk
 
 import (
 	"crypto/md5"
@@ -55,7 +55,7 @@ type FileEvent struct {
 }
 
 type EventHolder struct {
-	app     *App
+	app     *app
 	options []PreferOptions
 }
 
@@ -67,7 +67,7 @@ type PreferOptions struct {
 }
 
 // WithEventHolder 初始化事件监听器
-func (a *App) WithEventHolder() {
+func (a *app) WithEventHolder() {
 	a.Event = &EventHolder{
 		app: a,
 	}

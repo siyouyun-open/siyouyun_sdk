@@ -1,4 +1,4 @@
-package siyouyunfaas
+package siyouyunsdk
 
 import (
 	"github.com/siyouyun-open/siyouyun_sdk/entity"
@@ -15,7 +15,7 @@ const (
 	AppCodeEnvKey = "AppCode"
 )
 
-type App struct {
+type app struct {
 	AppCode string
 	Api     SiyouFaasApi
 	AppInfo *entity.AppRegisterInfo
@@ -25,34 +25,35 @@ type App struct {
 	DB *gorm.DB
 }
 
-func NewApp() *App {
-	var app App
+var App *app
+
+func NewApp() *app {
 	var err error
 
 	// init http client
 	restclient.InitHttpClient()
 
-	app.AppCode = os.Getenv(AppCodeEnvKey)
+	App.AppCode = os.Getenv(AppCodeEnvKey)
 
 	// get app info
-	app.AppInfo, err = gateway.GetAppInfo(app.AppCode)
+	App.AppInfo, err = gateway.GetAppInfo(App.AppCode)
 	if err != nil {
 		panic(err)
 	}
 
 	// init db
-	db, _ := gorm.Open(mysql.Open(app.AppInfo.DSN), &gorm.Config{
+	db, _ := gorm.Open(mysql.Open(App.AppInfo.DSN), &gorm.Config{
 		Logger: siyoumysql.NewLogger(),
 	})
-	app.DB = db
+	App.DB = db
 
 	// init api
-	app.Api = make(SiyouFaasApi)
+	App.Api = make(SiyouFaasApi)
 
-	return &app
+	return App
 }
 
-func (a *App) exec(un *utils.UserNamespace, f func(*gorm.DB) error) error {
+func (a *app) exec(un *utils.UserNamespace, f func(*gorm.DB) error) error {
 	err := a.DB.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := un.DatabaseName()
 		if dbname == "" {

@@ -1,4 +1,4 @@
-package siyouyunfaas
+package siyouyunsdk
 
 import (
 	"github.com/kataras/iris/v12"
@@ -13,11 +13,11 @@ type FS struct {
 	AppCodeName string
 
 	api *gateway.StorageApi
-	app *App
+	app *app
 	*utils.UserNamespace
 }
 
-func (a *App) NewFSFromCtx(ctx iris.Context) *FS {
+func (a *app) NewFSFromCtx(ctx iris.Context) *FS {
 	un := utils.NewUserNamespaceFromIris(ctx)
 	fs := &FS{
 		AppCodeName:   a.AppCode,
@@ -28,7 +28,7 @@ func (a *App) NewFSFromCtx(ctx iris.Context) *FS {
 	return fs
 }
 
-func (a *App) NewFSFromUserNamespace(un *utils.UserNamespace) *FS {
+func (a *app) NewFSFromUserNamespace(un *utils.UserNamespace) *FS {
 	fs := &FS{
 		AppCodeName:   a.AppCode,
 		app:           a,

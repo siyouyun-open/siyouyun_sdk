@@ -4,19 +4,17 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk"
 )
 
-var app *siyouyunfaas.App
-
 func Init() {
-	app = siyouyunfaas.NewApp()
+	siyouyunsdk.NewApp()
 	AddRouter()
 }
 
 func AddRouter() {
-	app.Api.Get("/test/un", TestUN)
-	app.Api.Post("/test/un", TestUN)
-	app.Api.Put("/test/un", TestUN)
-	app.Api.Delete("/test/un", TestUN)
-	app.Api.Get("/test/page", TestPage)
-	app.Api.Get("/test/use/db", TestUseDB)
-	app.Api.Get("/test/use/file", TestUseFile)
+	siyouyunsdk.App.Api.Get("/test/un", TestUN)
+	siyouyunsdk.App.Api.Post("/test/un", TestUN)
+	siyouyunsdk.App.Api.Put("/test/un", TestUN)
+	siyouyunsdk.App.Api.Delete("/test/un", TestUN)
+	siyouyunsdk.App.Api.Get("/test/page", TestPage)
+	siyouyunsdk.App.Api.Get("/test/use/db", TestUseDB)
+	siyouyunsdk.App.Api.Get("/test/use/file", TestUseFile)
 }

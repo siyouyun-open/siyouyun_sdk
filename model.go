@@ -1,10 +1,10 @@
-package siyouyunfaas
+package siyouyunsdk
 
 type TableDefine struct {
 	Name    string
 	Defines []string
 }
 
-func (a *App) WithModel(defs []TableDefine) {
+func (a *app) WithModel(defs []TableDefine) {
 
 }
