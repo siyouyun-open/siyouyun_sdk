@@ -29,6 +29,7 @@ var App *AppStruct
 
 func NewApp() *AppStruct {
 	var err error
+	App = &AppStruct{}
 
 	// init http client
 	restclient.InitHttpClient()
