@@ -56,6 +56,7 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
+
 	// 发送开启文件请求
 	api := sos.Host + "/open"
 	response := restclient.PostRequest[any](
@@ -71,6 +72,7 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 	if response.Code != sdkconst.Success {
 		return nil, nil, usuuidFp, errors.New(response.Msg)
 	}
+
 	// msg分为两部分数据
 	buf := make([]byte, 32)
 	oob := make([]byte, 32)
@@ -121,6 +123,7 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *o
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
+
 	// 发送开启文件请求
 	api := sos.Host + "/open/file"
 	response := restclient.PostRequest[any](
@@ -135,6 +138,7 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *o
 		},
 		nil,
 	)
+	
 	if response.Code != sdkconst.Success {
 		return nil, nil, usuuidFp, errors.New(response.Msg)
 	}
