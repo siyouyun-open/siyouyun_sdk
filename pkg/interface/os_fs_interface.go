@@ -2,15 +2,16 @@ package siyouinterface
 
 import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	"net"
 	"os"
 	"time"
 )
 
-type FSApi interface {
+type OSFSApi interface {
 	// Open  打开文件
-	Open(path string) (*os.File, error)
+	Open(path string) (*os.File, *net.UnixConn, string, error)
 	// OpenFile 打开或创建文件
-	OpenFile(path string, flag int, perm os.FileMode) (*os.File, error)
+	OpenFile(path string, flag int, perm os.FileMode) (*os.File, *net.UnixConn, string, error)
 	// MkdirAll 递归创建目录
 	MkdirAll(path string) error
 	// Remove 删除文件

@@ -15,6 +15,8 @@ import (
 type FS struct {
 	AppCodeName string
 
+	*Ability
+
 	unixConnMap map[string]*net.UnixConn
 
 	api *gateway.StorageApi
@@ -31,6 +33,7 @@ func (a *AppStruct) NewFSFromCtx(ctx iris.Context) *FS {
 		App:           a,
 		UserNamespace: un,
 	}
+	fs.initAbility()
 	return fs
 }
 
@@ -42,7 +45,13 @@ func (a *AppStruct) NewFSFromUserNamespace(un *utils.UserNamespace) *FS {
 		UserNamespace: un,
 		api:           gateway.NewStorageApi(un),
 	}
+	fs.initAbility()
 	return fs
+}
+
+func (fs *FS) initAbility() {
+	fs.Ability.KV = fs.NewKV()
+	fs.Ability.FFmpeg = fs.NewFFmpeg()
 }
 
 // Open  打开文件

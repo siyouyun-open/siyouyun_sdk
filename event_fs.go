@@ -9,6 +9,7 @@ type EventFS struct {
 	EventFileInode int64
 	FS             *FS
 	AppFS          *AppFS
+	*Ability
 }
 
 func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
@@ -21,6 +22,7 @@ func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
 		FS:             a.NewFSFromUserNamespace(un),
 		AppFS:          a.NewAppFSFromUserNamespace(un),
 	}
+	efs.Ability = efs.FS.Ability
 	return efs
 }
 

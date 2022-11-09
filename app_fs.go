@@ -14,6 +14,7 @@ import (
 type AppFS struct {
 	appNormalPath string
 	fs            *FS
+	*Ability
 }
 
 func (a *AppStruct) NewAppFSFromCtx(ctx iris.Context) *AppFS {
@@ -21,6 +22,7 @@ func (a *AppStruct) NewAppFSFromCtx(ctx iris.Context) *AppFS {
 		fs: a.NewFSFromCtx(ctx),
 	}
 	afs.appNormalPath = afs.getNormalAppPrefix()
+	afs.Ability = afs.fs.Ability
 	return afs
 }
 
@@ -28,6 +30,7 @@ func (a *AppStruct) NewAppFSFromUserNamespace(un *utils.UserNamespace) *AppFS {
 	afs := &AppFS{
 		fs: a.NewFSFromUserNamespace(un),
 	}
+	afs.Ability = afs.fs.Ability
 	return afs
 }
 
