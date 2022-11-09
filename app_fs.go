@@ -7,7 +7,6 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -42,24 +41,16 @@ func (afs *AppFS) getNormalAppPrefix() string {
 		fallthrough
 	case sdkconst.MainNamespace:
 		prefixPath = filepath.Join(
-			sdkconst.FaasMntPrefix,
-			afs.fs.Username,
-			strings.Join([]string{afs.fs.Username, sdkconst.MainNamespace}, "-"),
 			".siyouyun", "app",
 			afs.fs.AppCodeName,
 		)
 	case sdkconst.PrivateNamespace:
 		prefixPath = filepath.Join(
-			sdkconst.FaasMntPrefix,
-			afs.fs.Username,
-			strings.Join([]string{afs.fs.Username, sdkconst.PrivateNamespace}, "-"),
 			".siyouyun", "app",
 			afs.fs.AppCodeName,
 		)
 	case sdkconst.CommonNamespace:
 		prefixPath = filepath.Join(
-			sdkconst.FaasMntPrefix,
-			sdkconst.CommonNamespace,
 			".siyouyun", "app",
 			afs.fs.AppCodeName,
 		)
