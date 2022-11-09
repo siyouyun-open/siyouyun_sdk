@@ -30,6 +30,7 @@ func (a *AppStruct) NewAppFSFromUserNamespace(un *utils.UserNamespace) *AppFS {
 	afs := &AppFS{
 		fs: a.NewFSFromUserNamespace(un),
 	}
+	afs.appNormalPath = afs.getNormalAppPrefix()
 	afs.Ability = afs.fs.Ability
 	return afs
 }
