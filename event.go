@@ -45,6 +45,14 @@ const (
 	EventStatusFinish
 )
 
+type ConsumeStatus int
+
+const (
+	ConsumeSuccess ConsumeStatus = iota + 1
+	ConsumeRetry
+	ConsumeFail
+)
+
 type FileType string
 
 type FileEvent struct {
@@ -63,7 +71,7 @@ type PreferOptions struct {
 	FileType      FileType
 	FileEventType int
 	Description   string
-	Handler       func(fs *EventFS) error
+	Handler       func(fs *EventFS) ConsumeStatus
 }
 
 // WithEventHolder 初始化事件监听器
@@ -121,15 +129,10 @@ func (e *EventHolder) Listen() {
 					return
 				}
 				fs := e.app.newEventFSFromFileEvent(&fe)
-				err = e.options[j].Handler(fs)
-				if err != nil {
-					fs.Destroy()
-					_ = nc.Publish(msg.Reply, []byte(strconv.Itoa(EventStatusError)))
-					return
-				} else {
-					fs.Destroy()
-					_ = nc.Publish(msg.Reply, []byte(strconv.Itoa(EventStatusFinish)))
-				}
+				cs := e.options[j].Handler(fs)
+				fs.Destroy()
+				_ = nc.Publish(msg.Reply, []byte(strconv.Itoa(int(cs))))
+				return
 			})
 		}
 	}()
