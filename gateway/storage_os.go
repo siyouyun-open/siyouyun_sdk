@@ -51,23 +51,26 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
+
+	go func() {
+		// 发送开启文件请求
+		api := sos.Host + "/open"
+		_ = restclient.PostRequest[any](
+			sos.UserNamespace,
+			api,
+			map[string]string{
+				"parentPath": filepath.Dir(path),
+				"name":       filepath.Base(path),
+				"usuuid":     usuuid,
+			},
+			nil,
+		)
+	}()
+
 	conn, err := l.AcceptUnix()
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
-
-	// 发送开启文件请求
-	api := sos.Host + "/open"
-	_ = restclient.PostRequest[any](
-		sos.UserNamespace,
-		api,
-		map[string]string{
-			"parentPath": filepath.Dir(path),
-			"name":       filepath.Base(path),
-			"usuuid":     usuuid,
-		},
-		nil,
-	)
 
 	// msg分为两部分数据
 	buf := make([]byte, 32)
@@ -115,25 +118,28 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *o
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
+
+	go func() {
+		// 发送开启文件请求
+		api := sos.Host + "/open/file"
+		_ = restclient.PostRequest[any](
+			sos.UserNamespace,
+			api,
+			map[string]string{
+				"parentPath": filepath.Dir(path),
+				"name":       filepath.Base(path),
+				"usuuid":     usuuid,
+				"flag":       strconv.Itoa(flag),
+				"perm":       strconv.Itoa(int(perm)),
+			},
+			nil,
+		)
+	}()
+	
 	conn, err := l.AcceptUnix()
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
-
-	// 发送开启文件请求
-	api := sos.Host + "/open/file"
-	_ = restclient.PostRequest[any](
-		sos.UserNamespace,
-		api,
-		map[string]string{
-			"parentPath": filepath.Dir(path),
-			"name":       filepath.Base(path),
-			"usuuid":     usuuid,
-			"flag":       strconv.Itoa(flag),
-			"perm":       strconv.Itoa(int(perm)),
-		},
-		nil,
-	)
 
 	// msg分为两部分数据
 	buf := make([]byte, 32)
