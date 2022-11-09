@@ -35,7 +35,6 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 	// 建立unix socket文件,链接并监听
 	usuuid := uuid.New().String() + "-" + strconv.FormatInt(time.Now().UnixMilli(), 10)
 	usuuidFp := filepath.Join(UnixSocketPrefix, usuuid)
-	// todo 验证存在时重新计算uuid
 	_, err = os.Create(usuuidFp)
 	if err != nil {
 		return nil, nil, usuuidFp, err
@@ -57,13 +56,6 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
-	// msg分为两部分数据
-	buf := make([]byte, 32)
-	oob := make([]byte, 32)
-	_, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
-	if err != nil {
-		return nil, nil, usuuidFp, err
-	}
 	// 发送开启文件请求
 	api := sos.Host + "/open"
 	response := restclient.PostRequest[any](
@@ -78,6 +70,13 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 	)
 	if response.Code != sdkconst.Success {
 		return nil, nil, usuuidFp, errors.New(response.Msg)
+	}
+	// msg分为两部分数据
+	buf := make([]byte, 32)
+	oob := make([]byte, 32)
+	_, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
+	if err != nil {
+		return nil, nil, usuuidFp, err
 	}
 	// 解出SocketControlMessage数组
 	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
@@ -102,7 +101,6 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *o
 	// 建立unix socket文件,链接并监听
 	usuuid := uuid.New().String() + "-" + strconv.FormatInt(time.Now().UnixMilli(), 10)
 	usuuidFp := filepath.Join(UnixSocketPrefix, usuuid)
-	// todo 验证存在时重新计算uuid
 	_, err = os.Create(usuuidFp)
 	if err != nil {
 		return nil, nil, usuuidFp, err
@@ -123,16 +121,9 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *o
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
-	// msg分为两部分数据
-	buf := make([]byte, 32)
-	oob := make([]byte, 32)
-	_, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
-	if err != nil {
-		return nil, nil, usuuidFp, err
-	}
 	// 发送开启文件请求
 	api := sos.Host + "/open/file"
-	_ = restclient.PostRequest[any](
+	response := restclient.PostRequest[any](
 		sos.UserNamespace,
 		api,
 		map[string]string{
@@ -144,6 +135,16 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *o
 		},
 		nil,
 	)
+	if response.Code != sdkconst.Success {
+		return nil, nil, usuuidFp, errors.New(response.Msg)
+	}
+	// msg分为两部分数据
+	buf := make([]byte, 32)
+	oob := make([]byte, 32)
+	_, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
+	if err != nil {
+		return nil, nil, usuuidFp, err
+	}
 	// 解出SocketControlMessage数组
 	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
 	if err != nil {
