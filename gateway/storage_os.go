@@ -40,21 +40,6 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
-	// 发送开启文件请求
-	api := sos.Host + "/open"
-	response := restclient.PostRequest[any](
-		sos.UserNamespace,
-		api,
-		map[string]string{
-			"parentPath": filepath.Dir(path),
-			"name":       filepath.Base(path),
-			"usuuid":     usuuid,
-		},
-		nil,
-	)
-	if response.Code != sdkconst.Success {
-		return nil, nil, usuuidFp, errors.New(response.Msg)
-	}
 	// 返回file对象
 	err = syscall.Unlink(usuuidFp)
 	if err != nil {
@@ -78,6 +63,21 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 	_, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
 	if err != nil {
 		return nil, nil, usuuidFp, err
+	}
+	// 发送开启文件请求
+	api := sos.Host + "/open"
+	response := restclient.PostRequest[any](
+		sos.UserNamespace,
+		api,
+		map[string]string{
+			"parentPath": filepath.Dir(path),
+			"name":       filepath.Base(path),
+			"usuuid":     usuuid,
+		},
+		nil,
+	)
+	if response.Code != sdkconst.Success {
+		return nil, nil, usuuidFp, errors.New(response.Msg)
 	}
 	// 解出SocketControlMessage数组
 	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
@@ -107,20 +107,6 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *o
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
-	// 发送开启文件请求
-	api := sos.Host + "/open/file"
-	_ = restclient.PostRequest[any](
-		sos.UserNamespace,
-		api,
-		map[string]string{
-			"parentPath": filepath.Dir(path),
-			"name":       filepath.Base(path),
-			"usuuid":     usuuid,
-			"flag":       strconv.Itoa(flag),
-			"perm":       strconv.Itoa(int(perm)),
-		},
-		nil,
-	)
 	err = syscall.Unlink(usuuidFp)
 	if err != nil {
 		return nil, nil, usuuidFp, err
@@ -144,6 +130,20 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *o
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
+	// 发送开启文件请求
+	api := sos.Host + "/open/file"
+	_ = restclient.PostRequest[any](
+		sos.UserNamespace,
+		api,
+		map[string]string{
+			"parentPath": filepath.Dir(path),
+			"name":       filepath.Base(path),
+			"usuuid":     usuuid,
+			"flag":       strconv.Itoa(flag),
+			"perm":       strconv.Itoa(int(perm)),
+		},
+		nil,
+	)
 	// 解出SocketControlMessage数组
 	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
 	if err != nil {
