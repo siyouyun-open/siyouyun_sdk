@@ -50,6 +50,7 @@ func (a *AppStruct) NewFSFromUserNamespace(un *utils.UserNamespace) *FS {
 }
 
 func (fs *FS) initAbility() {
+	fs.Ability = new(Ability)
 	fs.Ability.KV = fs.NewKV()
 	fs.Ability.FFmpeg = fs.NewFFmpeg()
 }
