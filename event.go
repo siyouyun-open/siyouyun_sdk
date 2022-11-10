@@ -53,6 +53,14 @@ const (
 	ConsumeFail
 )
 
+type TaskLevel int
+
+const (
+	HighLevel TaskLevel = iota + 1
+	MidLevel
+	LowLevel
+)
+
 type FileType string
 
 type FileEvent struct {
@@ -72,6 +80,7 @@ type PreferOptions struct {
 	FileEventType int
 	Description   string
 	Handler       func(fs *EventFS) ConsumeStatus
+	Priority      TaskLevel
 }
 
 // WithEventHolder 初始化事件监听器
@@ -83,6 +92,11 @@ func (a *AppStruct) WithEventHolder() {
 
 // SetPrefer 设置偏好与回调函数
 func (e *EventHolder) SetPrefer(options ...PreferOptions) {
+	for i := range options {
+		if options[i].Priority == 0 {
+			options[i].Priority = LowLevel
+		}
+	}
 	e.options = append(e.options, options...)
 }
 
@@ -101,6 +115,7 @@ func (e *EventHolder) Listen() {
 				EventType:   e.options[i].FileEventType,
 				FileType:    string(e.options[i].FileType),
 				Description: e.options[i].Description,
+				Priority:    int(e.options[i].Priority),
 			}
 			ari.Code = getAppRegisterInfoCode(ari)
 			// 处理用户的event注册信息

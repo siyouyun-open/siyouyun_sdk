@@ -21,6 +21,7 @@ type ActionAppRegisterInfo struct {
 	EventType   int
 	FileType    string
 	Description string
+	Priority    int
 	Code        string
 }
 
