@@ -26,7 +26,7 @@ func newStorageCoreApi(un *utils.UserNamespace) *storageCoreApi {
 
 // PathToInode path转inode
 func (sc storageCoreApi) PathToInode(path string) int64 {
-	api := sc.Host + "/inode/to/path"
+	api := sc.Host + "/path/to/inode"
 	response := restclient.PostRequest[int64](
 		sc.UserNamespace,
 		api,
@@ -41,7 +41,7 @@ func (sc storageCoreApi) PathToInode(path string) int64 {
 
 // InodeToPath inode转path
 func (sc storageCoreApi) InodeToPath(inode int64) string {
-	api := sc.Host + "/path/to/inode"
+	api := sc.Host + "/inode/to/path"
 	response := restclient.PostRequest[string](
 		sc.UserNamespace,
 		api,

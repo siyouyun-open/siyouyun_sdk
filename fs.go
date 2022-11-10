@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 	"net"
 	"os"
+	"os/exec"
 	"time"
 )
 
@@ -130,7 +131,8 @@ func (fs *FS) Destroy() {
 		if v, ok := fs.unixConnMap[s]; ok {
 			v.Close()
 		}
-		os.RemoveAll(s)
+		cmd := exec.Command("rm", s)
+		cmd.Run()
 	}
 }
 
