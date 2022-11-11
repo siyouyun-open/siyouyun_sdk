@@ -3,9 +3,12 @@ package siyouyunsdk
 import (
 	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/nats-io/nats.go"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/restclient"
 	"strconv"
 )
 
@@ -101,7 +104,7 @@ func (e *EventHolder) Listen() {
 	if nc == nil {
 		return
 	}
-	err = gateway.RegisterAndGetAppEvent(e.app.AppCode, e.options)
+	err = registerAndGetAppEvent(e.app.AppCode, e.options)
 	if err != nil {
 		return
 	}
@@ -135,4 +138,20 @@ func getNats() *nats.Conn {
 		return nil
 	}
 	return nc
+}
+
+var eventGatewayAddr = fmt.Sprintf("%s:%d/%s", gateway.LocalhostAddress, gateway.CoreHTTPPort, "faas")
+
+func registerAndGetAppEvent(appCode string, options []PreferOptions) error {
+	api := eventGatewayAddr + "/app/event/register"
+	response := restclient.PostRequest[any](
+		nil,
+		api,
+		map[string]string{"appCode": appCode},
+		options,
+	)
+	if response.Code != sdkconst.Success {
+		return errors.New(response.Msg)
+	}
+	return nil
 }
