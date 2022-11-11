@@ -43,7 +43,7 @@ func NewApp() *AppStruct {
 	}
 
 	// init db
-	db, _ := gorm.Open(mysql.Open(App.AppInfo.DSN), &gorm.Config{
+	db, _ := gorm.Open(mysql.Open(App.AppInfo.AppDSN), &gorm.Config{
 		Logger: siyoumysql.NewLogger(),
 	})
 	App.DB = db
