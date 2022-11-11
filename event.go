@@ -3,15 +3,13 @@ package siyouyunsdk
 import (
 	"crypto/md5"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/nats-io/nats.go"
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
-	"github.com/siyouyun-open/siyouyun_sdk/entity"
-	"github.com/siyouyun-open/siyouyun_sdk/utils"
-	"gorm.io/gorm"
+	"github.com/siyouyun-open/siyouyun_sdk/gateway"
 	"strconv"
 )
+
+type FileType string
 
 // 偏好设置可以关注的文件类型，上半部分为独立类型文件，下半部分为混合类型文件
 const (
@@ -37,14 +35,6 @@ const (
 	FileEventDelete
 )
 
-// 处理任务的状态
-const (
-	EventStatusAppend = iota + 1
-	EventStatusRunning
-	EventStatusError
-	EventStatusFinish
-)
-
 type ConsumeStatus int
 
 const (
@@ -61,8 +51,6 @@ const (
 	LowLevel
 )
 
-type FileType string
-
 type FileEvent struct {
 	Inode     int64  `json:"inode,omitempty"`
 	Action    int    `json:"action,omitempty"`
@@ -76,11 +64,11 @@ type EventHolder struct {
 }
 
 type PreferOptions struct {
-	FileType      FileType
-	FileEventType int
-	Description   string
-	Handler       func(fs *EventFS) ConsumeStatus
-	Priority      TaskLevel
+	FileType      FileType                        `json:"fileType"`
+	FileEventType int                             `json:"fileEventType"`
+	Description   string                          `json:"description"`
+	Priority      TaskLevel                       `json:"priority"`
+	Handler       func(fs *EventFS) ConsumeStatus `json:"-"`
 }
 
 // WithEventHolder 初始化事件监听器
@@ -100,39 +88,27 @@ func (e *EventHolder) SetPrefer(options ...PreferOptions) {
 	e.options = append(e.options, options...)
 }
 
+// 拼接app事件code
+func (p *PreferOptions) parseToEventCode(appCode string) string {
+	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v%v", appCode, p.FileEventType, p.FileType, p.Description))))
+}
+
 // Listen 开始监听器工作
 func (e *EventHolder) Listen() {
+	var err error
 	//启动监听event
 	nc := getNats()
 	if nc == nil {
 		return
 	}
+	err = gateway.RegisterAndGetAppEvent(e.app.AppCode, e.options)
+	if err != nil {
+		return
+	}
 	go func() {
-		e.cleanAppRegisterInfo()
 		for i := range e.options {
-			var ari = &entity.ActionAppRegisterInfo{
-				AppCodeName: e.app.AppCode,
-				EventType:   e.options[i].FileEventType,
-				FileType:    string(e.options[i].FileType),
-				Description: e.options[i].Description,
-				Priority:    int(e.options[i].Priority),
-			}
-			ari.Code = getAppRegisterInfoCode(ari)
-			// 处理用户的event注册信息
-			e.app.exec(utils.NewUserNamespace("", sdkconst.CommonNamespace), func(db *gorm.DB) error {
-				return e.registerIfHaveApp(db, ari)
-			})
-			var ul = e.app.AppInfo.RegisterUserList
-			for i := range ul {
-				e.app.exec(utils.NewUserNamespace(ul[i], sdkconst.MainNamespace), func(db *gorm.DB) error {
-					return e.registerIfHaveApp(db, ari)
-				})
-				e.app.exec(utils.NewUserNamespace(ul[i], sdkconst.PrivateNamespace), func(db *gorm.DB) error {
-					return e.registerIfHaveApp(db, ari)
-				})
-			}
 			j := i
-			_, _ = nc.Subscribe(ari.Code, func(msg *nats.Msg) {
+			_, _ = nc.Subscribe(e.options[j].parseToEventCode(e.app.AppCode), func(msg *nats.Msg) {
 				var fe FileEvent
 				defer func() {
 					if err := recover(); err != nil {
@@ -143,77 +119,14 @@ func (e *EventHolder) Listen() {
 				if err != nil {
 					return
 				}
-				fs := e.app.newEventFSFromFileEvent(&fe)
-				cs := e.options[j].Handler(fs)
-				fs.Destroy()
+				eventfs := e.app.newEventFSFromFileEvent(&fe)
+				cs := e.options[j].Handler(eventfs)
+				eventfs.Destroy()
 				_ = nc.Publish(msg.Reply, []byte(strconv.Itoa(int(cs))))
 				return
 			})
 		}
 	}()
-}
-
-// 清理app事件注册信息
-func (e *EventHolder) cleanAppRegisterInfo() {
-	doClean := func(db *gorm.DB, appName string) error {
-		return db.Where("app_code_name = ?", appName).Delete(&entity.ActionAppRegisterInfo{}).Error
-	}
-	e.app.exec(utils.NewUserNamespace("", sdkconst.CommonNamespace), func(db *gorm.DB) error {
-		err := doClean(db, e.app.AppCode)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	var ul = e.app.AppInfo.RegisterUserList
-	for i := range ul {
-		e.app.exec(utils.NewUserNamespace(ul[i], sdkconst.MainNamespace), func(db *gorm.DB) error {
-			err := doClean(db, e.app.AppCode)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-		e.app.exec(utils.NewUserNamespace(ul[i], sdkconst.PrivateNamespace), func(db *gorm.DB) error {
-			err := doClean(db, e.app.AppCode)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-}
-
-// 当有app时增加注册信息
-func (e *EventHolder) registerIfHaveApp(db *gorm.DB, ari *entity.ActionAppRegisterInfo) error {
-	var app entity.Apps
-	err := db.Where(entity.Apps{CodeName: ari.AppCodeName}).First(&app).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		// 尝试清理register info
-		err = db.Delete(&entity.ActionAppRegisterInfo{}, "app_code_name = ?", ari.AppCodeName).Error
-		return err
-	}
-	// 增加register info
-	var old entity.ActionAppRegisterInfo
-	err = db.Where(entity.ActionAppRegisterInfo{
-		AppCodeName: ari.AppCodeName,
-		EventType:   ari.EventType,
-		FileType:    ari.FileType,
-		Description: ari.Description,
-	}).Delete(&old).Error
-	if err != nil {
-		return err
-	}
-	err = db.Create(ari).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// 拼接app事件code
-func getAppRegisterInfoCode(ari *entity.ActionAppRegisterInfo) string {
-	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v%v", ari.AppCodeName, ari.EventType, ari.FileType, ari.Description))))
 }
 
 func getNats() *nats.Conn {

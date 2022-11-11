@@ -5,6 +5,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
+	"gorm.io/gorm"
 	"os"
 	"path/filepath"
 	"time"
@@ -124,4 +125,8 @@ func (afs *AppFS) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRe
 
 func (afs *AppFS) Destroy() {
 	afs.fs.Destroy()
+}
+
+func (afs *AppFS) Exec(f func(*gorm.DB) error) error {
+	return afs.fs.Exec(f)
 }

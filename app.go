@@ -18,7 +18,7 @@ const (
 type AppStruct struct {
 	AppCode string
 	Api     SiyouFaasApi
-	AppInfo *entity.AppRegisterInfo
+	AppInfo *sdkentity.AppRegisterInfo
 	Event   *EventHolder
 	Model   []interface{}
 

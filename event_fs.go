@@ -2,6 +2,7 @@ package siyouyunsdk
 
 import (
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
+	"gorm.io/gorm"
 	"os"
 )
 
@@ -35,4 +36,8 @@ func (efs *EventFS) OpenEventFile() (*os.File, error) {
 func (efs *EventFS) Destroy() {
 	efs.FS.Destroy()
 	efs.AppFS.Destroy()
+}
+
+func (efs *EventFS) Exec(f func(*gorm.DB) error) error {
+	return efs.FS.Exec(f)
 }

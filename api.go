@@ -21,7 +21,3 @@ func (api SiyouFaasApi) Put(uri string, f func(iris.Context)) {
 func (api SiyouFaasApi) Delete(uri string, f func(iris.Context)) {
 	api[iris.MethodDelete+" "+uri] = f
 }
-
-func (api SiyouFaasApi) Exec(uri string, ctx iris.Context) {
-	api[iris.MethodDelete+" "+uri](ctx)
-}
