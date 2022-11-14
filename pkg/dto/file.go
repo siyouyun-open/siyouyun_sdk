@@ -9,7 +9,9 @@ type FileInfoRes struct {
 	FullPath     string      `json:"fullPath"`
 	IsDir        bool        `json:"isDir"`
 	Tag          string      `json:"tag"`
-	Md5          string      `json:"md5"`
+	Md51         string      `json:"md51"`
+	Md52         string      `json:"md52"`
+	Md53         string      `json:"md53"`
 	Extension    string      `json:"extension"`
 	Mime         string      `json:"mime"`
 	Owner        string      `json:"owner"`
