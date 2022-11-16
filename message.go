@@ -42,6 +42,12 @@ func EnableMessage(desc string, handler func(content string) (reply bool, replyC
 		return err
 	}
 	// 开启监听
+	ListenMsg(&MessageHandlerStruct{
+		RobotCode: App.AppCode + "_msg", // todo use uuid
+		RobotDesc: desc,
+		Handler:   handler,
+	})
+	return nil
 }
 
 // SendMsg 发送消息给用户,只有权限发送给拥有此app的用户
