@@ -15,6 +15,8 @@ type MessageEvent struct {
 	UUID      string `json:"uuid"`
 	Content   string `json:"content"`
 	SessionId string `json:"sessionId"`
+
+	SendByAdmin bool `json:"sendByAdmin"`
 }
 
 type MessageHandlerStruct struct {
@@ -61,27 +63,37 @@ func ListenMsg(mh *MessageHandlerStruct) {
 	nc := getNats()
 	go func() {
 		_, _ = nc.Subscribe(mh.RobotCode, func(msg *nats.Msg) {
-			var me MessageEvent
+			var mes []MessageEvent
 			defer func() {
 				if err := recover(); err != nil {
-					log.Printf("nats panic:[%v]-[%v]", err, me)
+					log.Printf("nats panic:[%v]-[%v]", err, mes)
 				}
 			}()
-			err := json.Unmarshal(msg.Data, &me)
+			err := json.Unmarshal(msg.Data, &mes)
 			if err != nil {
 				return
 			}
-			un := utils.NewUserNamespace(me.Username, me.Namespace)
-			// 获取消息正文
-			reply, content, replyToUUID := mh.Handler(me.Content)
-			if reply {
-				var replyUUID string
-				if replyToUUID {
-					replyUUID = me.UUID
-				}
-				err = gateway.SendMessage(un, App.AppCode, content, replyUUID)
-				if err != nil {
-					return
+			for i := range mes {
+				me := mes[i]
+				un := utils.NewUserNamespace(me.Username, me.Namespace)
+				if me.SendByAdmin {
+					switch me.Content {
+					case "autoMigrate":
+						App.setUserWithModel(un)
+					}
+				} else {
+					// 获取消息正文
+					reply, content, replyToUUID := mh.Handler(me.Content)
+					if reply {
+						var replyUUID string
+						if replyToUUID {
+							replyUUID = me.UUID
+						}
+						err = gateway.SendMessage(un, App.AppCode, content, replyUUID)
+						if err != nil {
+							return
+						}
+					}
 				}
 			}
 			return
