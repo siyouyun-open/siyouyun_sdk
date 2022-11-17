@@ -20,9 +20,9 @@ type MessageEvent struct {
 }
 
 type MessageHandlerStruct struct {
-	RobotCode string                                                                   `json:"robotCode"`
-	RobotDesc string                                                                   `json:"robotDesc"`
-	Handler   func(content string) (reply bool, replyContent string, replyToUUID bool) `json:"-"`
+	RobotCode string                                                                                 `json:"robotCode"`
+	RobotDesc string                                                                                 `json:"robotDesc"`
+	Handler   func(appfs *AppFS, content string) (reply bool, replyContent string, replyToUUID bool) `json:"-"`
 }
 
 var MessageHandler *MessageHandlerStruct
@@ -37,7 +37,7 @@ var MessageHandler *MessageHandlerStruct
 // 		- reply 		:	是否需要回复
 // 		- replyContent	:	回复的正文
 // 		- replyToUUID	:	回复时是否引用用户消息
-func EnableMessage(desc string, handler func(content string) (reply bool, replyContent string, replyToUUID bool)) error {
+func EnableMessage(desc string, handler func(appfs *AppFS, content string) (reply bool, replyContent string, replyToUUID bool)) error {
 	// 注册机器人
 	err := gateway.RegisterMessageRobot(App.AppCode, desc)
 	if err != nil {
@@ -82,8 +82,9 @@ func ListenMsg(mh *MessageHandlerStruct) {
 						App.setUserWithModel(un)
 					}
 				} else {
+					fs := App.NewAppFSFromUserNamespace(un)
 					// 获取消息正文
-					reply, content, replyToUUID := mh.Handler(me.Content)
+					reply, content, replyToUUID := mh.Handler(fs, me.Content)
 					if reply {
 						var replyUUID string
 						if replyToUUID {
