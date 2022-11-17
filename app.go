@@ -9,6 +9,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"os"
+	"time"
 )
 
 const (
@@ -46,6 +47,11 @@ func NewApp() *AppStruct {
 	db, _ := gorm.Open(mysql.Open(App.AppInfo.AppDSN), &gorm.Config{
 		Logger: siyoumysql.NewLogger(),
 	})
+	sqlDB, _ := db.DB()
+	sqlDB.SetConnMaxLifetime(time.Minute * 5)
+	sqlDB.SetConnMaxIdleTime(time.Minute * 1)
+	sqlDB.SetMaxOpenConns(5)
+	sqlDB.SetMaxIdleConns(1)
 	App.DB = db
 
 	// init api
