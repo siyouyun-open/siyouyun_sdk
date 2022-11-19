@@ -8,7 +8,6 @@ import (
 	"gorm.io/gorm"
 	"net"
 	"os"
-	"os/exec"
 	"time"
 )
 
@@ -127,15 +126,15 @@ func (fs *FS) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
 }
 
 func (fs *FS) Destroy() {
-	for s := range fs.unixConnMap {
-		if v, ok := fs.unixConnMap[s]; ok {
-			v.Close()
-		}
-		cmd := exec.Command("rm", s)
-		err := cmd.Run()
-		if err != nil {
-		}
-	}
+	//for s := range fs.unixConnMap {
+	//	if v, ok := fs.unixConnMap[s]; ok {
+	//		v.Close()
+	//	}
+	//	cmd := exec.Command("rm", s)
+	//	err := cmd.Run()
+	//	if err != nil {
+	//	}
+	//}
 }
 
 // Exec  fs执行sql
