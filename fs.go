@@ -6,6 +6,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -131,8 +132,12 @@ func (fs *FS) Destroy() {
 		if v, ok := fs.unixConnMap[s]; ok {
 			v.Close()
 		}
+		log.Printf("unix_file_path:%v", s)
 		cmd := exec.Command("rm", s)
-		cmd.Run()
+		err := cmd.Run()
+		if err != nil {
+			log.Printf("rm err:%v", s)
+		}
 	}
 }
 
