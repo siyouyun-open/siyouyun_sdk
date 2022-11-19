@@ -6,7 +6,6 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -73,7 +72,6 @@ func (fs *FS) OpenFile(path string, flag int, perm os.FileMode) (*os.File, error
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("set unix conn map:%v", usfp)
 	fs.unixConnMap[usfp] = conn
 	return file, nil
 }
@@ -129,16 +127,13 @@ func (fs *FS) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
 }
 
 func (fs *FS) Destroy() {
-	log.Printf("start destroy:%v", len(fs.unixConnMap))
 	for s := range fs.unixConnMap {
 		if v, ok := fs.unixConnMap[s]; ok {
 			v.Close()
 		}
-		log.Printf("unix_file_path:%v", s)
 		cmd := exec.Command("rm", s)
 		err := cmd.Run()
 		if err != nil {
-			log.Printf("rm err:%v", s)
 		}
 	}
 }
