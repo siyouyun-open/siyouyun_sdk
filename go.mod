@@ -7,6 +7,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/kataras/iris/v12 v12.1.8
 	github.com/nats-io/nats.go v1.19.0
+	github.com/robfig/cron v1.2.0
 	gorm.io/driver/mysql v1.4.3
 	gorm.io/gorm v1.24.1
 )

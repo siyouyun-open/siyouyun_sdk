@@ -27,6 +27,19 @@ func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
 	return efs
 }
 
+func (a *AppStruct) newEventFSFromScheduleEvent(se *ScheduleEvent) *EventFS {
+	un := &utils.UserNamespace{
+		Username:  se.Username,
+		Namespace: se.Namespace,
+	}
+	efs := &EventFS{
+		FS:    a.NewFSFromUserNamespace(un),
+		AppFS: a.NewAppFSFromUserNamespace(un),
+	}
+	efs.Ability = efs.FS.Ability
+	return efs
+}
+
 // OpenEventFile  打开事件相关文件
 func (efs *EventFS) OpenEventFile() (*os.File, error) {
 	path := efs.FS.InodeToPath(efs.EventFileInode)

@@ -98,6 +98,9 @@ func (p *PreferOptions) parseToEventCode(appCode string) string {
 
 // Listen 开始监听器工作
 func (e *EventHolder) Listen() {
+	if len(e.options) == 0 {
+		return
+	}
 	var err error
 	//启动监听event
 	nc := getNats()
@@ -133,7 +136,7 @@ func (e *EventHolder) Listen() {
 }
 
 func getNats() *nats.Conn {
-	nc, err := nats.Connect("nats://nats:4222")
+	nc, err := nats.Connect("nats://127.0.0.1:4222")
 	if err != nil {
 		return nil
 	}

@@ -53,6 +53,7 @@ func (fs *FS) initAbility() {
 	fs.Ability = new(Ability)
 	fs.Ability.KV = fs.NewKV()
 	fs.Ability.FFmpeg = fs.NewFFmpeg()
+	fs.Ability.Schedule = fs.NewSchedule()
 }
 
 // Open  打开文件

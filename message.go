@@ -60,6 +60,9 @@ func (mh *MessageHandlerStruct) SendMsg(un *utils.UserNamespace, content string)
 }
 
 func ListenMsg(mh *MessageHandlerStruct) {
+	if mh.Handler == nil {
+		return
+	}
 	nc := getNats()
 	go func() {
 		_, _ = nc.Subscribe(mh.RobotCode, func(msg *nats.Msg) {
