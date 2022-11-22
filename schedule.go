@@ -84,6 +84,7 @@ func (sh *ScheduleHandler) Listen() {
 				h.Handler(eventfs, &se)
 				eventfs.Destroy()
 			}
+			
 			return
 		})
 	}()
