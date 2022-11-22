@@ -17,12 +17,13 @@ const (
 )
 
 type AppStruct struct {
-	AppCode  string
-	Api      SiyouFaasApi
-	AppInfo  *sdkentity.AppRegisterInfo
-	Event    *EventHolder
-	Schedule *ScheduleHandler
-	Model    []interface{}
+	AppCode   string
+	Api       SiyouFaasApi
+	EnableWeb bool
+	AppInfo   *sdkentity.AppRegisterInfo
+	Event     *EventHolder
+	Schedule  *ScheduleHandler
+	Model     []interface{}
 
 	DB *gorm.DB
 }
