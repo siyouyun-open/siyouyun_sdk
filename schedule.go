@@ -16,13 +16,20 @@ func (fs *FS) NewSchedule() *Schedule {
 	}
 }
 
-func (s *Schedule) AddOnceScheduleEvent(name string, payload []byte, remindTime int64) error {
+func (s *Schedule) AddOnceScheduleEvent(name string, payload []byte, remindTime int64) (err error, eventId *int64) {
 	return s.ScheduleApi.OnceCreate(name, payload, remindTime)
-
 }
 
-func (s *Schedule) AddCronScheduleEvent(name string, payload []byte, c string) error {
+func (s *Schedule) UpdateOnceScheduleEvent(eventId int64, remindTime int64) (err error) {
+	return s.ScheduleApi.OnceUpdate(eventId, remindTime)
+}
+
+func (s *Schedule) AddCronScheduleEvent(name string, payload []byte, c string) (err error, eventId *int64) {
 	return s.ScheduleApi.CronCreate(name, payload, c)
+}
+
+func (s *Schedule) UpdateCronScheduleEvent(eventId int64, c string) (err error) {
+	return s.ScheduleApi.CronUpdate(eventId, c)
 }
 
 type ScheduleEvent struct {
@@ -84,7 +91,7 @@ func (sh *ScheduleHandler) Listen() {
 				h.Handler(eventfs, &se)
 				eventfs.Destroy()
 			}
-			
+
 			return
 		})
 	}()
