@@ -136,7 +136,7 @@ func (e *EventHolder) Listen() {
 }
 
 func getNats() *nats.Conn {
-	nc, err := nats.Connect("nats://127.0.0.1:4222")
+	nc, err := nats.Connect("nats://nats:4222")
 	if err != nil {
 		return nil
 	}
