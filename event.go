@@ -62,16 +62,17 @@ type FileEvent struct {
 }
 
 type EventHolder struct {
-	app     *AppStruct
-	options []PreferOptions
+	app        *AppStruct
+	options    []PreferOptions
+	optionsMap map[string]PreferOptions
 }
 
 type PreferOptions struct {
-	FileType      FileType                        `json:"fileType"`
-	FileEventType int                             `json:"fileEventType"`
-	Description   string                          `json:"description"`
-	Priority      TaskLevel                       `json:"priority"`
-	Handler       func(fs *EventFS) ConsumeStatus `json:"-"`
+	FileType      FileType                                  `json:"fileType"`
+	FileEventType int                                       `json:"fileEventType"`
+	Description   string                                    `json:"description"`
+	Priority      TaskLevel                                 `json:"priority"`
+	Handler       func(fs *EventFS) (ConsumeStatus, string) `json:"-"`
 }
 
 // WithEventHolder 初始化事件监听器
@@ -87,13 +88,9 @@ func (e *EventHolder) SetPrefer(options ...PreferOptions) {
 		if options[i].Priority == 0 {
 			options[i].Priority = LowLevel
 		}
+		e.optionsMap[options[i].parseToEventCode(e.app.AppCode)] = options[i]
 	}
 	e.options = append(e.options, options...)
-}
-
-// 拼接app事件code
-func (p *PreferOptions) parseToEventCode(appCode string) string {
-	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v%v", appCode, p.FileEventType, p.FileType, p.Description))))
 }
 
 // Listen 开始监听器工作
@@ -112,27 +109,33 @@ func (e *EventHolder) Listen() {
 		return
 	}
 	go func() {
-		for i := range e.options {
-			j := i
-			_, _ = nc.Subscribe(e.options[j].parseToEventCode(e.app.AppCode), func(msg *nats.Msg) {
-				var fe FileEvent
-				defer func() {
-					if err := recover(); err != nil {
-						return
-					}
-				}()
-				err := json.Unmarshal(msg.Data, &fe)
-				if err != nil {
+		_, _ = nc.Subscribe(e.app.AppCode+"_event", func(msg *nats.Msg) {
+			var fe FileEvent
+			defer func() {
+				if err := recover(); err != nil {
 					return
 				}
-				eventfs := e.app.newEventFSFromFileEvent(&fe)
-				cs := e.options[j].Handler(eventfs)
-				eventfs.Destroy()
-				_ = nc.Publish(msg.Reply, []byte(strconv.Itoa(int(cs))))
+			}()
+			err := json.Unmarshal(msg.Data, &fe)
+			if err != nil {
 				return
-			})
-		}
+			}
+			eventCode := msg.Header.Get("eventCode")
+			eventfs := e.app.newEventFSFromFileEvent(&fe)
+			cs, m := e.optionsMap[eventCode].Handler(eventfs)
+			eventfs.Destroy()
+			var resMsg = nats.NewMsg(msg.Reply)
+			resMsg.Data = []byte(m)
+			resMsg.Header.Set("status", strconv.Itoa(int(cs)))
+			_ = nc.PublishMsg(resMsg)
+			return
+		})
 	}()
+}
+
+// 拼接app事件code
+func (p *PreferOptions) parseToEventCode(appCode string) string {
+	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v%v", appCode, p.FileEventType, p.FileType, p.Description))))
 }
 
 func getNats() *nats.Conn {
