@@ -78,7 +78,8 @@ type PreferOptions struct {
 // WithEventHolder 初始化事件监听器
 func (a *AppStruct) WithEventHolder() {
 	a.Event = &EventHolder{
-		app: a,
+		app:        a,
+		optionsMap: make(map[string]PreferOptions),
 	}
 }
 
