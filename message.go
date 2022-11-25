@@ -78,7 +78,7 @@ func ListenMsg(mh *MessageHandlerStruct) {
 			}()
 			err := json.Unmarshal(msg.Data, &mes)
 			if err != nil {
-				return
+				panic(err)
 			}
 			for i := range mes.Msgs {
 				me := mes.Msgs[i]
@@ -86,6 +86,7 @@ func ListenMsg(mh *MessageHandlerStruct) {
 				if me.SendByAdmin {
 					switch me.Content {
 					case "autoMigrate":
+						log.Printf("autoMigrate:%v", un)
 						App.setUserWithModel(un)
 					}
 				} else {
