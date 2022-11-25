@@ -8,6 +8,10 @@ import (
 	"log"
 )
 
+type MessageEvents struct {
+	Msgs []MessageEvent `json:"msgs"`
+}
+
 // MessageEvent 消息在事件中传递的结构
 type MessageEvent struct {
 	Username  string `json:"username"`
