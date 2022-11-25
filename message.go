@@ -78,7 +78,6 @@ func ListenMsg(mh *MessageHandlerStruct) {
 				if mes[i].SendByAdmin {
 					switch mes[i].Content {
 					case "autoMigrate":
-						log.Printf("autoMigrate:%v", un)
 						App.setUserWithModel(un)
 					}
 				} else {
