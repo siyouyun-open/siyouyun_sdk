@@ -22,11 +22,9 @@ func (a *AppStruct) WithModel(models ...interface{}) {
 // 增加用户追加建立数据表
 func (a *AppStruct) setUserWithModel(un *utils.UserNamespace) {
 	a.exec(un, func(db *gorm.DB) error {
-		for i := range App.Model {
-			err := db.AutoMigrate(App.Model[i])
-			if err != nil {
-				return err
-			}
+		err := db.AutoMigrate(App.Model...)
+		if err != nil {
+			return err
 		}
 		return nil
 	})
