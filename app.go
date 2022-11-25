@@ -58,6 +58,8 @@ func NewApp() *AppStruct {
 	// init api
 	App.Api = make(SiyouFaasApi)
 
+	EnableMessage(App.AppInfo.AppName, nil)
+
 	return App
 }
 
