@@ -70,7 +70,7 @@ func ListenMsg(mh *MessageHandlerStruct) {
 	nc := getNats()
 	go func() {
 		_, _ = nc.Subscribe(mh.RobotCode, func(msg *nats.Msg) {
-			var mes []MessageEvent
+			var mes MessageEvents
 			defer func() {
 				if err := recover(); err != nil {
 					log.Printf("nats panic:[%v]-[%v]", err, mes)
@@ -80,8 +80,8 @@ func ListenMsg(mh *MessageHandlerStruct) {
 			if err != nil {
 				return
 			}
-			for i := range mes {
-				me := mes[i]
+			for i := range mes.Msgs {
+				me := mes.Msgs[i]
 				un := utils.NewUserNamespace(me.Username, me.Namespace)
 				if me.SendByAdmin {
 					switch me.Content {
