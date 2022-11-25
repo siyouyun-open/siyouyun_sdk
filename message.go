@@ -8,10 +8,6 @@ import (
 	"log"
 )
 
-type MessageEvents struct {
-	Msgs []MessageEvent `json:"msgs"`
-}
-
 // MessageEvent 消息在事件中传递的结构
 type MessageEvent struct {
 	Username  string `json:"username"`
@@ -67,7 +63,7 @@ func ListenMsg(mh *MessageHandlerStruct) {
 	nc := getNats()
 	go func() {
 		_, _ = nc.Subscribe(mh.RobotCode, func(msg *nats.Msg) {
-			var mes MessageEvents
+			var mes []MessageEvent
 			defer func() {
 				if err := recover(); err != nil {
 					log.Printf("nats panic:[%v]-[%v]", err, mes)
@@ -77,11 +73,10 @@ func ListenMsg(mh *MessageHandlerStruct) {
 			if err != nil {
 				panic(err)
 			}
-			for i := range mes.Msgs {
-				me := mes.Msgs[i]
-				un := utils.NewUserNamespace(me.Username, me.Namespace)
-				if me.SendByAdmin {
-					switch me.Content {
+			for i := range mes {
+				un := utils.NewUserNamespace(mes[i].Username, mes[i].Namespace)
+				if mes[i].SendByAdmin {
+					switch mes[i].Content {
 					case "autoMigrate":
 						log.Printf("autoMigrate:%v", un)
 						App.setUserWithModel(un)
@@ -89,11 +84,11 @@ func ListenMsg(mh *MessageHandlerStruct) {
 				} else {
 					fs := App.NewAppFSFromUserNamespace(un)
 					// 获取消息正文
-					reply, content, replyToUUID := mh.Handler(fs, me.Content)
+					reply, content, replyToUUID := mh.Handler(fs, mes[i].Content)
 					if reply {
 						var replyUUID string
 						if replyToUUID {
-							replyUUID = me.UUID
+							replyUUID = mes[i].UUID
 						}
 						err = gateway.SendMessage(un, App.AppCode, content, replyUUID)
 						if err != nil {
