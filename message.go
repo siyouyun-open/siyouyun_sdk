@@ -62,6 +62,7 @@ func (mh *MessageHandlerStruct) SendMsg(un *utils.UserNamespace, content string)
 func ListenMsg(mh *MessageHandlerStruct) {
 	nc := getNats()
 	go func() {
+		log.Printf("start ListenMsg at:%v", mh.RobotCode)
 		_, _ = nc.Subscribe(mh.RobotCode, func(msg *nats.Msg) {
 			var mes []MessageEvent
 			defer func() {
