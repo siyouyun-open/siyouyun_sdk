@@ -8,6 +8,16 @@ import (
 	"log"
 )
 
+type Message struct {
+}
+
+// SendMsg 发送消息给用户,只有权限发送给拥有此app的用户
+// un		:	用户与空间
+// content 	:	消息正文
+func (m *Message) SendMsg(un *utils.UserNamespace, content string) error {
+	return gateway.SendMessage(un, App.AppCode, content, "")
+}
+
 // MessageEvent 消息在事件中传递的结构
 type MessageEvent struct {
 	Username  string `json:"username"`
@@ -24,8 +34,6 @@ type MessageHandlerStruct struct {
 	RobotDesc string                                                                                 `json:"robotDesc"`
 	Handler   func(appfs *AppFS, content string) (reply bool, replyContent string, replyToUUID bool) `json:"-"`
 }
-
-var MessageHandler *MessageHandlerStruct
 
 // EnableMessage 开启消息机器人
 // desc:
@@ -50,13 +58,6 @@ func EnableMessage(desc string, handler func(appfs *AppFS, content string) (repl
 		Handler:   handler,
 	})
 	return nil
-}
-
-// SendMsg 发送消息给用户,只有权限发送给拥有此app的用户
-// un		:	用户与空间
-// content 	:	消息正文
-func (mh *MessageHandlerStruct) SendMsg(un *utils.UserNamespace, content string) error {
-	return gateway.SendMessage(un, App.AppCode, content, "")
 }
 
 func ListenMsg(mh *MessageHandlerStruct) {
