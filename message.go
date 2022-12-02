@@ -36,6 +36,7 @@ type MessageHandlerStruct struct {
 }
 
 // EnableMessage 开启消息机器人
+//
 // desc:
 // 	消息机器人的功能描述
 // handler func(content string) (reply bool, replyContent string, replyToUUID bool):
