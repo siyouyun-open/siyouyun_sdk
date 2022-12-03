@@ -1,10 +1,12 @@
 package siyouyunsdk
 
 import (
+	"github.com/kataras/iris/v12"
 	"github.com/siyouyun-open/siyouyun_sdk/entity"
 	"github.com/siyouyun-open/siyouyun_sdk/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/mysql"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
+	"github.com/siyouyun-open/siyouyun_sdk/restjson"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -57,6 +59,9 @@ func NewApp() *AppStruct {
 
 	// init api
 	App.Api = make(SiyouFaasApi)
+	App.Api.Get("/alive", func(ctx iris.Context) {
+		ctx.JSON(restjson.SuccessResJson("alive"))
+	})
 
 	EnableMessage(App.AppInfo.AppName, nil)
 
