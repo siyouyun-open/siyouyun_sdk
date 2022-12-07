@@ -60,12 +60,12 @@ func (afs *AppFS) getNormalAppPrefix() string {
 }
 
 // Open  打开文件
-func (afs *AppFS) Open(path string) (*os.File, error) {
+func (afs *AppFS) Open(path string) (*SyyFile, error) {
 	return afs.fs.Open(filepath.Join(afs.appNormalPath, path))
 }
 
 // OpenFile 打开或创建文件
-func (afs *AppFS) OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
+func (afs *AppFS) OpenFile(path string, flag int, perm os.FileMode) (*SyyFile, error) {
 	return afs.fs.OpenFile(filepath.Join(afs.appNormalPath, path), flag, perm)
 }
 

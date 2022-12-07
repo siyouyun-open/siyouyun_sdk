@@ -6,7 +6,6 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
-	"net"
 	"os"
 	"time"
 )
@@ -14,11 +13,7 @@ import (
 // FS fs
 type FS struct {
 	AppCodeName string
-
 	*Ability
-
-	unixConnMap map[string]*net.UnixConn
-
 	api *gateway.StorageApi
 	App *AppStruct
 	*utils.UserNamespace
@@ -28,7 +23,6 @@ func (a *AppStruct) NewFSFromCtx(ctx iris.Context) *FS {
 	un := utils.NewUserNamespaceFromIris(ctx)
 	fs := &FS{
 		AppCodeName:   a.AppCode,
-		unixConnMap:   make(map[string]*net.UnixConn),
 		api:           gateway.NewStorageApi(un),
 		App:           a,
 		UserNamespace: un,
@@ -40,7 +34,6 @@ func (a *AppStruct) NewFSFromCtx(ctx iris.Context) *FS {
 func (a *AppStruct) NewFSFromUserNamespace(un *utils.UserNamespace) *FS {
 	fs := &FS{
 		AppCodeName:   a.AppCode,
-		unixConnMap:   make(map[string]*net.UnixConn),
 		App:           a,
 		UserNamespace: un,
 		api:           gateway.NewStorageApi(un),
@@ -58,23 +51,29 @@ func (fs *FS) initAbility() {
 }
 
 // Open  打开文件
-func (fs *FS) Open(path string) (*os.File, error) {
+func (fs *FS) Open(path string) (*SyyFile, error) {
 	file, conn, usfp, err := fs.api.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	fs.unixConnMap[usfp] = conn
-	return file, nil
+	return &SyyFile{
+		file:           file,
+		unixConn:       conn,
+		unixSocketPath: usfp,
+	}, nil
 }
 
 // OpenFile 打开或创建文件
-func (fs *FS) OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
+func (fs *FS) OpenFile(path string, flag int, perm os.FileMode) (*SyyFile, error) {
 	file, conn, usfp, err := fs.api.OpenFile(path, flag, perm)
 	if err != nil {
 		return nil, err
 	}
-	fs.unixConnMap[usfp] = conn
-	return file, nil
+	return &SyyFile{
+		file:           file,
+		unixConn:       conn,
+		unixSocketPath: usfp,
+	}, nil
 }
 
 // MkdirAll 递归创建目录
