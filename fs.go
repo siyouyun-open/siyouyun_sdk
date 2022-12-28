@@ -53,27 +53,21 @@ func (fs *FS) initAbility() {
 // Open  打开文件
 func (fs *FS) Open(path string) (*SyyFile, error) {
 	file, conn, usfp, err := fs.api.Open(path)
-	if err != nil {
-		return nil, err
-	}
 	return &SyyFile{
 		file:           file,
 		unixConn:       conn,
 		unixSocketPath: usfp,
-	}, nil
+	}, err
 }
 
 // OpenFile 打开或创建文件
 func (fs *FS) OpenFile(path string, flag int, perm os.FileMode) (*SyyFile, error) {
 	file, conn, usfp, err := fs.api.OpenFile(path, flag, perm)
-	if err != nil {
-		return nil, err
-	}
 	return &SyyFile{
 		file:           file,
 		unixConn:       conn,
 		unixSocketPath: usfp,
-	}, nil
+	}, err
 }
 
 // MkdirAll 递归创建目录
