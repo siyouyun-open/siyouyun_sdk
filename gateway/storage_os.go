@@ -37,19 +37,23 @@ func (sos *storageOSApi) Open(path string) (*os.File, *net.UnixConn, string, err
 	usuuidFp := filepath.Join(UnixSocketPrefix, usuuid)
 	_, err := os.Create(usuuidFp)
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	err = syscall.Unlink(usuuidFp)
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	laddr, err := net.ResolveUnixAddr("unix", usuuidFp)
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	l, err := net.ListenUnix("unix", laddr)
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 
 	go func() {
@@ -69,7 +73,8 @@ func (sos *storageOSApi) Open(path string) (*os.File, *net.UnixConn, string, err
 
 	conn, err := l.AcceptUnix()
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 
 	// msg分为两部分数据
@@ -77,20 +82,28 @@ func (sos *storageOSApi) Open(path string) (*os.File, *net.UnixConn, string, err
 	oob := make([]byte, 32)
 	_, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
 	if err != nil {
-		return nil, conn, usuuidFp, err
+		_ = conn.Close()
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	// 解出SocketControlMessage数组
 	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
 	if err != nil {
-		return nil, conn, usuuidFp, err
+		_ = conn.Close()
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	if len(scms) == 0 {
-		return nil, conn, usuuidFp, errors.New("scms is 0")
+		_ = conn.Close()
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", errors.New("scms is 0")
 	}
 	// 从SocketControlMessage中得到UnixRights
 	fds, err := syscall.ParseUnixRights(&(scms[0]))
 	if err != nil {
-		return nil, conn, usuuidFp, err
+		_ = conn.Close()
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	// os.NewFile()将文件描述符转为 *os.File对象, 并不创建新文件, 通常很少使用到
 	f := os.NewFile(uintptr(fds[0]), "")
@@ -104,19 +117,23 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 	usuuidFp := filepath.Join(UnixSocketPrefix, usuuid)
 	_, err := os.Create(usuuidFp)
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	err = syscall.Unlink(usuuidFp)
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	laddr, err := net.ResolveUnixAddr("unix", usuuidFp)
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	l, err := net.ListenUnix("unix", laddr)
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 
 	go func() {
@@ -138,7 +155,8 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 
 	conn, err := l.AcceptUnix()
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 
 	// msg分为两部分数据
@@ -146,20 +164,28 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 	oob := make([]byte, 32)
 	_, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
 	if err != nil {
-		return nil, conn, usuuidFp, err
+		_ = conn.Close()
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	// 解出SocketControlMessage数组
 	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
 	if err != nil {
-		return nil, conn, usuuidFp, err
+		_ = conn.Close()
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	if len(scms) == 0 {
-		return nil, conn, usuuidFp, errors.New("scms is 0")
+		_ = conn.Close()
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", errors.New("scms is 0")
 	}
 	// 从SocketControlMessage中得到UnixRights
 	fds, err := syscall.ParseUnixRights(&(scms[0]))
 	if err != nil {
-		return nil, conn, usuuidFp, err
+		_ = conn.Close()
+		_ = os.Remove(usuuidFp)
+		return nil, nil, "", err
 	}
 	// os.NewFile()将文件描述符转为 *os.File对象, 并不创建新文件, 通常很少使用到
 	f := os.NewFile(uintptr(fds[0]), "")

@@ -2,7 +2,6 @@ package siyouyunsdk
 
 import (
 	"io"
-	"log"
 	"net"
 	"os"
 	"syscall"
@@ -23,13 +22,10 @@ func (sf *SyyFile) Close() error {
 	if sf.unixConn != nil {
 		_ = sf.unixConn.Close()
 	}
-	log.Printf("[DEBUG] close file, remove unix socket path: %s", sf.unixSocketPath)
-	err := os.Remove(sf.unixSocketPath)
-	if err != nil {
-		log.Printf("[DEBUG] remove unix socket error: %v", err)
-		return err
+	if sf.unixSocketPath == "" {
+		return nil
 	}
-	return nil
+	return os.Remove(sf.unixSocketPath)
 }
 
 func (sf *SyyFile) Chmod(mode os.FileMode) error {
