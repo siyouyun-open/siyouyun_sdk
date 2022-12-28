@@ -16,7 +16,9 @@ type SyyFile struct {
 }
 
 func (sf *SyyFile) Close() error {
-	_ = sf.file.Close()
+	if sf.file != nil {
+		_ = sf.file.Close()
+	}
 	if sf.unixConn != nil {
 		_ = sf.unixConn.Close()
 	}

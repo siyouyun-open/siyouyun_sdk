@@ -31,11 +31,11 @@ func newStorageOSApi(un *utils.UserNamespace) *storageOSApi {
 }
 
 // Open  打开文件
-func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ string, err error) {
+func (sos *storageOSApi) Open(path string) (*os.File, *net.UnixConn, string, error) {
 	// 建立unix socket文件,链接并监听
 	usuuid := uuid.New().String() + "-" + strconv.FormatInt(time.Now().UnixMilli(), 10)
 	usuuidFp := filepath.Join(UnixSocketPrefix, usuuid)
-	_, err = os.Create(usuuidFp)
+	_, err := os.Create(usuuidFp)
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
@@ -77,20 +77,20 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 	oob := make([]byte, 32)
 	_, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		return nil, conn, usuuidFp, err
 	}
 	// 解出SocketControlMessage数组
 	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		return nil, conn, usuuidFp, err
 	}
 	if len(scms) == 0 {
-		return nil, nil, usuuidFp, errors.New("scms is 0")
+		return nil, conn, usuuidFp, errors.New("scms is 0")
 	}
 	// 从SocketControlMessage中得到UnixRights
 	fds, err := syscall.ParseUnixRights(&(scms[0]))
 	if err != nil {
-		panic(err)
+		return nil, conn, usuuidFp, err
 	}
 	// os.NewFile()将文件描述符转为 *os.File对象, 并不创建新文件, 通常很少使用到
 	f := os.NewFile(uintptr(fds[0]), "")
@@ -98,11 +98,11 @@ func (sos *storageOSApi) Open(path string) (_ *os.File, _ *net.UnixConn, _ strin
 }
 
 // OpenFile 打开或创建文件
-func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *os.File, _ *net.UnixConn, _ string, err error) {
+func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.File, *net.UnixConn, string, error) {
 	// 建立unix socket文件,链接并监听
 	usuuid := uuid.New().String() + "-" + strconv.FormatInt(time.Now().UnixMilli(), 10)
 	usuuidFp := filepath.Join(UnixSocketPrefix, usuuid)
-	_, err = os.Create(usuuidFp)
+	_, err := os.Create(usuuidFp)
 	if err != nil {
 		return nil, nil, usuuidFp, err
 	}
@@ -135,7 +135,7 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *o
 			nil,
 		)
 	}()
-	
+
 	conn, err := l.AcceptUnix()
 	if err != nil {
 		return nil, nil, usuuidFp, err
@@ -146,20 +146,20 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (_ *o
 	oob := make([]byte, 32)
 	_, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		return nil, conn, usuuidFp, err
 	}
 	// 解出SocketControlMessage数组
 	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
 	if err != nil {
-		return nil, nil, usuuidFp, err
+		return nil, conn, usuuidFp, err
 	}
 	if len(scms) == 0 {
-		return nil, nil, usuuidFp, errors.New("scms is 0")
+		return nil, conn, usuuidFp, errors.New("scms is 0")
 	}
 	// 从SocketControlMessage中得到UnixRights
 	fds, err := syscall.ParseUnixRights(&(scms[0]))
 	if err != nil {
-		panic(err)
+		return nil, conn, usuuidFp, err
 	}
 	// os.NewFile()将文件描述符转为 *os.File对象, 并不创建新文件, 通常很少使用到
 	f := os.NewFile(uintptr(fds[0]), "")
