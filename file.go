@@ -2,7 +2,6 @@ package siyouyunsdk
 
 import (
 	"io"
-	"log"
 	"net"
 	"os"
 	"syscall"
@@ -17,7 +16,6 @@ type SyyFile struct {
 }
 
 func (sf *SyyFile) Close() error {
-	log.Printf("[DEBUG] close file, socket path: %s", sf.unixSocketPath)
 	if sf.file != nil {
 		_ = sf.file.Close()
 	}
