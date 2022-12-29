@@ -274,8 +274,8 @@ func (sos *storageOSApi) Chtimes(path string, atime time.Time, mtime time.Time) 
 
 // FileExists 文件是否存在
 func (sos *storageOSApi) FileExists(path string) bool {
-	api := sos.Host + "/fs/object/exists"
-	response := restclient.PostRequest[any](
+	api := sos.Host + "/fs/file/exist"
+	response := restclient.PostRequest[bool](
 		sos.UserNamespace,
 		api,
 		map[string]string{
@@ -284,7 +284,10 @@ func (sos *storageOSApi) FileExists(path string) bool {
 		},
 		nil,
 	)
-	return response.Code == sdkconst.Success
+	if response.Code == sdkconst.Success {
+		return *response.Data
+	}
+	return false
 }
 
 // EnsureDirExist 确保目录存在
