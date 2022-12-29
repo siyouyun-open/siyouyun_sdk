@@ -7,7 +7,6 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -59,7 +58,7 @@ func (sos *storageOSApi) Open(path string) (*os.File, *net.UnixConn, string, err
 	go func() {
 		// 发送开启文件请求
 		api := sos.Host + "/open"
-		_ = restclient.PostRequest[any](
+		resp := restclient.PostRequest[any](
 			sos.UserNamespace,
 			api,
 			map[string]string{
@@ -69,6 +68,10 @@ func (sos *storageOSApi) Open(path string) (*os.File, *net.UnixConn, string, err
 			},
 			nil,
 		)
+		if resp.Code != sdkconst.Success {
+			// 开启文件请求错误，停止unix监听
+			_ = l.Close()
+		}
 	}()
 
 	conn, err := l.AcceptUnix()
@@ -148,8 +151,12 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 			},
 			nil,
 		)
-		log.Printf("[DEBUG] open file %s response: %+v", usuuid, resp)
+		if resp.Code != sdkconst.Success {
+			// 开启文件请求错误，停止unix监听
+			_ = l.Close()
+		}
 	}()
+
 	conn, err := l.AcceptUnix()
 	if err != nil {
 		_ = os.Remove(usuuidFp)

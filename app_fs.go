@@ -6,6 +6,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -91,6 +92,7 @@ func (afs *AppFS) Chtimes(path string, atime time.Time, mtime time.Time) error {
 
 // FileExists 文件是否存在
 func (afs *AppFS) FileExists(path string) bool {
+	log.Printf("[INFO] FILE EXISTS: %s", filepath.Join(afs.appNormalPath, path))
 	return afs.fs.FileExists(filepath.Join(afs.appNormalPath, path))
 }
 
