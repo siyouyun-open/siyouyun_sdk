@@ -37,7 +37,6 @@ func (sos *storageOSApi) Open(path string) (*os.File, *net.UnixConn, string, err
 	usuuidFp := filepath.Join(UnixSocketPrefix, usuuid)
 	_, err := os.Create(usuuidFp)
 	if err != nil {
-		_ = os.Remove(usuuidFp)
 		return nil, nil, "", err
 	}
 	err = syscall.Unlink(usuuidFp)
@@ -117,7 +116,6 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 	usuuidFp := filepath.Join(UnixSocketPrefix, usuuid)
 	_, err := os.Create(usuuidFp)
 	if err != nil {
-		_ = os.Remove(usuuidFp)
 		return nil, nil, "", err
 	}
 	err = syscall.Unlink(usuuidFp)
