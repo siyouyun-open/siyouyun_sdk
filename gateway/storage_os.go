@@ -119,32 +119,26 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 	if err != nil {
 		return nil, nil, "", err
 	}
-	log.Printf("[DEBUG] syscall.Unlink usuuidFp: %s", usuuidFp)
 	err = syscall.Unlink(usuuidFp)
 	if err != nil {
 		_ = os.Remove(usuuidFp)
 		return nil, nil, "", err
 	}
-	log.Printf("[DEBUG] net.ResolveUnixAddr usuuidFp: %s", usuuidFp)
 	laddr, err := net.ResolveUnixAddr("unix", usuuidFp)
 	if err != nil {
 		_ = os.Remove(usuuidFp)
 		return nil, nil, "", err
 	}
-	log.Printf("[DEBUG] net.ListenUnix usuuidFp: %s", usuuidFp)
 	l, err := net.ListenUnix("unix", laddr)
 	if err != nil {
 		_ = os.Remove(usuuidFp)
 		return nil, nil, "", err
 	}
 
-	log.Printf("[DEBUG] send open file request, usuuidFp: %v", usuuidFp)
 	go func() {
 		// 发送开启文件请求
 		api := sos.Host + "/open/file"
-		_ = restclient.PostRequest[any](
-			sos.UserNamespace,
-			api,
+		resp := restclient.PostRequest[any](sos.UserNamespace, api,
 			map[string]string{
 				"parentPath": filepath.Dir(path),
 				"name":       filepath.Base(path),
@@ -154,8 +148,8 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 			},
 			nil,
 		)
+		log.Printf("[DEBUG] open file %s response: %+v", usuuid, resp)
 	}()
-	log.Printf("[DEBUG] l.AcceptUnix usuuidFp: %s", usuuidFp)
 	conn, err := l.AcceptUnix()
 	if err != nil {
 		_ = os.Remove(usuuidFp)
