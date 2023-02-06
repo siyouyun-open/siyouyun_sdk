@@ -147,10 +147,8 @@ func getNats() *nats.Conn {
 	return nc
 }
 
-var eventGatewayAddr = fmt.Sprintf("%s:%d/%s", gateway.LocalhostAddress, gateway.CoreHTTPPort, "faas")
-
 func registerAndGetAppEvent(appCode string, options []PreferOptions) error {
-	api := eventGatewayAddr + "/app/event/register"
+	api := gateway.CoreServiceURL + "/faas/app/event/register"
 	response := restclient.PostRequest[any](
 		nil,
 		api,

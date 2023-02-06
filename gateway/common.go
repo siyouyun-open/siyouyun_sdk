@@ -1,6 +1,8 @@
 package gateway
 
-const LocalhostAddress = "http://10.62.0.1"
-const OSHTTPPort = 40000
-const CoreHTTPPort = 40100
+var (
+	CoreServiceURL = "http://10.62.0.1:40100/syy"
+	OSURL          = "http://10.62.0.1:40000/os"
+)
+
 const UnixSocketPrefix = "/siyouyun/unix-socket/"

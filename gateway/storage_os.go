@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"errors"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
@@ -21,11 +20,9 @@ type storageOSApi struct {
 	*utils.UserNamespace
 }
 
-var storageOSGatewayAddr = fmt.Sprintf("%s:%d/%s", LocalhostAddress, OSHTTPPort, "storage")
-
 func newStorageOSApi(un *utils.UserNamespace) *storageOSApi {
 	return &storageOSApi{
-		Host:          storageOSGatewayAddr,
+		Host:          OSURL + "/storage",
 		UserNamespace: un,
 	}
 }

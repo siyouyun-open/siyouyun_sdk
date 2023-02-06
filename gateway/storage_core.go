@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"fmt"
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
@@ -15,7 +14,7 @@ type storageCoreApi struct {
 	*utils.UserNamespace
 }
 
-var storageCoreGatewayAddr = fmt.Sprintf("%s:%d/%s", LocalhostAddress, CoreHTTPPort, "fs")
+var storageCoreGatewayAddr = CoreServiceURL + "/fs"
 
 func newStorageCoreApi(un *utils.UserNamespace) *storageCoreApi {
 	return &storageCoreApi{

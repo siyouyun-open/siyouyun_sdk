@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"errors"
-	"fmt"
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
@@ -28,7 +27,7 @@ type KVCoreApi struct {
 	*utils.UserNamespace
 }
 
-var kvCoreGatewayAddr = fmt.Sprintf("%s:%d/%s", LocalhostAddress, CoreHTTPPort, "kv")
+var kvCoreGatewayAddr = CoreServiceURL + "/kv"
 
 func NewKVCoreApi(appCode string, un *utils.UserNamespace) *KVCoreApi {
 	return &KVCoreApi{

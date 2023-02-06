@@ -2,13 +2,12 @@ package gateway
 
 import (
 	"errors"
-	"fmt"
 	"github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 )
 
-var messageGatewayAddr = fmt.Sprintf("%s:%d/%s", LocalhostAddress, CoreHTTPPort, "msg")
+var messageGatewayAddr = CoreServiceURL + "/msg"
 
 func RegisterMessageRobot(appCode, robotDesc string) error {
 	api := messageGatewayAddr + "/robot/register"

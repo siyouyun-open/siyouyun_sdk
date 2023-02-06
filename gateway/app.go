@@ -2,13 +2,12 @@ package gateway
 
 import (
 	"errors"
-	"fmt"
 	"github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/entity"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
 )
 
-var appGatewayAddr = fmt.Sprintf("%s:%d/%s", LocalhostAddress, CoreHTTPPort, "faas")
+var appGatewayAddr = CoreServiceURL + "/faas"
 
 func GetAppInfo(code string) (*sdkentity.AppRegisterInfo, error) {
 	api := appGatewayAddr + "/app/info"

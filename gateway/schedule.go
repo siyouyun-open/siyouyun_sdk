@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"errors"
-	"fmt"
 	"github.com/robfig/cron"
 	"github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
@@ -42,7 +41,7 @@ type ScheduleApi struct {
 	*utils.UserNamespace
 }
 
-var scheduleGatewayAddr = fmt.Sprintf("%s:%d/%s", LocalhostAddress, CoreHTTPPort, "schedule")
+var scheduleGatewayAddr = CoreServiceURL + "/schedule"
 
 func NewScheduleApi(appCode string, un *utils.UserNamespace) *ScheduleApi {
 	return &ScheduleApi{
