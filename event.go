@@ -140,7 +140,7 @@ func (p *PreferOptions) parseToEventCode(appCode string) string {
 }
 
 func getNats() *nats.Conn {
-	nc, err := nats.Connect("nats://nats:4222")
+	nc, err := nats.Connect("nats://10.62.0.1:4222")
 	if err != nil {
 		return nil
 	}
