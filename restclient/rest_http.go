@@ -30,12 +30,14 @@ func PostRequest[T any](un *utils.UserNamespace, fullApi string, query map[strin
 		header["x-namespace"] = un.Namespace
 	}
 	resp := restjson.Response[T]{}
-	_, err := Client.R().
+	req := Client.R().
 		SetQueryParams(query).
 		SetHeaders(header).
-		SetBody(body).
-		SetResult(&resp).
-		Post(fullApi)
+		SetResult(&resp)
+	if body != nil {
+		req.SetBody(body)
+	}
+	_, err := req.Post(fullApi)
 	if err != nil {
 		return restjson.ResJson[T](sdkconst.RPCError, nil, fmt.Sprintf("远程调用错误:%v", err))
 	}
