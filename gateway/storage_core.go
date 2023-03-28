@@ -6,7 +6,6 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"strconv"
-	"strings"
 )
 
 type storageCoreApi struct {
@@ -14,7 +13,7 @@ type storageCoreApi struct {
 	*utils.UserNamespace
 }
 
-var storageCoreGatewayAddr = CoreServiceURL + "/fs"
+var storageCoreGatewayAddr = OSURL + "/fs"
 
 func newStorageCoreApi(un *utils.UserNamespace) *storageCoreApi {
 	return &storageCoreApi{
@@ -26,12 +25,7 @@ func newStorageCoreApi(un *utils.UserNamespace) *storageCoreApi {
 // PathToInode path转inode
 func (sc storageCoreApi) PathToInode(path string) int64 {
 	api := sc.Host + "/path/to/inode"
-	response := restclient.PostRequest[int64](
-		sc.UserNamespace,
-		api,
-		map[string]string{"path": path},
-		nil,
-	)
+	response := restclient.PostRequest[int64](sc.UserNamespace, api, map[string]string{"path": path}, nil)
 	if response.Code != sdkconst.Success {
 		return 0
 	}
@@ -41,12 +35,7 @@ func (sc storageCoreApi) PathToInode(path string) int64 {
 // InodeToPath inode转path
 func (sc storageCoreApi) InodeToPath(inode int64) string {
 	api := sc.Host + "/inode/to/path"
-	response := restclient.PostRequest[string](
-		sc.UserNamespace,
-		api,
-		map[string]string{"inode": strconv.FormatInt(inode, 10)},
-		nil,
-	)
+	response := restclient.PostRequest[string](sc.UserNamespace, api, map[string]string{"inode": strconv.FormatInt(inode, 10)}, nil)
 	if response.Code != sdkconst.Success {
 		return ""
 	}
@@ -55,13 +44,8 @@ func (sc storageCoreApi) InodeToPath(inode int64) string {
 
 // InodeToFileInfo inode转fileInfo
 func (sc storageCoreApi) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
-	api := sc.Host + "/inode/to/fileinfo"
-	response := restclient.PostRequest[sdkdto.FileInfoRes](
-		sc.UserNamespace,
-		api,
-		map[string]string{"inode": strconv.FormatInt(inode, 10)},
-		nil,
-	)
+	api := sc.Host + "/file/info/by/inode"
+	response := restclient.PostRequest[sdkdto.FileInfoRes](sc.UserNamespace, api, map[string]string{"inode": strconv.FormatInt(inode, 10)}, nil)
 	if response.Code != sdkconst.Success {
 		return nil
 	}
@@ -70,19 +54,8 @@ func (sc storageCoreApi) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
 
 // InodesToFileInfos inodes转fileInfos
 func (sc storageCoreApi) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
-	var inodesStr []string
-	for i := range inodes {
-		inodesStr = append(inodesStr, strconv.FormatInt(inodes[i], 10))
-	}
-	api := sc.Host + "/inodes/to/fileinfos"
-	response := restclient.PostRequest[map[int64]sdkdto.FileInfoRes](
-		sc.UserNamespace,
-		api,
-		map[string]string{
-			"inodes": strings.Join(inodesStr, ","),
-		},
-		nil,
-	)
+	api := sc.Host + "/file/infos/by/inodes"
+	response := restclient.PostRequest[map[int64]sdkdto.FileInfoRes](sc.UserNamespace, api, nil, inodes)
 	if response.Code != sdkconst.Success {
 		return nil
 	}
