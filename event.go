@@ -139,15 +139,21 @@ func (p *PreferOptions) parseToEventCode(appCode string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v%v", appCode, p.FileEventType, p.FileType, p.Description))))
 }
 
-func getNats() *nats.Conn {
-	if globalNC != nil {
-		return globalNC
+func getNats() (nc *nats.Conn) {
+	var err error
+	if detectVir() {
+		nc, err = nats.Connect("nats://10.62.0.1:4222")
+	} else {
+		nc, err = nats.Connect("nats://127.0.0.1:4222")
 	}
-	nc, err := nats.Connect("nats://10.62.0.1:4222")
 	if err != nil {
 		return nil
 	}
 	return nc
+}
+
+func detectVir() bool {
+	return true
 }
 
 func registerAndGetAppEvent(appCode string, options []PreferOptions) error {
