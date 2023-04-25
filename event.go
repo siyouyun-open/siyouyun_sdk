@@ -67,12 +67,14 @@ type EventHolder struct {
 	optionsMap map[string]PreferOptions
 }
 
+// PreferOptions 事件偏好选项
 type PreferOptions struct {
-	FileType      FileType                                  `json:"fileType"`
-	FileEventType int                                       `json:"fileEventType"`
-	Description   string                                    `json:"description"`
-	Priority      TaskLevel                                 `json:"priority"`
-	Handler       func(fs *EventFS) (ConsumeStatus, string) `json:"-"`
+	FileType      FileType                                  `json:"fileType"`      // 文件类型
+	FileEventType int                                       `json:"fileEventType"` // 事件类型
+	FollowDirs    []string                                  `json:"followDirs"`    // 关注目录（不设置默认所有）
+	Description   string                                    `json:"description"`   // 描述
+	Priority      TaskLevel                                 `json:"priority"`      // 优先级（资源占用等级）
+	Handler       func(fs *EventFS) (ConsumeStatus, string) `json:"-"`             // 处理器
 }
 
 // WithEventHolder 初始化事件监听器
