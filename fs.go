@@ -54,6 +54,7 @@ func (fs *FS) initAbility() {
 func (fs *FS) Open(path string) (*SyyFile, error) {
 	file, conn, usfp, err := fs.api.Open(path)
 	return &SyyFile{
+		Fullpath:       path,
 		file:           file,
 		unixConn:       conn,
 		unixSocketPath: usfp,

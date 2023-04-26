@@ -10,6 +10,7 @@ import (
 
 // SyyFile 四有云File，FaaS应用操作文件均使用此文件结构体，覆盖了os.File的所有方法实现
 type SyyFile struct {
+	Fullpath       string
 	file           *os.File
 	unixConn       *net.UnixConn
 	unixSocketPath string
