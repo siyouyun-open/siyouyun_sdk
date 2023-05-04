@@ -65,6 +65,7 @@ func (fs *FS) Open(path string) (*SyyFile, error) {
 func (fs *FS) OpenFile(path string, flag int, perm os.FileMode) (*SyyFile, error) {
 	file, conn, usfp, err := fs.api.OpenFile(path, flag, perm)
 	return &SyyFile{
+		Fullpath:       path,
 		file:           file,
 		unixConn:       conn,
 		unixSocketPath: usfp,
