@@ -125,13 +125,16 @@ func (e *EventHolder) Listen() {
 			}
 			eventCode := msg.Header.Get("eventCode")
 			eventfs := e.app.newEventFSFromFileEvent(&fe)
-			cs, m := e.optionsMap[eventCode].Handler(eventfs)
-			eventfs.Destroy()
-			var resMsg = nats.NewMsg(msg.Reply)
-			resMsg.Data = []byte(m)
-			resMsg.Header.Set("status", strconv.Itoa(int(cs)))
-			_ = nc.PublishMsg(resMsg)
-			return
+
+			// 异步执行具体任务
+			go func() {
+				cs, m := e.optionsMap[eventCode].Handler(eventfs)
+				eventfs.Destroy()
+				var resMsg = nats.NewMsg(msg.Reply)
+				resMsg.Data = []byte(m)
+				resMsg.Header.Set("status", strconv.Itoa(int(cs)))
+				_ = nc.PublishMsg(resMsg)
+			}()
 		})
 	}()
 }
