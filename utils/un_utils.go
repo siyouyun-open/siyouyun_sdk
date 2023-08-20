@@ -6,13 +6,10 @@ import (
 	"strings"
 )
 
-const (
-	DatabaseCommon = sdkconst.SiyouFSMysqlDBPrefix + "_" + sdkconst.CommonNamespace
-)
-
 type UserNamespace struct {
-	Username  string `json:"username"`
-	Namespace string `json:"namespace"`
+	Username  string `json:"username"`  // 用户名
+	GroupName string `json:"groupName"` // 组名
+	Namespace string `json:"namespace"` // 命名空间
 }
 
 func NewUserNamespaceFromIris(ctx iris.Context) *UserNamespace {
@@ -34,15 +31,8 @@ func NewUserNamespace(username, namespace string) *UserNamespace {
 }
 
 func (un *UserNamespace) DatabaseName() string {
-	switch un.Namespace {
-	case "":
-		fallthrough
-	case sdkconst.MainNamespace:
-		return sdkconst.SiyouFSMysqlDBPrefix + "_" + un.Username + "_" + sdkconst.MainNamespace
-	case sdkconst.PrivateNamespace:
-		return sdkconst.SiyouFSMysqlDBPrefix + "_" + un.Username + "_" + sdkconst.PrivateNamespace
-	case sdkconst.CommonNamespace:
-		return sdkconst.SiyouFSMysqlDBPrefix + "_" + sdkconst.CommonNamespace
+	if un.GroupName == "" {
+		un.GroupName = un.Username
 	}
-	return ""
+	return sdkconst.SiyouFSMysqlDBPrefix + "_" + un.GroupName + "_" + un.Namespace
 }
