@@ -12,7 +12,7 @@ type Schedule struct {
 
 func (fs *FS) NewSchedule() *Schedule {
 	return &Schedule{
-		ScheduleApi: gateway.NewScheduleApi(fs.AppCodeName, fs.UserNamespace),
+		ScheduleApi: gateway.NewScheduleApi(fs.AppCodeName, fs.UGN),
 	}
 }
 

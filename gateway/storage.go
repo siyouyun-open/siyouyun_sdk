@@ -13,7 +13,7 @@ type StorageApi struct {
 	*storageCoreApi
 }
 
-func NewStorageApi(un *utils.UserNamespace) *StorageApi {
+func NewStorageApi(un *utils.UserGroupNamespace) *StorageApi {
 	return &StorageApi{
 		storageOSApi:   newStorageOSApi(un),
 		storageCoreApi: newStorageCoreApi(un),

@@ -26,7 +26,7 @@ func (a *AppStruct) NewAppFSFromCtx(ctx iris.Context) *AppFS {
 	return afs
 }
 
-func (a *AppStruct) NewAppFSFromUserNamespace(un *utils.UserNamespace) *AppFS {
+func (a *AppStruct) NewAppFSFromUserNamespace(un *utils.UserGroupNamespace) *AppFS {
 	afs := &AppFS{
 		fs: a.NewFSFromUserNamespace(un),
 	}
@@ -37,7 +37,7 @@ func (a *AppStruct) NewAppFSFromUserNamespace(un *utils.UserNamespace) *AppFS {
 
 func (afs *AppFS) getNormalAppPrefix() string {
 	var prefixPath string
-	switch afs.fs.Namespace {
+	switch afs.fs.UGN.Namespace {
 	case "":
 		fallthrough
 	case sdkconst.MainNamespace:

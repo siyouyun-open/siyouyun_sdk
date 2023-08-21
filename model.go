@@ -21,7 +21,7 @@ func (a *AppStruct) WithModel(models ...interface{}) {
 }
 
 // 增加用户追加建立数据表
-func (a *AppStruct) setUserWithModel(un *utils.UserNamespace) {
+func (a *AppStruct) setUserWithModel(un *utils.UserGroupNamespace) {
 	a.exec(un, func(db *gorm.DB) error {
 		err := db.AutoMigrate(App.Model...)
 		if err != nil {

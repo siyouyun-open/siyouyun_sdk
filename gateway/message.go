@@ -27,7 +27,7 @@ func RegisterMessageRobot(appCode, robotDesc string) error {
 	return nil
 }
 
-func SendMessage(un *utils.UserNamespace, appCode, content, replyUUID string) error {
+func SendMessage(un *utils.UserGroupNamespace, appCode, content, replyUUID string) error {
 	api := messageGatewayAddr + "/robot/session/send"
 	response := restclient.PostRequest[any](
 		un,

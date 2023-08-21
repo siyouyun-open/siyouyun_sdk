@@ -18,36 +18,34 @@ const (
 )
 
 type OnceCreateBody struct {
+	UGN        *utils.UserGroupNamespace
 	AppCode    string `json:"appCode"`
-	Username   string `json:"username"`
-	Namespace  string `json:"namespace"`
 	Name       string `json:"name"`
 	Payload    []byte `json:"payload"`
 	RemindTime int64  `json:"remindTime"`
 }
 
 type CronCreateBody struct {
-	AppCode   string `json:"appCode"`
-	Username  string `json:"username"`
-	Namespace string `json:"namespace"`
-	Name      string `json:"name"`
-	Payload   []byte `json:"payload"`
-	Cron      string `json:"cron"`
+	UGN     *utils.UserGroupNamespace
+	AppCode string `json:"appCode"`
+	Name    string `json:"name"`
+	Payload []byte `json:"payload"`
+	Cron    string `json:"cron"`
 }
 
 type ScheduleApi struct {
 	Host    string
 	AppCode string
-	*utils.UserNamespace
+	UGN     *utils.UserGroupNamespace
 }
 
 var scheduleGatewayAddr = CoreServiceURL + "/schedule"
 
-func NewScheduleApi(appCode string, un *utils.UserNamespace) *ScheduleApi {
+func NewScheduleApi(appCode string, un *utils.UserGroupNamespace) *ScheduleApi {
 	return &ScheduleApi{
-		Host:          scheduleGatewayAddr,
-		AppCode:       appCode,
-		UserNamespace: un,
+		Host:    scheduleGatewayAddr,
+		AppCode: appCode,
+		UGN:     un,
 	}
 }
 
@@ -57,13 +55,12 @@ func (sa *ScheduleApi) OnceCreate(name string, payload []byte, remindTime int64)
 	}
 	api := sa.Host + ScheduleOnceCreateApi
 	response := restclient.PostRequest[int64](
-		sa.UserNamespace,
+		sa.UGN,
 		api,
 		nil,
 		OnceCreateBody{
+			UGN:        sa.UGN,
 			AppCode:    sa.AppCode,
-			Username:   sa.Username,
-			Namespace:  sa.Namespace,
 			Name:       name,
 			Payload:    payload,
 			RemindTime: remindTime,
@@ -81,7 +78,7 @@ func (sa *ScheduleApi) OnceUpdate(eventId int64, remindTime int64) error {
 	}
 	api := sa.Host + ScheduleOnceUpdateApi
 	response := restclient.PostRequest[any](
-		sa.UserNamespace,
+		sa.UGN,
 		api,
 		map[string]string{
 			"eventId":    strconv.FormatInt(eventId, 10),
@@ -98,16 +95,15 @@ func (sa *ScheduleApi) OnceUpdate(eventId int64, remindTime int64) error {
 func (sa *ScheduleApi) CronCreate(name string, payload []byte, c string) (error, *int64) {
 	api := sa.Host + ScheduleCronCreateApi
 	var response = restclient.PostRequest[int64](
-		sa.UserNamespace,
+		sa.UGN,
 		api,
 		nil,
 		CronCreateBody{
-			AppCode:   sa.AppCode,
-			Username:  sa.Username,
-			Namespace: sa.Namespace,
-			Name:      name,
-			Payload:   payload,
-			Cron:      c,
+			UGN:     sa.UGN,
+			AppCode: sa.AppCode,
+			Name:    name,
+			Payload: payload,
+			Cron:    c,
 		},
 	)
 	if response.Code != sdkconst.Success {
@@ -119,7 +115,7 @@ func (sa *ScheduleApi) CronCreate(name string, payload []byte, c string) (error,
 func (sa *ScheduleApi) CronUpdate(eventId int64, c string) error {
 	api := sa.Host + ScheduleCronUpdateApi
 	var response = restclient.PostRequest[int](
-		sa.UserNamespace,
+		sa.UGN,
 		api,
 		map[string]string{
 			"eventId": strconv.FormatInt(eventId, 10),

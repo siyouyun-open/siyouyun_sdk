@@ -11,7 +11,7 @@ type FFmpeg struct {
 
 func (fs *FS) NewFFmpeg() *FFmpeg {
 	return &FFmpeg{
-		FFmpegOSApi: gateway.NewFFmpegOSApi(fs.UserNamespace),
+		FFmpegOSApi: gateway.NewFFmpegOSApi(fs.UGN),
 	}
 }
 

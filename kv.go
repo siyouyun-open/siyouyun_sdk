@@ -11,7 +11,7 @@ type KV struct {
 
 func (fs *FS) NewKV() *KV {
 	return &KV{
-		KVCoreApi: gateway.NewKVCoreApi(fs.AppCodeName, fs.UserNamespace),
+		KVCoreApi: gateway.NewKVCoreApi(fs.AppCodeName, fs.UGN),
 	}
 }
 

@@ -17,13 +17,13 @@ import (
 
 type storageOSApi struct {
 	Host string
-	*utils.UserNamespace
+	UGN  *utils.UserGroupNamespace
 }
 
-func newStorageOSApi(un *utils.UserNamespace) *storageOSApi {
+func newStorageOSApi(un *utils.UserGroupNamespace) *storageOSApi {
 	return &storageOSApi{
-		Host:          OSURL + "/storage",
-		UserNamespace: un,
+		Host: OSURL + "/storage",
+		UGN:  un,
 	}
 }
 
@@ -56,7 +56,7 @@ func (sos *storageOSApi) Open(path string) (*os.File, *net.UnixConn, string, err
 		// 发送开启文件请求
 		api := sos.Host + "/open"
 		resp := restclient.PostRequest[any](
-			sos.UserNamespace,
+			sos.UGN,
 			api,
 			map[string]string{
 				"parentPath": filepath.Dir(path),
@@ -138,7 +138,7 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 	go func() {
 		// 发送开启文件请求
 		api := sos.Host + "/open/file"
-		resp := restclient.PostRequest[any](sos.UserNamespace, api,
+		resp := restclient.PostRequest[any](sos.UGN, api,
 			map[string]string{
 				"parentPath": filepath.Dir(path),
 				"name":       filepath.Base(path),
@@ -197,7 +197,7 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 func (sos *storageOSApi) MkdirAll(path string) error {
 	api := sos.Host + "/fs/mkdir"
 	response := restclient.PostRequest[any](
-		sos.UserNamespace,
+		sos.UGN,
 		api,
 		map[string]string{
 			"parentPath": filepath.Dir(path),
@@ -215,7 +215,7 @@ func (sos *storageOSApi) MkdirAll(path string) error {
 func (sos *storageOSApi) Remove(path string) error {
 	api := sos.Host + "/fs/remove"
 	response := restclient.PostRequest[any](
-		sos.UserNamespace,
+		sos.UGN,
 		api,
 		map[string]string{
 			"parentPath": filepath.Dir(path),
@@ -233,7 +233,7 @@ func (sos *storageOSApi) Remove(path string) error {
 func (sos *storageOSApi) Rename(oldPath, newPath string) error {
 	api := sos.Host + "/fs/rename"
 	response := restclient.PostRequest[any](
-		sos.UserNamespace,
+		sos.UGN,
 		api,
 		map[string]string{
 			"parentPath":    filepath.Dir(oldPath),
@@ -253,7 +253,7 @@ func (sos *storageOSApi) Rename(oldPath, newPath string) error {
 func (sos *storageOSApi) Chtimes(path string, atime time.Time, mtime time.Time) error {
 	api := sos.Host + "/fs/chtimes"
 	response := restclient.PostRequest[any](
-		sos.UserNamespace,
+		sos.UGN,
 		api,
 		map[string]string{
 			"parentPath": filepath.Dir(path),
@@ -273,7 +273,7 @@ func (sos *storageOSApi) Chtimes(path string, atime time.Time, mtime time.Time) 
 func (sos *storageOSApi) FileExists(path string) bool {
 	api := sos.Host + "/fs/file/exist"
 	response := restclient.PostRequest[bool](
-		sos.UserNamespace,
+		sos.UGN,
 		api,
 		map[string]string{
 			"parentPath": filepath.Dir(path),
@@ -290,5 +290,5 @@ func (sos *storageOSApi) FileExists(path string) bool {
 // EnsureDirExist 确保目录存在
 func (sos *storageOSApi) EnsureDirExist(ps ...string) {
 	api := sos.Host + "/fs/ensure/dir/exist"
-	_ = restclient.PostRequest[any](sos.UserNamespace, api, map[string]string{"paths": strings.Join(ps, ",")}, nil)
+	_ = restclient.PostRequest[any](sos.UGN, api, map[string]string{"paths": strings.Join(ps, ",")}, nil)
 }

@@ -64,7 +64,7 @@ func NewApp() *AppStruct {
 	return App
 }
 
-func (a *AppStruct) exec(un *utils.UserNamespace, f func(*gorm.DB) error) error {
+func (a *AppStruct) exec(un *utils.UserGroupNamespace, f func(*gorm.DB) error) error {
 	err := a.DB.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := un.DatabaseName()
 		if dbname == "" {

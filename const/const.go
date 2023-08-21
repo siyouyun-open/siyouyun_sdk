@@ -13,6 +13,7 @@ const (
 
 const (
 	UsernameHeader  = "x-username"
+	GroupNameHeader = "x-group-name"
 	NamespaceHeader = "x-namespace"
 )
 

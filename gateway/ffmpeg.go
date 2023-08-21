@@ -10,13 +10,13 @@ import (
 
 type FFmpegOSApi struct {
 	Host string
-	*utils.UserNamespace
+	*utils.UserGroupNamespace
 }
 
-func NewFFmpegOSApi(un *utils.UserNamespace) *FFmpegOSApi {
+func NewFFmpegOSApi(un *utils.UserGroupNamespace) *FFmpegOSApi {
 	return &FFmpegOSApi{
-		Host:          OSURL + "/codec",
-		UserNamespace: un,
+		Host:               OSURL + "/codec",
+		UserGroupNamespace: un,
 	}
 }
 
@@ -24,7 +24,7 @@ func NewFFmpegOSApi(un *utils.UserNamespace) *FFmpegOSApi {
 func (kv *FFmpegOSApi) GetInfo(parentPath, name string) (*sdkdto.FFProbeInfo, error) {
 	api := kv.Host + "/ffmpeg/info"
 	response := restclient.GetRequest[sdkdto.FFProbeInfo](
-		kv.UserNamespace,
+		kv.UserGroupNamespace,
 		api,
 		map[string]string{
 			"parentPath": parentPath,

@@ -24,16 +24,16 @@ const (
 type KVCoreApi struct {
 	Host    string
 	AppCode string
-	*utils.UserNamespace
+	UGN     *utils.UserGroupNamespace
 }
 
 var kvCoreGatewayAddr = CoreServiceURL + "/kv"
 
-func NewKVCoreApi(appCode string, un *utils.UserNamespace) *KVCoreApi {
+func NewKVCoreApi(appCode string, un *utils.UserGroupNamespace) *KVCoreApi {
 	return &KVCoreApi{
-		Host:          kvCoreGatewayAddr,
-		AppCode:       appCode,
-		UserNamespace: un,
+		Host:    kvCoreGatewayAddr,
+		AppCode: appCode,
+		UGN:     un,
 	}
 }
 
@@ -41,7 +41,7 @@ func NewKVCoreApi(appCode string, un *utils.UserNamespace) *KVCoreApi {
 func (kv *KVCoreApi) PutKV(kvType, key, value string) error {
 	api := kv.Host + KVApiPut
 	response := restclient.PostRequest[any](
-		kv.UserNamespace,
+		kv.UGN,
 		api,
 		map[string]string{
 			AppCodeQuery: kv.AppCode,
@@ -61,7 +61,7 @@ func (kv *KVCoreApi) PutKV(kvType, key, value string) error {
 func (kv *KVCoreApi) DeleteKV(kvType, key string) error {
 	api := kv.Host + KVApiDelete
 	response := restclient.PostRequest[any](
-		kv.UserNamespace,
+		kv.UGN,
 		api,
 		map[string]string{
 			AppCodeQuery: kv.AppCode,
@@ -80,7 +80,7 @@ func (kv *KVCoreApi) DeleteKV(kvType, key string) error {
 func (kv *KVCoreApi) GetKV(kvType, key string) (*sdkdto.KV, bool) {
 	api := kv.Host + KVApiGet
 	response := restclient.GetRequest[sdkdto.KV](
-		kv.UserNamespace,
+		kv.UGN,
 		api,
 		map[string]string{
 			AppCodeQuery: kv.AppCode,

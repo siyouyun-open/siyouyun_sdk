@@ -9,6 +9,7 @@ import (
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/restclient"
+	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"strconv"
 )
 
@@ -55,10 +56,9 @@ const (
 )
 
 type FileEvent struct {
-	Inode     int64  `json:"inode,omitempty"`
-	Action    int    `json:"action,omitempty"`
-	Username  string `json:"username,omitempty"`
-	Namespace string `json:"namespace,omitempty"`
+	Inode  int64 `json:"inode,omitempty"`
+	Action int   `json:"action,omitempty"`
+	UGN    utils.UserGroupNamespace
 }
 
 type EventHolder struct {

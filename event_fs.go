@@ -13,21 +13,17 @@ type EventFS struct {
 }
 
 func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
-	un := &utils.UserNamespace{
-		Username:  fe.Username,
-		Namespace: fe.Namespace,
-	}
 	efs := &EventFS{
 		EventFileInode: fe.Inode,
-		FS:             a.NewFSFromUserNamespace(un),
-		AppFS:          a.NewAppFSFromUserNamespace(un),
+		FS:             a.NewFSFromUserNamespace(&fe.UGN),
+		AppFS:          a.NewAppFSFromUserNamespace(&fe.UGN),
 	}
 	efs.Ability = efs.FS.Ability
 	return efs
 }
 
 func (a *AppStruct) newEventFSFromScheduleEvent(se *ScheduleEvent) *EventFS {
-	un := &utils.UserNamespace{
+	un := &utils.UserGroupNamespace{
 		Username:  se.Username,
 		Namespace: se.Namespace,
 	}

@@ -6,31 +6,29 @@ import (
 	"strings"
 )
 
-type UserNamespace struct {
+type UserGroupNamespace struct {
 	Username  string `json:"username"`  // 用户名
 	GroupName string `json:"groupName"` // 组名
 	Namespace string `json:"namespace"` // 命名空间
 }
 
-func NewUserNamespaceFromIris(ctx iris.Context) *UserNamespace {
-	// username
-	username := strings.TrimSpace(ctx.GetHeader(sdkconst.UsernameHeader))
-	// namespace
-	namespace := strings.TrimSpace(ctx.GetHeader(sdkconst.NamespaceHeader))
-	return &UserNamespace{
+func NewUserNamespaceFromIris(ctx iris.Context) *UserGroupNamespace {
+	return &UserGroupNamespace{
+		Username:  strings.TrimSpace(ctx.GetHeader(sdkconst.UsernameHeader)),
+		GroupName: strings.TrimSpace(ctx.GetHeader(sdkconst.GroupNameHeader)),
+		Namespace: strings.TrimSpace(ctx.GetHeader(sdkconst.NamespaceHeader)),
+	}
+}
+
+func NewUserGroupNamespace(username, groupname, namespace string) *UserGroupNamespace {
+	return &UserGroupNamespace{
 		Username:  username,
+		GroupName: groupname,
 		Namespace: namespace,
 	}
 }
 
-func NewUserNamespace(username, namespace string) *UserNamespace {
-	return &UserNamespace{
-		Username:  username,
-		Namespace: namespace,
-	}
-}
-
-func (un *UserNamespace) DatabaseName() string {
+func (un *UserGroupNamespace) DatabaseName() string {
 	if un.GroupName == "" {
 		un.GroupName = un.Username
 	}

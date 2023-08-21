@@ -19,7 +19,7 @@ func InitHttpClient() {
 }
 
 // PostRequest 发起rest post请求
-func PostRequest[T any](un *utils.UserNamespace, fullApi string, query map[string]string, body any) restjson.Response[T] {
+func PostRequest[T any](un *utils.UserGroupNamespace, fullApi string, query map[string]string, body any) restjson.Response[T] {
 	if query == nil {
 		query = map[string]string{}
 	}
@@ -45,7 +45,7 @@ func PostRequest[T any](un *utils.UserNamespace, fullApi string, query map[strin
 }
 
 // GetRequest 发起rest get请求
-func GetRequest[T any](un *utils.UserNamespace, fullApi string, query map[string]string) restjson.Response[T] {
+func GetRequest[T any](un *utils.UserGroupNamespace, fullApi string, query map[string]string) restjson.Response[T] {
 	if query == nil {
 		query = map[string]string{}
 	}
