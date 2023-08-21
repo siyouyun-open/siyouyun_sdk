@@ -20,12 +20,10 @@ func (m *Message) SendMsg(un *utils.UserGroupNamespace, content string) error {
 
 // MessageEvent 消息在事件中传递的结构
 type MessageEvent struct {
-	Username  string `json:"username"`
-	Groupname string `json:"groupname"`
-	Namespace string `json:"namespace"`
-	UUID      string `json:"uuid"`
-	Content   string `json:"content"`
-	SessionId string `json:"sessionId"`
+	UGN       utils.UserGroupNamespace `json:"ugn"`
+	UUID      string                   `json:"uuid"`
+	Content   string                   `json:"content"`
+	SessionId string                   `json:"sessionId"`
 
 	SendByAdmin bool `json:"sendByAdmin"`
 }
@@ -80,7 +78,7 @@ func ListenMsg(mh *MessageHandlerStruct) {
 				panic(err)
 			}
 			for i := range mes {
-				un := utils.NewUserGroupNamespace(mes[i].Username, mes[i].Groupname, mes[i].Namespace)
+				un := utils.NewUserGroupNamespace(mes[i].UGN.Username, mes[i].UGN.GroupName, mes[i].UGN.Namespace)
 				if mes[i].SendByAdmin {
 					switch mes[i].Content {
 					case "autoMigrate":
