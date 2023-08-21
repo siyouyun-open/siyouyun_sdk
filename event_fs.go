@@ -1,7 +1,6 @@
 package siyouyunsdk
 
 import (
-	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
 )
 
@@ -23,13 +22,9 @@ func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
 }
 
 func (a *AppStruct) newEventFSFromScheduleEvent(se *ScheduleEvent) *EventFS {
-	un := &utils.UserGroupNamespace{
-		Username:  se.Username,
-		Namespace: se.Namespace,
-	}
 	efs := &EventFS{
-		FS:    a.NewFSFromUserNamespace(un),
-		AppFS: a.NewAppFSFromUserNamespace(un),
+		FS:    a.NewFSFromUserNamespace(&se.UGN),
+		AppFS: a.NewAppFSFromUserNamespace(&se.UGN),
 	}
 	efs.Ability = efs.FS.Ability
 	return efs

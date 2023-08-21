@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/nats-io/nats.go"
 	"github.com/siyouyun-open/siyouyun_sdk/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/utils"
 )
 
 type Schedule struct {
@@ -33,8 +34,7 @@ func (s *Schedule) UpdateCronScheduleEvent(eventId int64, c string) (err error) 
 }
 
 type ScheduleEvent struct {
-	Username   string `json:"username"`
-	Namespace  string `json:"namespace"`
+	UGN        utils.UserGroupNamespace
 	RemindTime int64  `json:"remindTime"`
 	Name       string `json:"name"`
 	Payload    []byte `json:"payload"`
