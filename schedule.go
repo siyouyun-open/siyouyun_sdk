@@ -34,10 +34,10 @@ func (s *Schedule) UpdateCronScheduleEvent(eventId int64, c string) (err error) 
 }
 
 type ScheduleEvent struct {
-	UGN        utils.UserGroupNamespace
-	RemindTime int64  `json:"remindTime"`
-	Name       string `json:"name"`
-	Payload    []byte `json:"payload"`
+	UGN        utils.UserGroupNamespace `json:"ugn"`
+	RemindTime int64                    `json:"remindTime"`
+	Name       string                   `json:"name"`
+	Payload    []byte                   `json:"payload"`
 }
 
 type ScheduleHandler struct {

@@ -27,7 +27,7 @@ func PostRequest[T any](un *utils.UserGroupNamespace, fullApi string, query map[
 	header["Accept"] = "application/json"
 	if un != nil {
 		header[sdkconst.UsernameHeader] = un.Username
-		header[sdkconst.GroupNameHeader] = un.Username
+		header[sdkconst.GroupNameHeader] = un.GroupName
 		header[sdkconst.NamespaceHeader] = un.Namespace
 	}
 	resp := restjson.Response[T]{}
@@ -54,7 +54,7 @@ func GetRequest[T any](un *utils.UserGroupNamespace, fullApi string, query map[s
 	header["Accept"] = "application/json"
 	if un != nil {
 		header[sdkconst.UsernameHeader] = un.Username
-		header[sdkconst.GroupNameHeader] = un.Username
+		header[sdkconst.GroupNameHeader] = un.GroupName
 		header[sdkconst.NamespaceHeader] = un.Namespace
 	}
 	resp := restjson.Response[T]{}

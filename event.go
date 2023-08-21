@@ -56,9 +56,9 @@ const (
 )
 
 type FileEvent struct {
-	Inode  int64 `json:"inode,omitempty"`
-	Action int   `json:"action,omitempty"`
-	UGN    utils.UserGroupNamespace
+	Inode  int64                    `json:"inode,omitempty"`
+	Action int                      `json:"action,omitempty"`
+	UGN    utils.UserGroupNamespace `json:"ugn"`
 }
 
 type EventHolder struct {
