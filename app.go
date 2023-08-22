@@ -49,8 +49,8 @@ func NewApp() *AppStruct {
 		Logger: siyoumysql.NewLogger(),
 	})
 	sqlDB, _ := db.DB()
-	sqlDB.SetConnMaxLifetime(time.Minute * 5)
-	sqlDB.SetConnMaxIdleTime(time.Minute * 1)
+	sqlDB.SetConnMaxLifetime(time.Minute * 30)
+	sqlDB.SetConnMaxIdleTime(time.Minute * 3)
 	sqlDB.SetMaxOpenConns(5)
 	sqlDB.SetMaxIdleConns(1)
 	App.DB = db
