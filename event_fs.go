@@ -6,6 +6,7 @@ import (
 
 type EventFS struct {
 	EventFileInode int64
+	EventFilePath  string
 	FS             *FS
 	AppFS          *AppFS
 	*Ability
