@@ -8,7 +8,7 @@ import (
 
 type UserGroupNamespace struct {
 	Username  string `json:"username"`  // 用户名
-	GroupName string `json:"groupName"` // 组名
+	GroupName string `json:"groupname"` // 组名
 	Namespace string `json:"namespace"` // 命名空间
 }
 
