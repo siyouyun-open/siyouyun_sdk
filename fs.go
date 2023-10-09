@@ -61,6 +61,11 @@ func (fs *FS) Open(path string) (*SyyFile, error) {
 	}, err
 }
 
+// OpenByInode 根据inode打开文件
+func (fs *FS) OpenByInode(inode int64) (*SyyFile, error) {
+	return fs.Open(fs.InodeToPath(inode))
+}
+
 // OpenFile 打开或创建文件
 func (fs *FS) OpenFile(path string, flag int, perm os.FileMode) (*SyyFile, error) {
 	file, conn, usfp, err := fs.api.OpenFile(path, flag, perm)

@@ -34,3 +34,10 @@ func (un *UserGroupNamespace) DatabaseName() string {
 	}
 	return sdkconst.SiyouFSMysqlDBPrefix + "_" + un.GroupName + "_" + un.Namespace
 }
+
+func (un *UserGroupNamespace) String() string {
+	if un.GroupName == "" {
+		un.GroupName = un.Username
+	}
+	return un.GroupName + "-" + un.Namespace
+}

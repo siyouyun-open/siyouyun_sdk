@@ -2,7 +2,6 @@ package siyouyunsdk
 
 import (
 	"github.com/kataras/iris/v12"
-	"github.com/siyouyun-open/siyouyun_sdk/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/utils"
 	"gorm.io/gorm"
@@ -36,27 +35,7 @@ func (a *AppStruct) NewAppFSFromUserNamespace(un *utils.UserGroupNamespace) *App
 }
 
 func (afs *AppFS) getNormalAppPrefix() string {
-	var prefixPath string
-	switch afs.fs.UGN.Namespace {
-	case "":
-		fallthrough
-	case sdkconst.MainNamespace:
-		prefixPath = filepath.Join(
-			".siyouyun", "app",
-			afs.fs.AppCodeName,
-		)
-	case sdkconst.PrivateNamespace:
-		prefixPath = filepath.Join(
-			".siyouyun", "app",
-			afs.fs.AppCodeName,
-		)
-	case sdkconst.CommonNamespace:
-		prefixPath = filepath.Join(
-			".siyouyun", "app",
-			afs.fs.AppCodeName,
-		)
-	}
-	return prefixPath
+	return filepath.Join(".siyouyun", "app", afs.fs.AppCodeName)
 }
 
 // Open  打开文件
