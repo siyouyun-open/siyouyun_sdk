@@ -8,21 +8,17 @@ import (
 
 func (a *AppStruct) WithModel(models ...interface{}) {
 	a.Model = append(a.Model, models...)
-	var ul = a.AppInfo.UserNamespaceList
+	var ul = a.AppInfo.UGNList
 	for i := range ul {
-		a.exec(&ul[i], func(db *gorm.DB) error {
-			err := db.AutoMigrate(models...)
-			if err != nil {
-				return err
-			}
-			return nil
+		_ = a.exec(&ul[i], func(db *gorm.DB) error {
+			return db.AutoMigrate(models...)
 		})
 	}
 }
 
 // 增加用户追加建立数据表
 func (a *AppStruct) setUserWithModel(un *utils.UserGroupNamespace) {
-	a.exec(un, func(db *gorm.DB) error {
+	_ = a.exec(un, func(db *gorm.DB) error {
 		err := db.AutoMigrate(App.Model...)
 		if err != nil {
 			log.Printf(err.Error())
