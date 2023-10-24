@@ -6,12 +6,24 @@ import (
 	"log"
 )
 
+// WithModel 自动迁移表
 func (a *AppStruct) WithModel(models ...interface{}) {
 	a.Model = append(a.Model, models...)
 	var ul = a.AppInfo.UGNList
 	for i := range ul {
 		_ = a.exec(&ul[i], func(db *gorm.DB) error {
 			return db.AutoMigrate(models...)
+		})
+	}
+}
+
+// UpdateModel 更新表（需要删除更改字段或索引时使用）
+func (a *AppStruct) UpdateModel(f func(gorm.Migrator)) {
+	var ul = a.AppInfo.UGNList
+	for i := range ul {
+		_ = a.exec(&ul[i], func(db *gorm.DB) error {
+			f(db.Migrator())
+			return nil
 		})
 	}
 }
