@@ -59,6 +59,7 @@ type FileEvent struct {
 	Inode    int64  `json:"inode"`
 	FullPath string `json:"fullPath"`
 	Action   int    `json:"action"`
+	IsRename bool   `json:"isRename"`
 
 	UGN utils.UserGroupNamespace `json:"ugn"`
 }

@@ -7,6 +7,7 @@ import (
 type EventFS struct {
 	EventFileInode int64
 	EventFilePath  string
+	IsRename       bool
 	FS             *FS
 	AppFS          *AppFS
 	*Ability
