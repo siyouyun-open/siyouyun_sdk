@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+const (
+	SiyouyunPrefix = "/.siyouyun"
+	AppPrefix      = SiyouyunPrefix + "/appdata"
+)
+
 type AppFS struct {
 	appNormalPath string
 	fs            *FS
@@ -35,7 +40,7 @@ func (a *AppStruct) NewAppFSFromUserNamespace(un *utils.UserGroupNamespace) *App
 }
 
 func (afs *AppFS) getNormalAppPrefix() string {
-	return filepath.Join(".siyouyun", "app", afs.fs.AppCodeName)
+	return filepath.Join(AppPrefix, afs.fs.AppCodeName)
 }
 
 // Open  打开文件
