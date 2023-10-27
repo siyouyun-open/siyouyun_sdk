@@ -8,8 +8,8 @@ require (
 	github.com/kataras/iris/v12 v12.2.4
 	github.com/nats-io/nats.go v1.29.0
 	github.com/robfig/cron v1.2.0
-	gorm.io/driver/mysql v1.4.3
-	gorm.io/gorm v1.24.1
+	gorm.io/driver/mysql v1.5.2
+	gorm.io/gorm v1.25.5
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/flosch/pongo2/v4 v4.0.2 // indirect
-	github.com/go-sql-driver/mysql v1.6.0 // indirect
+	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gomarkdown/markdown v0.0.0-20230716120725-531d2d74bc12 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
