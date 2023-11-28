@@ -14,6 +14,7 @@ import (
 
 const (
 	AppCodeEnvKey = "APPCODE"
+	IconPath      = "/home/app/icon.png"
 )
 
 type AppStruct struct {
@@ -58,6 +59,7 @@ func NewApp() *AppStruct {
 	// init api
 	App.Api = make(SiyouFaasApi)
 	App.Api.Get("/alive", Alive)
+	App.Api.Get("/icon", GetIcon)
 
 	EnableMessage(App.AppInfo.AppName, nil)
 
