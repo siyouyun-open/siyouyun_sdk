@@ -13,24 +13,29 @@ import (
 	"strconv"
 )
 
-type FileType string
+// MediaType 文件媒体类型
+type MediaType string
 
-// 偏好设置可以关注的文件类型，上半部分为独立类型文件，下半部分为混合类型文件
+// 偏好设置可以关注的文件媒体类型，上半部分为标准媒体类型，下半部分为自定义媒体类型
+// 标准媒体类型
 const (
-	FileTypeAll      FileType = "all"
-	FileTypeText     FileType = "text"
-	FileTypeImage    FileType = "image"
-	FileTypeAudio    FileType = "audio"
-	FileTypeVideo    FileType = "video"
-	FileTypeMessage  FileType = "message"
-	FileTypeCompress FileType = "compress"
+	MediaTypeText    MediaType = "text"
+	MediaTypeImage   MediaType = "image"
+	MediaTypeAudio   MediaType = "audio"
+	MediaTypeVideo   MediaType = "video"
+	MediaTypeMessage MediaType = "message"
+)
 
-	FileTypeImageVideo FileType = "image-video"
-	FileTypeDoc        FileType = "doc"
-	FileTypeBt         FileType = "bt"
-	FileTypeEbook      FileType = "ebook"
-	FileTypeSoftware   FileType = "software"
-	FileTypeOther      FileType = "other"
+// 自定义媒体类型
+const (
+	MediaTypeAll        MediaType = "all"         // 全部类型
+	MediaTypeCompress   MediaType = "compress"    // 压缩包类型
+	MediaTypeImageVideo MediaType = "image-video" // 图片+视频类型
+	MediaTypeDoc        MediaType = "doc"         // 文档类型
+	MediaTypeBt         MediaType = "bt"          // 种子类型
+	MediaTypeEbook      MediaType = "ebook"       // 电子书类型
+	MediaTypeSoftware   MediaType = "software"    // 软件包类型
+	MediaTypeOther      MediaType = "other"       // 其他类型
 )
 
 // 文件事件类型，文件创建与文件删除
@@ -71,9 +76,10 @@ type EventHolder struct {
 
 // PreferOptions 事件偏好选项
 type PreferOptions struct {
-	FileType      FileType                                  `json:"fileType"`      // 文件类型
+	MediaType     MediaType                                 `json:"mediaType"`     // 媒体类型
 	FileEventType int                                       `json:"fileEventType"` // 事件类型
 	FollowDirs    []string                                  `json:"followDirs"`    // 关注目录（不设置默认所有）
+	ExcludeExts   []string                                  `json:"excludeExts"`   // 排除的文件后缀
 	Description   string                                    `json:"description"`   // 描述
 	Priority      TaskLevel                                 `json:"priority"`      // 优先级（资源占用等级）
 	Handler       func(fs *EventFS) (ConsumeStatus, string) `json:"-"`             // 处理器
@@ -143,7 +149,7 @@ func (e *EventHolder) Listen() {
 
 // 拼接app事件code
 func (p *PreferOptions) parseToEventCode(appCode string) string {
-	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v%v", appCode, p.FileEventType, p.FileType, p.Description))))
+	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v%v", appCode, p.FileEventType, p.MediaType, p.Description))))
 }
 
 func getNats() (nc *nats.Conn) {
