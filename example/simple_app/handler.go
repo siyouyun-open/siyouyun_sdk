@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/kataras/iris/v12"
 	siyouyunsdk "github.com/siyouyun-open/siyouyun_sdk"
-	"github.com/siyouyun-open/siyouyun_sdk/restjson"
-	"github.com/siyouyun-open/siyouyun_sdk/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/gorm"
 	"io"
 )

@@ -1,7 +1,7 @@
 package siyouyunsdk
 
 import (
-	"github.com/siyouyun-open/siyouyun_sdk/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 )
 

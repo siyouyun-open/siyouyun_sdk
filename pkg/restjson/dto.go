@@ -1,8 +1,8 @@
 package restjson
 
 import (
-	"github.com/siyouyun-open/siyouyun_sdk/const"
-	"github.com/siyouyun-open/siyouyun_sdk/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )
 
 // Response 四有云响应结构体

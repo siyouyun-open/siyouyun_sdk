@@ -2,8 +2,7 @@ package gateway
 
 import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/utils"
-	"net"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"os"
 	"time"
 )
@@ -21,12 +20,12 @@ func NewStorageApi(un *utils.UserGroupNamespace) *StorageApi {
 }
 
 // Open  打开文件
-func (s StorageApi) Open(path string) (*os.File, *net.UnixConn, string, error) {
+func (s StorageApi) Open(path string) (*os.File, error) {
 	return s.storageOSApi.Open(path)
 }
 
 // OpenFile 打开或创建文件
-func (s StorageApi) OpenFile(path string, flag int, perm os.FileMode) (*os.File, *net.UnixConn, string, error) {
+func (s StorageApi) OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
 	return s.storageOSApi.OpenFile(path, flag, perm)
 }
 

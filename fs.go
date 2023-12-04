@@ -2,9 +2,9 @@ package siyouyunsdk
 
 import (
 	"github.com/kataras/iris/v12"
-	"github.com/siyouyun-open/siyouyun_sdk/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/gorm"
 	"os"
 	"time"
@@ -51,30 +51,18 @@ func (fs *FS) initAbility() {
 }
 
 // Open  打开文件
-func (fs *FS) Open(path string) (*SyyFile, error) {
-	file, conn, usfp, err := fs.api.Open(path)
-	return &SyyFile{
-		Fullpath:       path,
-		file:           file,
-		unixConn:       conn,
-		unixSocketPath: usfp,
-	}, err
+func (fs *FS) Open(path string) (*os.File, error) {
+	return fs.api.Open(path)
 }
 
 // OpenByInode 根据inode打开文件
-func (fs *FS) OpenByInode(inode int64) (*SyyFile, error) {
+func (fs *FS) OpenByInode(inode int64) (*os.File, error) {
 	return fs.Open(fs.InodeToPath(inode))
 }
 
 // OpenFile 打开或创建文件
-func (fs *FS) OpenFile(path string, flag int, perm os.FileMode) (*SyyFile, error) {
-	file, conn, usfp, err := fs.api.OpenFile(path, flag, perm)
-	return &SyyFile{
-		Fullpath:       path,
-		file:           file,
-		unixConn:       conn,
-		unixSocketPath: usfp,
-	}, err
+func (fs *FS) OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
+	return fs.api.OpenFile(path, flag, perm)
 }
 
 // MkdirAll 递归创建目录

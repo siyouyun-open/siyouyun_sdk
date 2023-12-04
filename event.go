@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/nats-io/nats.go"
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/const"
-	"github.com/siyouyun-open/siyouyun_sdk/gateway"
-	"github.com/siyouyun-open/siyouyun_sdk/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"strconv"
 )
 

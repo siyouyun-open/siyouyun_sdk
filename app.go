@@ -1,11 +1,11 @@
 package siyouyunsdk
 
 import (
-	"github.com/siyouyun-open/siyouyun_sdk/entity"
-	"github.com/siyouyun-open/siyouyun_sdk/gateway"
-	"github.com/siyouyun-open/siyouyun_sdk/mysql"
-	"github.com/siyouyun-open/siyouyun_sdk/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/internal/mysql"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"os"
@@ -20,7 +20,7 @@ const (
 type AppStruct struct {
 	AppCode  string
 	Api      SiyouFaasApi
-	AppInfo  *sdkentity.AppRegisterInfo
+	AppInfo  *sdkdto.AppRegisterInfo
 	Event    *EventHolder
 	Schedule *ScheduleHandler
 	Model    []interface{}

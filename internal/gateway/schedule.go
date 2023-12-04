@@ -3,9 +3,9 @@ package gateway
 import (
 	"errors"
 	"github.com/robfig/cron"
-	"github.com/siyouyun-open/siyouyun_sdk/const"
-	"github.com/siyouyun-open/siyouyun_sdk/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"strconv"
 	"time"
 )

@@ -2,7 +2,7 @@ package utils
 
 import (
 	"github.com/kataras/iris/v12"
-	"github.com/siyouyun-open/siyouyun_sdk/const"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"strings"
 )
 
@@ -28,16 +28,16 @@ func NewUserGroupNamespace(username, groupname, namespace string) *UserGroupName
 	}
 }
 
-func (un *UserGroupNamespace) DatabaseName() string {
-	if un.GroupName == "" {
-		un.GroupName = un.Username
+func (ugn *UserGroupNamespace) DatabaseName() string {
+	if ugn.GroupName == "" {
+		ugn.GroupName = ugn.Username
 	}
-	return sdkconst.SiyouFSMysqlDBPrefix + "_" + un.GroupName + "_" + un.Namespace
+	return sdkconst.SiyouFSMysqlDBPrefix + "_" + ugn.GroupName + "_" + ugn.Namespace
 }
 
-func (un *UserGroupNamespace) String() string {
-	if un.GroupName == "" {
-		un.GroupName = un.Username
+func (ugn *UserGroupNamespace) String() string {
+	if ugn.GroupName == "" {
+		ugn.GroupName = ugn.Username
 	}
-	return un.GroupName + "-" + un.Namespace
+	return ugn.GroupName + "-" + ugn.Namespace
 }

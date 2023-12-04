@@ -2,6 +2,7 @@ package siyouyunsdk
 
 import (
 	"gorm.io/gorm"
+	"os"
 )
 
 type EventFS struct {
@@ -32,7 +33,7 @@ func (a *AppStruct) newEventFSFromScheduleEvent(se *ScheduleEvent) *EventFS {
 }
 
 // OpenEventFile  打开事件相关文件
-func (efs *EventFS) OpenEventFile() (*SyyFile, error) {
+func (efs *EventFS) OpenEventFile() (*os.File, error) {
 	path := efs.FS.InodeToPath(efs.EventFileInode)
 	return efs.FS.Open(path)
 }

@@ -3,8 +3,8 @@ package siyouyunsdk
 import (
 	"encoding/json"
 	"github.com/nats-io/nats.go"
-	"github.com/siyouyun-open/siyouyun_sdk/gateway"
-	"github.com/siyouyun-open/siyouyun_sdk/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )
 
 type Schedule struct {

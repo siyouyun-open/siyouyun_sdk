@@ -1,6 +1,8 @@
-package sdkentity
+package sdkdto
 
-import "github.com/siyouyun-open/siyouyun_sdk/utils"
+import (
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+)
 
 type AppRegisterInfo struct {
 	AppCode     string                     `json:"appCode"`

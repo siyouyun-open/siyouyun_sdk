@@ -3,7 +3,7 @@ package siyouyunsdk
 import (
 	"bytes"
 	"github.com/kataras/iris/v12"
-	"github.com/siyouyun-open/siyouyun_sdk/restjson"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
 	"io"
 	"os"
 )
