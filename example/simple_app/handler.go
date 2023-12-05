@@ -44,6 +44,8 @@ func TestUseFile(ctx iris.Context) {
 	f1, _ := fs.Open("download-1.jpg")
 	f2, _ := appfs.Open("123")
 	io.Copy(f2, f1)
+	f1.Close()
+	f2.Close()
 }
 
 type Model struct {
