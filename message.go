@@ -86,7 +86,7 @@ func ListenMsg(mh *MessageHandlerStruct) {
 						App.setUserWithModel(ugn)
 					}
 				} else {
-					fs := App.NewAppFSFromUserNamespace(ugn)
+					fs := App.NewAppFSFromUserGroupNamespace(ugn)
 					// 获取消息正文
 					reply, content, replyToUUID := mh.Handler(fs, mes[i].Content)
 					if reply {
