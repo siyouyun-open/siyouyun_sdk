@@ -31,7 +31,7 @@ func (a *AppStruct) NewFSFromCtx(ctx iris.Context) *FS {
 	return fs
 }
 
-func (a *AppStruct) NewFSFromUserNamespace(ugn *utils.UserGroupNamespace) *FS {
+func (a *AppStruct) NewFSFromUserGroupNamespace(ugn *utils.UserGroupNamespace) *FS {
 	fs := &FS{
 		AppCodeName: a.AppCode,
 		App:         a,

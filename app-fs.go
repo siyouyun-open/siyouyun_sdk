@@ -30,9 +30,9 @@ func (a *AppStruct) NewAppFSFromCtx(ctx iris.Context) *AppFS {
 	return afs
 }
 
-func (a *AppStruct) NewAppFSFromUserNamespace(ugn *utils.UserGroupNamespace) *AppFS {
+func (a *AppStruct) NewAppFSFromUserGroupNamespace(ugn *utils.UserGroupNamespace) *AppFS {
 	afs := &AppFS{
-		fs: a.NewFSFromUserNamespace(ugn),
+		fs: a.NewFSFromUserGroupNamespace(ugn),
 	}
 	afs.appNormalPath = afs.getNormalAppPrefix()
 	afs.Ability = afs.fs.Ability
