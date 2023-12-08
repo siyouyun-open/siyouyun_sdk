@@ -16,8 +16,8 @@ type EventFS struct {
 func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
 	efs := &EventFS{
 		EventFileInode: fe.Inode,
-		FS:             a.NewFSFromUserNamespace(&fe.UGN),
-		AppFS:          a.NewAppFSFromUserNamespace(&fe.UGN),
+		FS:             a.NewFSFromUserGroupNamespace(&fe.UGN),
+		AppFS:          a.NewAppFSFromUserGroupNamespace(&fe.UGN),
 	}
 	efs.Ability = efs.FS.Ability
 	return efs
@@ -25,8 +25,8 @@ func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
 
 func (a *AppStruct) newEventFSFromScheduleEvent(se *ScheduleEvent) *EventFS {
 	efs := &EventFS{
-		FS:    a.NewFSFromUserNamespace(&se.UGN),
-		AppFS: a.NewAppFSFromUserNamespace(&se.UGN),
+		FS:    a.NewFSFromUserGroupNamespace(&se.UGN),
+		AppFS: a.NewAppFSFromUserGroupNamespace(&se.UGN),
 	}
 	efs.Ability = efs.FS.Ability
 	return efs
