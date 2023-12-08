@@ -29,11 +29,11 @@ type KVCoreApi struct {
 
 var kvCoreGatewayAddr = CoreServiceURL + "/kv"
 
-func NewKVCoreApi(appCode string, un *utils.UserGroupNamespace) *KVCoreApi {
+func NewKVCoreApi(appCode string, ugn *utils.UserGroupNamespace) *KVCoreApi {
 	return &KVCoreApi{
 		Host:    kvCoreGatewayAddr,
 		AppCode: appCode,
-		UGN:     un,
+		UGN:     ugn,
 	}
 }
 

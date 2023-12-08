@@ -22,10 +22,10 @@ type storageOSApi struct {
 	UGN  *utils.UserGroupNamespace
 }
 
-func newStorageOSApi(un *utils.UserGroupNamespace) *storageOSApi {
+func newStorageOSApi(ugn *utils.UserGroupNamespace) *storageOSApi {
 	return &storageOSApi{
 		Host: OSURL + "/storage",
-		UGN:  un,
+		UGN:  ugn,
 	}
 }
 

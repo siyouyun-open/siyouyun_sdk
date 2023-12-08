@@ -19,16 +19,16 @@ func InitHttpClient() {
 }
 
 // PostRequest 发起rest post请求
-func PostRequest[T any](un *utils.UserGroupNamespace, fullApi string, query map[string]string, body any) restjson.Response[T] {
+func PostRequest[T any](ugn *utils.UserGroupNamespace, fullApi string, query map[string]string, body any) restjson.Response[T] {
 	if query == nil {
 		query = map[string]string{}
 	}
 	header := make(map[string]string)
 	header["Accept"] = "application/json"
-	if un != nil {
-		header[sdkconst.UsernameHeader] = un.Username
-		header[sdkconst.GroupNameHeader] = un.GroupName
-		header[sdkconst.NamespaceHeader] = un.Namespace
+	if ugn != nil {
+		header[sdkconst.UsernameHeader] = ugn.Username
+		header[sdkconst.GroupNameHeader] = ugn.GroupName
+		header[sdkconst.NamespaceHeader] = ugn.Namespace
 	}
 	resp := restjson.Response[T]{}
 	req := Client.R().
@@ -46,16 +46,16 @@ func PostRequest[T any](un *utils.UserGroupNamespace, fullApi string, query map[
 }
 
 // GetRequest 发起rest get请求
-func GetRequest[T any](un *utils.UserGroupNamespace, fullApi string, query map[string]string) restjson.Response[T] {
+func GetRequest[T any](ugn *utils.UserGroupNamespace, fullApi string, query map[string]string) restjson.Response[T] {
 	if query == nil {
 		query = map[string]string{}
 	}
 	header := make(map[string]string)
 	header["Accept"] = "application/json"
-	if un != nil {
-		header[sdkconst.UsernameHeader] = un.Username
-		header[sdkconst.GroupNameHeader] = un.GroupName
-		header[sdkconst.NamespaceHeader] = un.Namespace
+	if ugn != nil {
+		header[sdkconst.UsernameHeader] = ugn.Username
+		header[sdkconst.GroupNameHeader] = ugn.GroupName
+		header[sdkconst.NamespaceHeader] = ugn.Namespace
 	}
 	resp := restjson.Response[T]{}
 	_, err := Client.R().

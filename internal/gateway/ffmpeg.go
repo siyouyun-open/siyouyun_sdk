@@ -13,10 +13,10 @@ type FFmpegOSApi struct {
 	*utils.UserGroupNamespace
 }
 
-func NewFFmpegOSApi(un *utils.UserGroupNamespace) *FFmpegOSApi {
+func NewFFmpegOSApi(ugn *utils.UserGroupNamespace) *FFmpegOSApi {
 	return &FFmpegOSApi{
 		Host:               OSURL + "/codec",
-		UserGroupNamespace: un,
+		UserGroupNamespace: ugn,
 	}
 }
 

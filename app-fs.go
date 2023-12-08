@@ -30,9 +30,9 @@ func (a *AppStruct) NewAppFSFromCtx(ctx iris.Context) *AppFS {
 	return afs
 }
 
-func (a *AppStruct) NewAppFSFromUserNamespace(un *utils.UserGroupNamespace) *AppFS {
+func (a *AppStruct) NewAppFSFromUserNamespace(ugn *utils.UserGroupNamespace) *AppFS {
 	afs := &AppFS{
-		fs: a.NewFSFromUserNamespace(un),
+		fs: a.NewFSFromUserNamespace(ugn),
 	}
 	afs.appNormalPath = afs.getNormalAppPrefix()
 	afs.Ability = afs.fs.Ability
@@ -103,7 +103,7 @@ func (afs *AppFS) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (afs *AppFS) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
+func (afs *AppFS) InodesToFileInfos(inodes ...int64) map[int64]*sdkdto.FileInfoRes {
 	return afs.fs.InodesToFileInfos(inodes...)
 }
 

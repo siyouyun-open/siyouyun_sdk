@@ -41,11 +41,11 @@ type ScheduleApi struct {
 
 var scheduleGatewayAddr = CoreServiceURL + "/schedule"
 
-func NewScheduleApi(appCode string, un *utils.UserGroupNamespace) *ScheduleApi {
+func NewScheduleApi(appCode string, ugn *utils.UserGroupNamespace) *ScheduleApi {
 	return &ScheduleApi{
 		Host:    scheduleGatewayAddr,
 		AppCode: appCode,
-		UGN:     un,
+		UGN:     ugn,
 	}
 }
 

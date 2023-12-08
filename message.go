@@ -12,10 +12,10 @@ type Message struct {
 }
 
 // SendMsg 发送消息给用户,只有权限发送给拥有此app的用户
-// un		:	用户与空间
+// ugn		:	用户与空间
 // content 	:	消息正文
-func (m *Message) SendMsg(un *utils.UserGroupNamespace, content string) error {
-	return gateway.SendMessage(un, App.AppCode, content, "")
+func (m *Message) SendMsg(ugn *utils.UserGroupNamespace, content string) error {
+	return gateway.SendMessage(ugn, App.AppCode, content, "")
 }
 
 // MessageEvent 消息在事件中传递的结构
@@ -78,15 +78,15 @@ func ListenMsg(mh *MessageHandlerStruct) {
 				panic(err)
 			}
 			for i := range mes {
-				un := utils.NewUserGroupNamespace(mes[i].UGN.Username, mes[i].UGN.GroupName, mes[i].UGN.Namespace)
+				ugn := utils.NewUserGroupNamespace(mes[i].UGN.Username, mes[i].UGN.GroupName, mes[i].UGN.Namespace)
 				if mes[i].SendByAdmin {
 					switch mes[i].Content {
 					case "autoMigrate":
 						log.Printf("mes[i].Content:%v", mes[i].Content)
-						App.setUserWithModel(un)
+						App.setUserWithModel(ugn)
 					}
 				} else {
-					fs := App.NewAppFSFromUserNamespace(un)
+					fs := App.NewAppFSFromUserNamespace(ugn)
 					// 获取消息正文
 					reply, content, replyToUUID := mh.Handler(fs, mes[i].Content)
 					if reply {
@@ -94,7 +94,7 @@ func ListenMsg(mh *MessageHandlerStruct) {
 						if replyToUUID {
 							replyUUID = mes[i].UUID
 						}
-						err = gateway.SendMessage(un, App.AppCode, content, replyUUID)
+						err = gateway.SendMessage(ugn, App.AppCode, content, replyUUID)
 						if err != nil {
 							return
 						}

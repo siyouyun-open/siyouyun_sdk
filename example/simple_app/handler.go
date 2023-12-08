@@ -10,9 +10,9 @@ import (
 	"io"
 )
 
-func TestUN(ctx iris.Context) {
-	un := utils.NewUserNamespaceFromIris(ctx)
-	ctx.JSON(restjson.SuccessResJson(fmt.Sprintf("[%v]%v-%v", ctx.Method(), un.Namespace, un.Username)))
+func TestUGN(ctx iris.Context) {
+	ugn := utils.NewUserNamespaceFromIris(ctx)
+	ctx.JSON(restjson.SuccessResJson(fmt.Sprintf("[%v]%v-%v", ctx.Method(), ugn.Namespace, ugn.Username)))
 }
 
 func TestPage(ctx iris.Context) {

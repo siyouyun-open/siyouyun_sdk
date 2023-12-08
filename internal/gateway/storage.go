@@ -12,10 +12,10 @@ type StorageApi struct {
 	*storageCoreApi
 }
 
-func NewStorageApi(un *utils.UserGroupNamespace) *StorageApi {
+func NewStorageApi(ugn *utils.UserGroupNamespace) *StorageApi {
 	return &StorageApi{
-		storageOSApi:   newStorageOSApi(un),
-		storageCoreApi: newStorageCoreApi(un),
+		storageOSApi:   newStorageOSApi(ugn),
+		storageCoreApi: newStorageCoreApi(ugn),
 	}
 }
 
@@ -75,6 +75,6 @@ func (s StorageApi) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (s StorageApi) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
+func (s StorageApi) InodesToFileInfos(inodes ...int64) map[int64]*sdkdto.FileInfoRes {
 	return s.storageCoreApi.InodesToFileInfos(inodes...)
 }

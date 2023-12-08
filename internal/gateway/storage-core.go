@@ -15,10 +15,10 @@ type storageCoreApi struct {
 
 var storageCoreGatewayAddr = OSURL + "/fs"
 
-func newStorageCoreApi(un *utils.UserGroupNamespace) *storageCoreApi {
+func newStorageCoreApi(ugn *utils.UserGroupNamespace) *storageCoreApi {
 	return &storageCoreApi{
 		Host: storageCoreGatewayAddr,
-		UGN:  un,
+		UGN:  ugn,
 	}
 }
 
@@ -53,9 +53,9 @@ func (sc storageCoreApi) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (sc storageCoreApi) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
+func (sc storageCoreApi) InodesToFileInfos(inodes ...int64) map[int64]*sdkdto.FileInfoRes {
 	api := sc.Host + "/file/infos/map/by/inodes"
-	response := restclient.PostRequest[map[int64]sdkdto.FileInfoRes](sc.UGN, api, nil, inodes)
+	response := restclient.PostRequest[map[int64]*sdkdto.FileInfoRes](sc.UGN, api, nil, inodes)
 	if response.Code != sdkconst.Success {
 		return nil
 	}

@@ -20,23 +20,23 @@ type FS struct {
 }
 
 func (a *AppStruct) NewFSFromCtx(ctx iris.Context) *FS {
-	un := utils.NewUserNamespaceFromIris(ctx)
+	ugn := utils.NewUserNamespaceFromIris(ctx)
 	fs := &FS{
 		AppCodeName: a.AppCode,
-		api:         gateway.NewStorageApi(un),
+		api:         gateway.NewStorageApi(ugn),
 		App:         a,
-		UGN:         un,
+		UGN:         ugn,
 	}
 	fs.initAbility()
 	return fs
 }
 
-func (a *AppStruct) NewFSFromUserNamespace(un *utils.UserGroupNamespace) *FS {
+func (a *AppStruct) NewFSFromUserNamespace(ugn *utils.UserGroupNamespace) *FS {
 	fs := &FS{
 		AppCodeName: a.AppCode,
 		App:         a,
-		UGN:         un,
-		api:         gateway.NewStorageApi(un),
+		UGN:         ugn,
+		api:         gateway.NewStorageApi(ugn),
 	}
 	fs.initAbility()
 	return fs
@@ -111,20 +111,11 @@ func (fs *FS) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (fs *FS) InodesToFileInfos(inodes ...int64) map[int64]sdkdto.FileInfoRes {
+func (fs *FS) InodesToFileInfos(inodes ...int64) map[int64]*sdkdto.FileInfoRes {
 	return fs.api.InodesToFileInfos(inodes...)
 }
 
 func (fs *FS) Destroy() {
-	//for s := range fs.unixConnMap {
-	//	if v, ok := fs.unixConnMap[s]; ok {
-	//		v.Close()
-	//	}
-	//	cmd := exec.Command("rm", s)
-	//	err := cmd.Run()
-	//	if err != nil {
-	//	}
-	//}
 }
 
 // Exec  fs执行sql
