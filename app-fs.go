@@ -114,3 +114,7 @@ func (afs *AppFS) Destroy() {
 func (afs *AppFS) Exec(f func(*gorm.DB) error) error {
 	return afs.fs.Exec(f)
 }
+
+func (afs *AppFS) GetUGN() *utils.UserGroupNamespace {
+	return afs.fs.UGN
+}
