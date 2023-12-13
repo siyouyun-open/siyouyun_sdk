@@ -12,7 +12,6 @@ import (
 
 // FS fs
 type FS struct {
-	AppCodeName string
 	*Ability
 	api *gateway.StorageApi
 	App *AppStruct
@@ -22,10 +21,9 @@ type FS struct {
 func (a *AppStruct) NewFSFromCtx(ctx iris.Context) *FS {
 	ugn := utils.NewUserNamespaceFromIris(ctx)
 	fs := &FS{
-		AppCodeName: a.AppCode,
-		api:         gateway.NewStorageApi(ugn),
-		App:         a,
-		UGN:         ugn,
+		api: gateway.NewStorageApi(ugn),
+		App: a,
+		UGN: ugn,
 	}
 	fs.initAbility()
 	return fs
@@ -33,10 +31,9 @@ func (a *AppStruct) NewFSFromCtx(ctx iris.Context) *FS {
 
 func (a *AppStruct) NewFSFromUserGroupNamespace(ugn *utils.UserGroupNamespace) *FS {
 	fs := &FS{
-		AppCodeName: a.AppCode,
-		App:         a,
-		UGN:         ugn,
-		api:         gateway.NewStorageApi(ugn),
+		App: a,
+		UGN: ugn,
+		api: gateway.NewStorageApi(ugn),
 	}
 	fs.initAbility()
 	return fs
@@ -124,7 +121,7 @@ func (fs *FS) Destroy() {
 
 // Exec  fs执行sql
 func (fs *FS) Exec(f func(*gorm.DB) error) error {
-	err := fs.App.DB.Transaction(func(tx *gorm.DB) (err error) {
+	err := fs.App.db.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := fs.UGN.DatabaseName()
 		if dbname == "" {
 			return

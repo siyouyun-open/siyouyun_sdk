@@ -10,6 +10,8 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"golang.org/x/exp/maps"
+	"log"
 	"strconv"
 )
 
@@ -70,7 +72,6 @@ type FileEvent struct {
 
 type EventHolder struct {
 	app        *AppStruct
-	options    []PreferOptions
 	optionsMap map[string]PreferOptions
 }
 
@@ -101,12 +102,11 @@ func (e *EventHolder) SetPrefer(options ...PreferOptions) {
 		}
 		e.optionsMap[options[i].parseToEventCode(e.app.AppCode)] = options[i]
 	}
-	e.options = append(e.options, options...)
 }
 
 // Listen 开始监听器工作
 func (e *EventHolder) Listen() {
-	if len(e.options) == 0 {
+	if len(e.optionsMap) == 0 {
 		return
 	}
 	var err error
@@ -115,18 +115,19 @@ func (e *EventHolder) Listen() {
 	if nc == nil {
 		return
 	}
-	err = registerAndGetAppEvent(e.app.AppCode, e.options)
+	err = registerAndGetAppEvent(e.app.AppCode, maps.Values(e.optionsMap))
 	if err != nil {
 		return
 	}
 	go func() {
 		_, _ = nc.Subscribe(e.app.AppCode+"_event", func(msg *nats.Msg) {
-			var fe FileEvent
 			defer func() {
 				if err := recover(); err != nil {
+					log.Printf("[PANIC] event handler panic: %v", err)
 					return
 				}
 			}()
+			var fe FileEvent
 			err := json.Unmarshal(msg.Data, &fe)
 			if err != nil {
 				return

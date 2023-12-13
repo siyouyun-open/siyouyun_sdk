@@ -19,13 +19,13 @@ const (
 
 type AppStruct struct {
 	AppCode  string
-	Api      SiyouFaasApi
-	AppInfo  *sdkdto.AppRegisterInfo
 	Event    *EventHolder
 	Schedule *ScheduleHandler
-	Model    []interface{}
+	Api      SiyouFaaSApi // app interfaces
 
-	DB *gorm.DB
+	db      *gorm.DB
+	models  []interface{}           // app table models
+	appInfo *sdkdto.AppRegisterInfo // app register info
 }
 
 var App *AppStruct
@@ -40,13 +40,13 @@ func NewApp() *AppStruct {
 	App.AppCode = os.Getenv(AppCodeEnvKey)
 
 	// get app info
-	App.AppInfo, err = gateway.GetAppInfo(App.AppCode)
+	App.appInfo, err = gateway.GetAppInfo(App.AppCode)
 	if err != nil {
 		panic(err)
 	}
 
 	// init db
-	db, _ := gorm.Open(mysql.Open(App.AppInfo.AppDSN), &gorm.Config{
+	db, _ := gorm.Open(mysql.Open(App.appInfo.AppDSN), &gorm.Config{
 		Logger: siyoumysql.NewLogger(),
 	})
 	sqlDB, _ := db.DB()
@@ -54,20 +54,21 @@ func NewApp() *AppStruct {
 	sqlDB.SetConnMaxIdleTime(time.Minute * 3)
 	sqlDB.SetMaxOpenConns(5)
 	sqlDB.SetMaxIdleConns(1)
-	App.DB = db
+	App.db = db
 
 	// init api
-	App.Api = make(SiyouFaasApi)
+	App.Api = make(SiyouFaaSApi)
 	App.Api.Get("/alive", Alive)
 	App.Api.Get("/icon", GetIcon)
 
-	EnableMessage(App.AppInfo.AppName, nil)
+	// enable message bot
+	EnableMessage(App.appInfo.AppName, nil)
 
 	return App
 }
 
 func (a *AppStruct) exec(ugn *utils.UserGroupNamespace, f func(*gorm.DB) error) error {
-	err := a.DB.Transaction(func(tx *gorm.DB) (err error) {
+	err := a.db.Transaction(func(tx *gorm.DB) (err error) {
 		dbname := ugn.DatabaseName()
 		if dbname == "" {
 			return

@@ -8,21 +8,21 @@ import (
 	"os"
 )
 
-type SiyouFaasApi map[string]func(iris.Context)
+type SiyouFaaSApi map[string]func(iris.Context)
 
-func (api SiyouFaasApi) Get(uri string, f func(iris.Context)) {
+func (api SiyouFaaSApi) Get(uri string, f func(iris.Context)) {
 	api[iris.MethodGet+" "+uri] = f
 }
 
-func (api SiyouFaasApi) Post(uri string, f func(iris.Context)) {
+func (api SiyouFaaSApi) Post(uri string, f func(iris.Context)) {
 	api[iris.MethodPost+" "+uri] = f
 }
 
-func (api SiyouFaasApi) Put(uri string, f func(iris.Context)) {
+func (api SiyouFaaSApi) Put(uri string, f func(iris.Context)) {
 	api[iris.MethodPut+" "+uri] = f
 }
 
-func (api SiyouFaasApi) Delete(uri string, f func(iris.Context)) {
+func (api SiyouFaaSApi) Delete(uri string, f func(iris.Context)) {
 	api[iris.MethodDelete+" "+uri] = f
 }
 

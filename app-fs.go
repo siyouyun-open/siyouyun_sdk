@@ -40,7 +40,7 @@ func (a *AppStruct) NewAppFSFromUserGroupNamespace(ugn *utils.UserGroupNamespace
 }
 
 func (afs *AppFS) getNormalAppPrefix() string {
-	return filepath.Join(AppPrefix, afs.fs.AppCodeName)
+	return filepath.Join(AppPrefix, afs.fs.App.AppCode)
 }
 
 // Open  打开文件

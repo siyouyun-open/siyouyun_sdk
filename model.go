@@ -8,8 +8,8 @@ import (
 
 // WithModel 自动迁移表
 func (a *AppStruct) WithModel(models ...interface{}) {
-	a.Model = append(a.Model, models...)
-	var ul = a.AppInfo.UGNList
+	a.models = append(a.models, models...)
+	var ul = a.appInfo.UGNList
 	for i := range ul {
 		_ = a.exec(&ul[i], func(db *gorm.DB) error {
 			return db.AutoMigrate(models...)
@@ -19,7 +19,7 @@ func (a *AppStruct) WithModel(models ...interface{}) {
 
 // UpdateModel 更新表（需要删除更改字段或索引时使用）
 func (a *AppStruct) UpdateModel(f func(gorm.Migrator)) {
-	var ul = a.AppInfo.UGNList
+	var ul = a.appInfo.UGNList
 	for i := range ul {
 		_ = a.exec(&ul[i], func(db *gorm.DB) error {
 			f(db.Migrator())
@@ -31,7 +31,7 @@ func (a *AppStruct) UpdateModel(f func(gorm.Migrator)) {
 // 增加用户追加建立数据表
 func (a *AppStruct) setUserWithModel(ugn *utils.UserGroupNamespace) {
 	_ = a.exec(ugn, func(db *gorm.DB) error {
-		err := db.AutoMigrate(App.Model...)
+		err := db.AutoMigrate(a.models...)
 		if err != nil {
 			log.Printf(err.Error())
 			return err
