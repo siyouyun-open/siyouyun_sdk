@@ -2,7 +2,7 @@ package sdkdto
 
 type FileInfoRes struct {
 	Id         int64  `json:"id"`
-	Inode      int64  `json:"inode"`
+	Inode      uint64 `json:"inode"`
 	Name       string `json:"name"`
 	Size       int64  `json:"size"`
 	ParentPath string `json:"parentPath"`
@@ -17,10 +17,6 @@ type FileInfoRes struct {
 	Mtime      int64  `json:"mtime"`
 	Ctime      int64  `json:"ctime"`
 
-	// 下述需要计算的属性
-	HasThumbnail bool `json:"hasThumbnail"`
-	// 扩展名
-	Extension string `json:"extension"`
 	// 是否是文件夹
 	IsDir bool `json:"isDir"`
 	// 文件详情的事件列表
