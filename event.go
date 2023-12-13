@@ -61,11 +61,11 @@ const (
 )
 
 type FileEvent struct {
-	Inode    int64  `json:"inode"`
-	FullPath string `json:"fullPath"`
-	Action   int    `json:"action"`
-
-	UGN utils.UserGroupNamespace `json:"ugn"`
+	UGN        *utils.UserGroupNamespace `json:"ugn"`
+	Inode      uint64                    `json:"inode"`
+	FullPath   string                    `json:"fullPath"`
+	Action     int                       `json:"action"`
+	WithAvatar bool                      `json:"withAvatar"` // 事件是否通过替身处理
 }
 
 type EventHolder struct {

@@ -6,7 +6,7 @@ import (
 )
 
 type EventFS struct {
-	EventFileInode int64
+	EventFileInode uint64
 	EventFilePath  string
 	FS             *FS
 	AppFS          *AppFS
@@ -16,8 +16,9 @@ type EventFS struct {
 func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
 	efs := &EventFS{
 		EventFileInode: fe.Inode,
-		FS:             a.NewFSFromUserGroupNamespace(&fe.UGN),
-		AppFS:          a.NewAppFSFromUserGroupNamespace(&fe.UGN),
+		EventFilePath:  fe.FullPath,
+		FS:             a.NewFSFromUserGroupNamespace(fe.UGN),
+		AppFS:          a.NewAppFSFromUserGroupNamespace(fe.UGN),
 	}
 	efs.Ability = efs.FS.Ability
 	return efs

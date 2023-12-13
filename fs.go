@@ -56,13 +56,17 @@ func (fs *FS) Open(path string) (*os.File, error) {
 }
 
 // OpenByInode 根据inode打开文件
-func (fs *FS) OpenByInode(inode int64) (*os.File, error) {
+func (fs *FS) OpenByInode(inode uint64) (*os.File, error) {
 	return fs.Open(fs.InodeToPath(inode))
 }
 
 // OpenFile 打开或创建文件
 func (fs *FS) OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
 	return fs.api.OpenFile(path, flag, perm)
+}
+
+func (fs *FS) OpenAvatarFile(path string) (*os.File, error) {
+	return fs.api.OpenAvatarFile(path)
 }
 
 // MkdirAll 递归创建目录
@@ -96,22 +100,22 @@ func (fs *FS) EnsureDirExist(ps ...string) {
 }
 
 // PathToInode path转inode
-func (fs *FS) PathToInode(path string) int64 {
+func (fs *FS) PathToInode(path string) uint64 {
 	return fs.api.PathToInode(path)
 }
 
 // InodeToPath inode转path
-func (fs *FS) InodeToPath(inode int64) string {
+func (fs *FS) InodeToPath(inode uint64) string {
 	return fs.api.InodeToPath(inode)
 }
 
 // InodeToFileInfo inode转fileInfo
-func (fs *FS) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
+func (fs *FS) InodeToFileInfo(inode uint64) *sdkdto.FileInfoRes {
 	return fs.api.InodeToFileInfo(inode)
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (fs *FS) InodesToFileInfos(inodes ...int64) map[int64]*sdkdto.FileInfoRes {
+func (fs *FS) InodesToFileInfos(inodes ...uint64) map[uint64]*sdkdto.FileInfoRes {
 	return fs.api.InodesToFileInfos(inodes...)
 }
 

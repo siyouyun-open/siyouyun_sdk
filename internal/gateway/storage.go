@@ -29,6 +29,11 @@ func (s StorageApi) OpenFile(path string, flag int, perm os.FileMode) (*os.File,
 	return s.storageOSApi.OpenFile(path, flag, perm)
 }
 
+// OpenAvatarFile 打开替身文件
+func (s StorageApi) OpenAvatarFile(path string) (*os.File, error) {
+	return s.storageOSApi.OpenAvatarFile(path)
+}
+
 // MkdirAll 递归创建目录
 func (s StorageApi) MkdirAll(path string) error {
 	return s.storageOSApi.MkdirAll(path)
@@ -60,21 +65,21 @@ func (s StorageApi) EnsureDirExist(ps ...string) {
 }
 
 // PathToInode path转inode
-func (s StorageApi) PathToInode(path string) int64 {
+func (s StorageApi) PathToInode(path string) uint64 {
 	return s.storageCoreApi.PathToInode(path)
 }
 
 // InodeToPath inode转path
-func (s StorageApi) InodeToPath(inode int64) string {
+func (s StorageApi) InodeToPath(inode uint64) string {
 	return s.storageCoreApi.InodeToPath(inode)
 }
 
 // InodeToFileInfo inode转fileInfo
-func (s StorageApi) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
+func (s StorageApi) InodeToFileInfo(inode uint64) *sdkdto.FileInfoRes {
 	return s.storageCoreApi.InodeToFileInfo(inode)
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (s StorageApi) InodesToFileInfos(inodes ...int64) map[int64]*sdkdto.FileInfoRes {
+func (s StorageApi) InodesToFileInfos(inodes ...uint64) map[uint64]*sdkdto.FileInfoRes {
 	return s.storageCoreApi.InodesToFileInfos(inodes...)
 }

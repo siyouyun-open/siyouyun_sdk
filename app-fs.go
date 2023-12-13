@@ -88,22 +88,22 @@ func (afs *AppFS) EnsureDirExist(ps ...string) {
 }
 
 // PathToInode path转inode
-func (afs *AppFS) PathToInode(path string) int64 {
+func (afs *AppFS) PathToInode(path string) uint64 {
 	return afs.fs.PathToInode(filepath.Join(afs.appNormalPath, path))
 }
 
 // InodeToPath inode转path
-func (afs *AppFS) InodeToPath(inode int64) string {
+func (afs *AppFS) InodeToPath(inode uint64) string {
 	return afs.fs.InodeToPath(inode)
 }
 
 // InodeToFileInfo inode转fileInfo
-func (afs *AppFS) InodeToFileInfo(inode int64) *sdkdto.FileInfoRes {
+func (afs *AppFS) InodeToFileInfo(inode uint64) *sdkdto.FileInfoRes {
 	return afs.fs.InodeToFileInfo(inode)
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (afs *AppFS) InodesToFileInfos(inodes ...int64) map[int64]*sdkdto.FileInfoRes {
+func (afs *AppFS) InodesToFileInfos(inodes ...uint64) map[uint64]*sdkdto.FileInfoRes {
 	return afs.fs.InodesToFileInfos(inodes...)
 }
 

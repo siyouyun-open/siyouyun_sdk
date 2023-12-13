@@ -63,38 +63,40 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 	if err != nil {
 		return nil, err
 	}
+	return parseUnixFdResponse(conn)
+}
 
-	// 接收打开文件响应
-	bufp := utils.ReadBufPool.Get().(*[]byte)
-	buf := *bufp
-	defer utils.ReadBufPool.Put(bufp)
-	oob := make([]byte, 32)
-	n, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
+// OpenAvatarFile 打开替身文件
+func (sos *storageOSApi) OpenAvatarFile(path string) (*os.File, error) {
+	laddr, err := net.ResolveUnixAddr("unix", UnixSocketFile)
+	if err != nil {
+		panic(err)
+	}
+	conn, err := net.DialUnix("unix", nil, laddr)
 	if err != nil {
 		return nil, err
 	}
-	// 处理响应数据
-	var resp restjson.Response[any]
-	_ = json.Unmarshal(buf[:n], &resp)
-	if resp.Code != sdkconst.Success {
-		return nil, errors.New(resp.Msg)
+	defer conn.Close()
+
+	// 发送打开文件请求
+	param := sdkdto.UnixOpenFileParam{
+		Name:       path,
+		Flag:       os.O_RDONLY,
+		Perm:       0,
+		WithAvatar: true,
 	}
-	// 解出SocketControlMessage数组
-	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
+	marshal, _ := json.Marshal(param)
+	req := &sdkdto.UnixFileOperateReq{
+		UGN:      sos.UGN,
+		Operator: sdkdto.UnixOpen,
+		Param:    marshal,
+	}
+	encoder := json.NewEncoder(conn)
+	err = encoder.Encode(req)
 	if err != nil {
 		return nil, err
 	}
-	if len(scms) == 0 {
-		return nil, errors.New("打开文件失败")
-	}
-	// 从SocketControlMessage中得到UnixRights
-	fds, err := syscall.ParseUnixRights(&(scms[0]))
-	if err != nil {
-		return nil, err
-	}
-	// os.NewFile()将文件描述符转为 *os.File对象
-	f := os.NewFile(uintptr(fds[0]), "")
-	return f, nil
+	return parseUnixFdResponse(conn)
 }
 
 // MkdirAll 递归创建目录
@@ -195,4 +197,38 @@ func (sos *storageOSApi) FileExists(path string) bool {
 func (sos *storageOSApi) EnsureDirExist(ps ...string) {
 	api := sos.Host + "/fs/ensure/dir/exist"
 	_ = restclient.PostRequest[any](sos.UGN, api, map[string]string{"paths": strings.Join(ps, ",")}, nil)
+}
+
+func parseUnixFdResponse(conn *net.UnixConn) (*os.File, error) {
+	// 接收打开文件响应
+	bufp := utils.ReadBufPool.Get().(*[]byte)
+	buf := *bufp
+	defer utils.ReadBufPool.Put(bufp)
+	oob := make([]byte, 32)
+	n, oobn, _, _, err := conn.ReadMsgUnix(buf, oob)
+	if err != nil {
+		return nil, err
+	}
+	// 处理响应数据
+	var resp restjson.Response[any]
+	_ = json.Unmarshal(buf[:n], &resp)
+	if resp.Code != sdkconst.Success {
+		return nil, errors.New(resp.Msg)
+	}
+	// 解出SocketControlMessage数组
+	scms, err := syscall.ParseSocketControlMessage(oob[:oobn])
+	if err != nil {
+		return nil, err
+	}
+	if len(scms) == 0 {
+		return nil, errors.New("打开文件失败")
+	}
+	// 从SocketControlMessage中得到UnixRights
+	fds, err := syscall.ParseUnixRights(&(scms[0]))
+	if err != nil {
+		return nil, err
+	}
+	// os.NewFile()将文件描述符转为 *os.File对象
+	f := os.NewFile(uintptr(fds[0]), "")
+	return f, nil
 }

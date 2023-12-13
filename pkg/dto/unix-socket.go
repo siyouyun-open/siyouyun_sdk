@@ -22,7 +22,8 @@ type UnixFileOperateReq struct {
 
 // UnixOpenFileParam unix打开文件参数
 type UnixOpenFileParam struct {
-	Name string      `json:"name"`
-	Flag int         `json:"flag"`
-	Perm os.FileMode `json:"perm"`
+	Name       string      `json:"name"`
+	Flag       int         `json:"flag"`
+	Perm       os.FileMode `json:"perm"`
+	WithAvatar bool        `json:"withAvatar"` // 是否获取替身文件
 }
