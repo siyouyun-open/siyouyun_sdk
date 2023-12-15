@@ -7,28 +7,8 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )
 
-var messageGatewayAddr = CoreServiceURL + "/msg"
-
-func RegisterMessageRobot(appCode, robotDesc string) error {
-	api := messageGatewayAddr + "/robot/register"
-	response := restclient.PostRequest[any](
-		nil,
-		api,
-		map[string]string{
-			"appCode":   appCode,
-			"robotCode": appCode + "_msg", // todo use uuid
-			"robotDesc": robotDesc,
-		},
-		nil,
-	)
-	if response.Code != sdkconst.Success {
-		return errors.New(response.Msg)
-	}
-	return nil
-}
-
 func SendMessage(ugn *utils.UserGroupNamespace, appCode, content, replyUUID string) error {
-	api := messageGatewayAddr + "/robot/session/send"
+	api := CoreServiceURL + "/msg/robot/session/send"
 	response := restclient.PostRequest[any](
 		ugn,
 		api,

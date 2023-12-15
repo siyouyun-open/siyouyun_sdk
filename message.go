@@ -49,13 +49,13 @@ type MessageHandlerStruct struct {
 //		- replyToUUID	:	回复时是否引用用户消息
 func EnableMessage(desc string, handler func(appfs *AppFS, content string) (reply bool, replyContent string, replyToUUID bool)) error {
 	// 注册机器人
-	err := gateway.RegisterMessageRobot(App.AppCode, desc)
+	err := gateway.RegisterAppMessageRobot(App.AppCode, desc)
 	if err != nil {
 		return err
 	}
 	// 开启监听
 	ListenMsg(&MessageHandlerStruct{
-		RobotCode: App.AppCode + "_msg", // todo use uuid
+		RobotCode: App.AppCode + "_msg",
 		RobotDesc: desc,
 		Handler:   handler,
 	})

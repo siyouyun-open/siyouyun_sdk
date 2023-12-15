@@ -7,10 +7,8 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 )
 
-var appGatewayAddr = CoreServiceURL + "/faas"
-
 func GetAppInfo(code string) (*sdkdto.AppRegisterInfo, error) {
-	api := appGatewayAddr + "/app/info"
+	api := OSURL + "/faas/app/info"
 	response := restclient.GetRequest[sdkdto.AppRegisterInfo](nil, api, map[string]string{"appCode": code})
 	if response.Code != sdkconst.Success {
 		return nil, errors.New(response.Msg)
@@ -20,4 +18,22 @@ func GetAppInfo(code string) (*sdkdto.AppRegisterInfo, error) {
 		return nil, nil
 	}
 	return response.Data, nil
+}
+
+func RegisterAppMessageRobot(appCode, robotDesc string) error {
+	api := OSURL + "/faas/app/robot/register"
+	response := restclient.PostRequest[any](
+		nil,
+		api,
+		map[string]string{
+			"appCode":   appCode,
+			"robotCode": appCode + "_msg",
+			"robotDesc": robotDesc,
+		},
+		nil,
+	)
+	if response.Code != sdkconst.Success {
+		return errors.New(response.Msg)
+	}
+	return nil
 }

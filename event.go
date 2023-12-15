@@ -87,7 +87,12 @@ type PreferOptions struct {
 }
 
 // WithEventHolder 初始化事件监听器
-func (a *AppStruct) WithEventHolder() {
+func (a *AppStruct) WithEventHolder(nc ...*nats.Conn) {
+	if len(nc) == 0 {
+		a.nc = getNats()
+	} else {
+		a.nc = nc[0]
+	}
 	a.Event = &EventHolder{
 		app:        a,
 		optionsMap: make(map[string]PreferOptions),
@@ -111,11 +116,11 @@ func (e *EventHolder) Listen() {
 	}
 	var err error
 	//启动监听event
-	nc := getNats()
+	nc := e.app.nc
 	if nc == nil {
 		return
 	}
-	err = registerAndGetAppEvent(e.app.AppCode, maps.Values(e.optionsMap))
+	err = registerAppEvent(e.app.AppCode, maps.Values(e.optionsMap))
 	if err != nil {
 		return
 	}
@@ -155,23 +160,15 @@ func (p *PreferOptions) parseToEventCode(appCode string) string {
 
 func getNats() (nc *nats.Conn) {
 	var err error
-	if detectVir() {
-		nc, err = nats.Connect("nats://10.62.0.1:4222")
-	} else {
-		nc, err = nats.Connect("nats://127.0.0.1:4222")
-	}
+	nc, err = nats.Connect("nats://10.62.0.1:4222")
 	if err != nil {
 		return nil
 	}
 	return nc
 }
 
-func detectVir() bool {
-	return true
-}
-
-func registerAndGetAppEvent(appCode string, options []PreferOptions) error {
-	api := gateway.CoreServiceURL + "/faas/app/event/register"
+func registerAppEvent(appCode string, options []PreferOptions) error {
+	api := gateway.OSURL + "/faas/app/event/register"
 	response := restclient.PostRequest[any](
 		nil,
 		api,

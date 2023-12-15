@@ -1,6 +1,7 @@
 package siyouyunsdk
 
 import (
+	"github.com/nats-io/nats.go"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/mysql"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
@@ -24,12 +25,14 @@ type AppStruct struct {
 	Api      SiyouFaaSApi // app interfaces
 
 	db      *gorm.DB
+	nc      *nats.Conn
 	models  []interface{}           // app table models
 	appInfo *sdkdto.AppRegisterInfo // app register info
 }
 
 var App *AppStruct
 
+// NewApp new standard app
 func NewApp() *AppStruct {
 	var err error
 	App = &AppStruct{}
