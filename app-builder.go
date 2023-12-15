@@ -1,7 +1,6 @@
 package siyouyunsdk
 
 import (
-	"github.com/nats-io/nats.go"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"gorm.io/gorm"
@@ -24,7 +23,11 @@ func NewAppBuilder(appCode string) *AppBuilder {
 	// get app info
 	if appCode == "" {
 		appCode = os.Getenv(AppCodeEnvKey)
+		if appCode == "" {
+			panic("appCode empty")
+		}
 	}
+	customApp.AppCode = appCode
 	customApp.appInfo, err = gateway.GetAppInfo(appCode)
 	if err != nil {
 		panic(err)
@@ -36,11 +39,6 @@ func NewAppBuilder(appCode string) *AppBuilder {
 
 func (b *AppBuilder) WithApi(api SiyouFaaSApi) *AppBuilder {
 	b.app.Api = api
-	return b
-}
-
-func (b *AppBuilder) WithNC(nc *nats.Conn) *AppBuilder {
-	b.app.nc = nc
 	return b
 }
 

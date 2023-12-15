@@ -122,7 +122,7 @@ func (e *EventHolder) Listen() {
 	}
 	err = registerAppEvent(e.app.AppCode, maps.Values(e.optionsMap))
 	if err != nil {
-		return
+		panic(err)
 	}
 	go func() {
 		_, _ = nc.Subscribe(e.app.AppCode+"_event", func(msg *nats.Msg) {
