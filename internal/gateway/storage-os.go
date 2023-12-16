@@ -24,7 +24,7 @@ type storageOSApi struct {
 
 func newStorageOSApi(ugn *utils.UserGroupNamespace) *storageOSApi {
 	return &storageOSApi{
-		Host: OSURL + "/storage",
+		Host: OSURL + "/fs",
 		UGN:  ugn,
 	}
 }
@@ -101,7 +101,7 @@ func (sos *storageOSApi) OpenAvatarFile(path string) (*os.File, error) {
 
 // MkdirAll 递归创建目录
 func (sos *storageOSApi) MkdirAll(path string) error {
-	api := sos.Host + "/fs/mkdir"
+	api := sos.Host + "/mkdir"
 	response := restclient.PostRequest[any](
 		sos.UGN,
 		api,
@@ -119,7 +119,7 @@ func (sos *storageOSApi) MkdirAll(path string) error {
 
 // Remove 删除文件
 func (sos *storageOSApi) Remove(path string) error {
-	api := sos.Host + "/fs/remove"
+	api := sos.Host + "/remove"
 	response := restclient.PostRequest[any](
 		sos.UGN,
 		api,
@@ -137,7 +137,7 @@ func (sos *storageOSApi) Remove(path string) error {
 
 // Rename 重命名文件
 func (sos *storageOSApi) Rename(oldPath, newPath string) error {
-	api := sos.Host + "/fs/rename"
+	api := sos.Host + "/rename"
 	response := restclient.PostRequest[any](
 		sos.UGN,
 		api,
@@ -157,7 +157,7 @@ func (sos *storageOSApi) Rename(oldPath, newPath string) error {
 
 // Chtimes 修改文件时间
 func (sos *storageOSApi) Chtimes(path string, atime time.Time, mtime time.Time) error {
-	api := sos.Host + "/fs/chtimes"
+	api := sos.Host + "/chtimes"
 	response := restclient.PostRequest[any](
 		sos.UGN,
 		api,
@@ -177,7 +177,7 @@ func (sos *storageOSApi) Chtimes(path string, atime time.Time, mtime time.Time) 
 
 // FileExists 文件是否存在
 func (sos *storageOSApi) FileExists(path string) bool {
-	api := sos.Host + "/fs/file/exist"
+	api := sos.Host + "/file/exist"
 	response := restclient.PostRequest[bool](
 		sos.UGN,
 		api,
@@ -195,7 +195,7 @@ func (sos *storageOSApi) FileExists(path string) bool {
 
 // EnsureDirExist 确保目录存在
 func (sos *storageOSApi) EnsureDirExist(ps ...string) {
-	api := sos.Host + "/fs/ensure/dir/exist"
+	api := sos.Host + "/ensure/dir/exist"
 	_ = restclient.PostRequest[any](sos.UGN, api, map[string]string{"paths": strings.Join(ps, ",")}, nil)
 }
 
