@@ -60,8 +60,8 @@ func (s StorageApi) FileExists(path string) bool {
 }
 
 // EnsureDirExist 确保目录存在
-func (s StorageApi) EnsureDirExist(ps ...string) {
-	s.storageOSApi.EnsureDirExist(ps...)
+func (s StorageApi) EnsureDirExist(path string) {
+	s.storageOSApi.EnsureDirExist(path)
 }
 
 // PathToInode path转inode

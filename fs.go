@@ -92,8 +92,8 @@ func (fs *FS) FileExists(path string) bool {
 }
 
 // EnsureDirExist 确保目录存在
-func (fs *FS) EnsureDirExist(ps ...string) {
-	fs.api.EnsureDirExist(ps...)
+func (fs *FS) EnsureDirExist(path string) {
+	fs.api.EnsureDirExist(path)
 }
 
 // PathToInode path转inode

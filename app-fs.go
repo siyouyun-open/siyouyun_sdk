@@ -79,12 +79,8 @@ func (afs *AppFS) FileExists(path string) bool {
 }
 
 // EnsureDirExist 确保目录存在
-func (afs *AppFS) EnsureDirExist(ps ...string) {
-	var nps []string
-	for i := range ps {
-		nps = append(nps, filepath.Join(afs.appNormalPath, ps[i]))
-	}
-	afs.fs.EnsureDirExist(nps...)
+func (afs *AppFS) EnsureDirExist(path string) {
+	afs.fs.EnsureDirExist(filepath.Join(afs.appNormalPath, path))
 }
 
 // PathToInode path转inode

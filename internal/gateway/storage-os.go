@@ -10,9 +10,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"net"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -101,13 +99,12 @@ func (sos *storageOSApi) OpenAvatarFile(path string) (*os.File, error) {
 
 // MkdirAll 递归创建目录
 func (sos *storageOSApi) MkdirAll(path string) error {
-	api := sos.Host + "/mkdir"
+	api := sos.Host + "/mkdir/all"
 	response := restclient.PostRequest[any](
 		sos.UGN,
 		api,
 		map[string]string{
-			"parentPath": filepath.Dir(path),
-			"name":       filepath.Base(path),
+			"path": path,
 		},
 		nil,
 	)
@@ -124,8 +121,7 @@ func (sos *storageOSApi) Remove(path string) error {
 		sos.UGN,
 		api,
 		map[string]string{
-			"parentPath": filepath.Dir(path),
-			"name":       filepath.Base(path),
+			"path": path,
 		},
 		nil,
 	)
@@ -142,10 +138,8 @@ func (sos *storageOSApi) Rename(oldPath, newPath string) error {
 		sos.UGN,
 		api,
 		map[string]string{
-			"parentPath":    filepath.Dir(oldPath),
-			"name":          filepath.Base(oldPath),
-			"newParentPath": filepath.Base(newPath),
-			"newName":       filepath.Base(newPath),
+			"oldpath": oldPath,
+			"newpath": newPath,
 		},
 		nil,
 	)
@@ -162,10 +156,9 @@ func (sos *storageOSApi) Chtimes(path string, atime time.Time, mtime time.Time) 
 		sos.UGN,
 		api,
 		map[string]string{
-			"parentPath": filepath.Dir(path),
-			"name":       filepath.Base(path),
-			"atime":      strconv.FormatInt(atime.UnixMilli(), 10),
-			"mtime":      strconv.FormatInt(mtime.UnixMilli(), 10),
+			"path":  path,
+			"atime": strconv.FormatInt(atime.UnixMilli(), 10),
+			"mtime": strconv.FormatInt(mtime.UnixMilli(), 10),
 		},
 		nil,
 	)
@@ -182,8 +175,7 @@ func (sos *storageOSApi) FileExists(path string) bool {
 		sos.UGN,
 		api,
 		map[string]string{
-			"parentPath": filepath.Dir(path),
-			"name":       filepath.Base(path),
+			"path": path,
 		},
 		nil,
 	)
@@ -194,9 +186,9 @@ func (sos *storageOSApi) FileExists(path string) bool {
 }
 
 // EnsureDirExist 确保目录存在
-func (sos *storageOSApi) EnsureDirExist(ps ...string) {
+func (sos *storageOSApi) EnsureDirExist(path string) {
 	api := sos.Host + "/ensure/dir/exist"
-	_ = restclient.PostRequest[any](sos.UGN, api, map[string]string{"paths": strings.Join(ps, ",")}, nil)
+	_ = restclient.PostRequest[any](sos.UGN, api, map[string]string{"path": path}, nil)
 }
 
 func parseUnixFdResponse(conn *net.UnixConn) (*os.File, error) {
