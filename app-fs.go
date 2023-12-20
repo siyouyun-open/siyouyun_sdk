@@ -58,9 +58,14 @@ func (afs *AppFS) MkdirAll(path string) error {
 	return afs.fs.MkdirAll(filepath.Join(afs.appNormalPath, path))
 }
 
-// Remove 删除文件
+// Remove 删除文件或空目录
 func (afs *AppFS) Remove(path string) error {
 	return afs.fs.Remove(filepath.Join(afs.appNormalPath, path))
+}
+
+// RemoveAll 删除文件或文件夹（包括子目录）
+func (afs *AppFS) RemoveAll(path string) error {
+	return afs.fs.RemoveAll(filepath.Join(afs.appNormalPath, path))
 }
 
 // Rename 重命名文件
