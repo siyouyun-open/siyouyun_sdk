@@ -131,6 +131,23 @@ func (sos *storageOSApi) Remove(path string) error {
 	return nil
 }
 
+// RemoveAll 删除文件夹
+func (sos *storageOSApi) RemoveAll(path string) error {
+	api := sos.Host + "/remove/all"
+	response := restclient.PostRequest[any](
+		sos.UGN,
+		api,
+		map[string]string{
+			"path": path,
+		},
+		nil,
+	)
+	if response.Code != sdkconst.Success {
+		return errors.New(response.Msg)
+	}
+	return nil
+}
+
 // Rename 重命名文件
 func (sos *storageOSApi) Rename(oldPath, newPath string) error {
 	api := sos.Host + "/rename"

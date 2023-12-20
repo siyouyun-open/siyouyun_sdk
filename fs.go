@@ -71,9 +71,14 @@ func (fs *FS) MkdirAll(path string) error {
 	return fs.api.MkdirAll(path)
 }
 
-// Remove 删除文件
+// Remove 删除文件或空目录
 func (fs *FS) Remove(path string) error {
 	return fs.api.Remove(path)
+}
+
+// RemoveAll 删除文件或文件夹（包括子目录）
+func (fs *FS) RemoveAll(path string) error {
+	return fs.api.RemoveAll(path)
 }
 
 // Rename 重命名文件
