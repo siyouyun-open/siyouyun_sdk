@@ -54,6 +54,9 @@ func EnableMessage(desc string, handler func(appfs *AppFS, content string) (repl
 		return err
 	}
 	// 开启监听
+	if handler == nil {
+		return nil
+	}
 	ListenMsg(&MessageHandlerStruct{
 		RobotCode: App.AppCode + "_msg",
 		RobotDesc: desc,
