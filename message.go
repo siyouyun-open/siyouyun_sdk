@@ -8,6 +8,8 @@ import (
 	"log"
 )
 
+var nc *nats.Conn
+
 type Message struct {
 }
 
@@ -48,15 +50,7 @@ type MessageHandlerStruct struct {
 //		- replyContent	:	回复的正文
 //		- replyToUUID	:	回复时是否引用用户消息
 func EnableMessage(desc string, handler func(appfs *AppFS, content string) (reply bool, replyContent string, replyToUUID bool)) error {
-	// 注册机器人
-	err := gateway.RegisterAppMessageRobot(App.AppCode, desc)
-	if err != nil {
-		return err
-	}
 	// 开启监听
-	if handler == nil {
-		return nil
-	}
 	ListenMsg(&MessageHandlerStruct{
 		RobotCode: App.AppCode + "_msg",
 		RobotDesc: desc,
@@ -66,10 +60,58 @@ func EnableMessage(desc string, handler func(appfs *AppFS, content string) (repl
 }
 
 func ListenMsg(mh *MessageHandlerStruct) {
-	nc := getNats()
 	go func() {
-		log.Printf("start ListenMsg at:%v", mh.RobotCode)
+		log.Printf("start ListenBizMsg at:%v", mh.RobotCode)
 		_, _ = nc.Subscribe(mh.RobotCode, func(msg *nats.Msg) {
+			var mes []MessageEvent
+			defer func() {
+				if err := recover(); err != nil {
+					log.Printf("nats panic:[%v]-[%v]", err, mes)
+				}
+			}()
+			err := json.Unmarshal(msg.Data, &mes)
+			if err != nil {
+				panic(err)
+			}
+			for i := range mes {
+				ugn := utils.NewUserGroupNamespace(mes[i].UGN.Username, mes[i].UGN.GroupName, mes[i].UGN.Namespace)
+				if !mes[i].SendByAdmin {
+					fs := App.NewAppFSFromUserGroupNamespace(ugn)
+					// 获取消息正文
+					reply, content, replyToUUID := mh.Handler(fs, mes[i].Content)
+					if reply {
+						var replyUUID string
+						if replyToUUID {
+							replyUUID = mes[i].UUID
+						}
+						err = gateway.SendMessage(ugn, App.AppCode, content, replyUUID)
+						if err != nil {
+							return
+						}
+					}
+				}
+			}
+			return
+		})
+	}()
+}
+
+func enableSysMessage(desc string) error {
+	// 注册机器人
+	err := gateway.RegisterAppMessageRobot(App.AppCode, desc)
+	if err != nil {
+		return err
+	}
+	// 开启监听
+	listenSysMsg(App.AppCode + "_msg")
+	return nil
+}
+
+func listenSysMsg(robotCode string) {
+	nc = getNats()
+	go func() {
+		log.Printf("start ListenSysMsg at:%v", robotCode)
+		_, _ = nc.Subscribe(robotCode, func(msg *nats.Msg) {
 			var mes []MessageEvent
 			defer func() {
 				if err := recover(); err != nil {
@@ -87,20 +129,6 @@ func ListenMsg(mh *MessageHandlerStruct) {
 					case "autoMigrate":
 						log.Printf("mes[i].Content:%v", mes[i].Content)
 						App.setUserWithModel(ugn)
-					}
-				} else {
-					fs := App.NewAppFSFromUserGroupNamespace(ugn)
-					// 获取消息正文
-					reply, content, replyToUUID := mh.Handler(fs, mes[i].Content)
-					if reply {
-						var replyUUID string
-						if replyToUUID {
-							replyUUID = mes[i].UUID
-						}
-						err = gateway.SendMessage(ugn, App.AppCode, content, replyUUID)
-						if err != nil {
-							return
-						}
 					}
 				}
 			}

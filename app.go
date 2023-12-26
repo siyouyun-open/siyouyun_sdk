@@ -65,7 +65,7 @@ func NewApp() *AppStruct {
 	App.Api.Get("/icon", GetIcon)
 
 	// enable message bot
-	EnableMessage(App.appInfo.AppName, nil)
+	enableSysMessage(App.appInfo.AppName)
 
 	return App
 }
