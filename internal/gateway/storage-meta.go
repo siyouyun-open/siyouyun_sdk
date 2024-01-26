@@ -8,22 +8,22 @@ import (
 	"strconv"
 )
 
-type storageCoreApi struct {
+type storageMetaApi struct {
 	Host string
 	UGN  *utils.UserGroupNamespace
 }
 
 var storageCoreGatewayAddr = OSURL + "/fs"
 
-func newStorageCoreApi(ugn *utils.UserGroupNamespace) *storageCoreApi {
-	return &storageCoreApi{
+func newStorageMetaApi(ugn *utils.UserGroupNamespace) *storageMetaApi {
+	return &storageMetaApi{
 		Host: storageCoreGatewayAddr,
 		UGN:  ugn,
 	}
 }
 
 // PathToInode path转inode
-func (sc storageCoreApi) PathToInode(path string) uint64 {
+func (sc storageMetaApi) PathToInode(path string) uint64 {
 	api := sc.Host + "/path/to/inode"
 	response := restclient.PostRequest[uint64](sc.UGN, api, map[string]string{"path": path}, nil)
 	if response.Code != sdkconst.Success {
@@ -33,7 +33,7 @@ func (sc storageCoreApi) PathToInode(path string) uint64 {
 }
 
 // InodeToPath inode转path
-func (sc storageCoreApi) InodeToPath(inode uint64) string {
+func (sc storageMetaApi) InodeToPath(inode uint64) string {
 	api := sc.Host + "/inode/to/path"
 	response := restclient.PostRequest[string](sc.UGN, api, map[string]string{"inode": strconv.FormatUint(inode, 10)}, nil)
 	if response.Code != sdkconst.Success {
@@ -43,7 +43,7 @@ func (sc storageCoreApi) InodeToPath(inode uint64) string {
 }
 
 // InodeToFileInfo inode转fileInfo
-func (sc storageCoreApi) InodeToFileInfo(inode uint64) *sdkdto.FileInfoRes {
+func (sc storageMetaApi) InodeToFileInfo(inode uint64) *sdkdto.FileInfoRes {
 	api := sc.Host + "/file/info/by/inode"
 	response := restclient.PostRequest[sdkdto.FileInfoRes](sc.UGN, api, map[string]string{"inode": strconv.FormatUint(inode, 10)}, nil)
 	if response.Code != sdkconst.Success {
@@ -53,7 +53,7 @@ func (sc storageCoreApi) InodeToFileInfo(inode uint64) *sdkdto.FileInfoRes {
 }
 
 // InodesToFileInfos inodes转fileInfos
-func (sc storageCoreApi) InodesToFileInfos(inodes ...uint64) map[uint64]*sdkdto.FileInfoRes {
+func (sc storageMetaApi) InodesToFileInfos(inodes ...uint64) map[uint64]*sdkdto.FileInfoRes {
 	api := sc.Host + "/file/infos/map/by/inodes"
 	response := restclient.PostRequest[map[uint64]*sdkdto.FileInfoRes](sc.UGN, api, nil, inodes)
 	if response.Code != sdkconst.Success {

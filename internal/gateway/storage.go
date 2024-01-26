@@ -9,13 +9,13 @@ import (
 
 type StorageApi struct {
 	*storageOSApi
-	*storageCoreApi
+	*storageMetaApi
 }
 
 func NewStorageApi(ugn *utils.UserGroupNamespace) *StorageApi {
 	return &StorageApi{
 		storageOSApi:   newStorageOSApi(ugn),
-		storageCoreApi: newStorageCoreApi(ugn),
+		storageMetaApi: newStorageMetaApi(ugn),
 	}
 }
 
@@ -71,20 +71,20 @@ func (s StorageApi) EnsureDirExist(path string) {
 
 // PathToInode path转inode
 func (s StorageApi) PathToInode(path string) uint64 {
-	return s.storageCoreApi.PathToInode(path)
+	return s.storageMetaApi.PathToInode(path)
 }
 
 // InodeToPath inode转path
 func (s StorageApi) InodeToPath(inode uint64) string {
-	return s.storageCoreApi.InodeToPath(inode)
+	return s.storageMetaApi.InodeToPath(inode)
 }
 
 // InodeToFileInfo inode转fileInfo
 func (s StorageApi) InodeToFileInfo(inode uint64) *sdkdto.FileInfoRes {
-	return s.storageCoreApi.InodeToFileInfo(inode)
+	return s.storageMetaApi.InodeToFileInfo(inode)
 }
 
 // InodesToFileInfos inodes转fileInfos
 func (s StorageApi) InodesToFileInfos(inodes ...uint64) map[uint64]*sdkdto.FileInfoRes {
-	return s.storageCoreApi.InodesToFileInfos(inodes...)
+	return s.storageMetaApi.InodesToFileInfos(inodes...)
 }
