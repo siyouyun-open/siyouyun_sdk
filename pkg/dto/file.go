@@ -1,23 +1,16 @@
 package sdkdto
 
 type FileInfoRes struct {
-	Id          int64  `json:"id"`
-	Inode       uint64 `json:"inode"`
-	Name        string `json:"name"`
-	Size        int64  `json:"size"`
-	ParentInode uint64 `json:"parentInode"`
-	ParentPath  string `json:"parentPath"`
-	FullPath    string `json:"fullPath"`
-	Md51        string `json:"md51"`
-	Md52        string `json:"md52"`
-	Md53        string `json:"md53"`
-	Mime        string `json:"mime"`
-	Owner       string `json:"owner"`
-	Atime       int64  `json:"atime"`
-	Mtime       int64  `json:"mtime"`
-	Ctime       int64  `json:"ctime"`
-	// 是否有替身
-	HasAvatar bool `json:"hasAvatar"`
-	// 是否是文件夹
-	IsDir bool `json:"isDir"`
+	Id          uint64 `json:"id"`          // 文件inode
+	Name        string `json:"name"`        // 文件名称
+	IsDir       bool   `json:"isDir"`       // 是否是文件夹
+	ParentInode uint64 `json:"parentInode"` // 父级inode
+	ParentPath  string `json:"parentPath"`  // 父级路径
+	FullPath    string `json:"fullPath"`    // 全路径
+	Mime        string `json:"mime"`        // 文件媒体类型
+	Atime       int64  `json:"atime"`       // access time
+	Mtime       int64  `json:"mtime"`       // modify time
+	Ctime       int64  `json:"ctime"`       // change time
+	Size        int64  `json:"size"`        // 文件大小
+	HasAvatar   bool   `json:"hasAvatar"`   // 是否有替身
 }
