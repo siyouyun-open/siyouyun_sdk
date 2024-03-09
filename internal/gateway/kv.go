@@ -27,7 +27,7 @@ type KVCoreApi struct {
 	UGN     *utils.UserGroupNamespace
 }
 
-var kvCoreGatewayAddr = CoreServiceURL + "/kv"
+var kvCoreGatewayAddr = CoreServiceURL + "/faas/kv"
 
 func NewKVCoreApi(appCode string, ugn *utils.UserGroupNamespace) *KVCoreApi {
 	return &KVCoreApi{
