@@ -131,6 +131,9 @@ func (sa *ScheduleApi) CronUpdate(eventId int64, c string) error {
 
 func checkCron(c string) bool {
 	s, err := cron.Parse(c)
+	if err != nil {
+		return false
+	}
 	t1 := s.Next(time.Now())
 	t2 := s.Next(t1)
 	// fixme : simple check duration
