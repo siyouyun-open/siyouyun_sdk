@@ -44,6 +44,7 @@ func (fs *FS) initAbility() {
 	fs.Ability.KV = fs.NewKV()
 	fs.Ability.FFmpeg = fs.NewFFmpeg()
 	fs.Ability.Schedule = fs.NewSchedule()
+	fs.Ability.AI = fs.NewAIHelperApi()
 	fs.Ability.Message = new(Message)
 }
 

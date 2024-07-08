@@ -5,4 +5,5 @@ type Ability struct {
 	FFmpeg   *FFmpeg
 	Schedule *Schedule
 	Message  *Message
+	AI       *AI
 }
