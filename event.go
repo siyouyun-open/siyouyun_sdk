@@ -89,7 +89,8 @@ type PreferOptions struct {
 // WithEventHolder 初始化事件监听器
 func (a *AppStruct) WithEventHolder(nc ...*nats.Conn) {
 	if len(nc) == 0 {
-		a.nc = getNats()
+		c, _ := nats.Connect("nats://10.62.0.1:4222")
+		a.nc = c
 	} else {
 		a.nc = nc[0]
 	}
@@ -156,15 +157,6 @@ func (e *EventHolder) Listen() {
 // 拼接app事件code
 func (p *PreferOptions) parseToEventCode(appCode string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v%v", appCode, p.FileEventType, p.MediaType, p.Description))))
-}
-
-func getNats() (nc *nats.Conn) {
-	var err error
-	nc, err = nats.Connect("nats://10.62.0.1:4222")
-	if err != nil {
-		return nil
-	}
-	return nc
 }
 
 func registerAppEvent(appCode string, options []PreferOptions) error {

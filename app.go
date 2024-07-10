@@ -1,7 +1,9 @@
 package siyouyunsdk
 
 import (
+	"encoding/json"
 	"github.com/nats-io/nats.go"
+	"github.com/siyouyun-open/siyouyun_sdk/internal/ability"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/mysql"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
@@ -9,6 +11,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"log"
 	"os"
 	"time"
 )
@@ -19,10 +22,10 @@ const (
 )
 
 type AppStruct struct {
-	AppCode  string
-	Event    *EventHolder
-	Schedule *ScheduleHandler
-	Api      SiyouFaaSApi // app interfaces
+	AppCode string
+	Event   *EventHolder
+	Ability *Ability     // app ability
+	Api     SiyouFaaSApi // app interfaces
 
 	db      *gorm.DB
 	nc      *nats.Conn
@@ -59,15 +62,64 @@ func NewApp() *AppStruct {
 	sqlDB.SetMaxIdleConns(1)
 	App.db = db
 
+	// init ability
+	App.Ability = &Ability{}
+
 	// init api
 	App.Api = make(SiyouFaaSApi)
 	App.Api.Get("/alive", Alive)
 	App.Api.Get("/icon", GetIcon)
 
-	// enable message bot
-	enableSysMessage(App.appInfo.AppName)
+	// listen sys message
+	App.listenSysMsg()
 
 	return App
+}
+
+func (a *AppStruct) Destroy() {
+	a.Ability.Destroy()
+	sqlDB, err := a.db.DB()
+	if err == nil {
+		_ = sqlDB.Close()
+	}
+	a.nc.Close()
+}
+
+func (a *AppStruct) listenSysMsg() {
+	// 注册应用消息
+	err := gateway.RegisterAppMessageRobot(a.AppCode, a.appInfo.AppName)
+	if err != nil {
+		log.Printf("[ERROR] RegisterAppMessageRobot err: %v", err)
+		return
+	}
+	robotCode := a.AppCode + "_msg"
+	// 开启监听
+	go func() {
+		log.Printf("[INFO] start ListenSysMsg at:%v", robotCode)
+		_, _ = a.nc.Subscribe(robotCode, func(msg *nats.Msg) {
+			var mes []ability.MessageEvent
+			defer func() {
+				if err := recover(); err != nil {
+					log.Printf("nats panic:[%v]-[%v]", err, mes)
+				}
+			}()
+			err := json.Unmarshal(msg.Data, &mes)
+			if err != nil {
+				panic(err)
+			}
+			for i := range mes {
+				ugn := utils.NewUserGroupNamespace(mes[i].UGN.Username, mes[i].UGN.GroupName, mes[i].UGN.Namespace)
+				if mes[i].SendByAdmin {
+					switch mes[i].Content {
+					case "autoMigrate":
+						log.Printf("[INFO] autoMigrate: %v", mes[i].Content)
+						a.setUserWithModel(ugn)
+					}
+				}
+			}
+			return
+		})
+	}()
 }
 
 func (a *AppStruct) exec(ugn *utils.UserGroupNamespace, f func(*gorm.DB) error) error {

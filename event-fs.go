@@ -1,6 +1,7 @@
 package siyouyunsdk
 
 import (
+	"github.com/siyouyun-open/siyouyun_sdk/internal/ability"
 	"gorm.io/gorm"
 	"os"
 )
@@ -22,7 +23,7 @@ func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
 	return efs
 }
 
-func (a *AppStruct) newEventFSFromScheduleEvent(se *ScheduleEvent) *EventFS {
+func (a *AppStruct) newEventFSFromScheduleEvent(se *ability.ScheduleEvent) *EventFS {
 	efs := &EventFS{
 		FS:    a.NewFSFromUserGroupNamespace(&se.UGN),
 		AppFS: a.NewAppFSFromUserGroupNamespace(&se.UGN),

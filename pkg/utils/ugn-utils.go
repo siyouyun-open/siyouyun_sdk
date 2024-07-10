@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/kataras/iris/v12"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	"path/filepath"
 	"strings"
 )
 
@@ -26,6 +27,13 @@ func NewUserGroupNamespace(username, groupname, namespace string) *UserGroupName
 		GroupName: groupname,
 		Namespace: namespace,
 	}
+}
+
+func (ugn *UserGroupNamespace) GetRealPrefix() string {
+	if ugn.GroupName == "" {
+		ugn.GroupName = ugn.Username
+	}
+	return filepath.Join(sdkconst.SiyouFSMountPrefix, sdkconst.UserSpacePrefix+ugn.GroupName, ugn.Namespace)
 }
 
 func (ugn *UserGroupNamespace) DatabaseName() string {

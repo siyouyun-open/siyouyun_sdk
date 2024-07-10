@@ -25,7 +25,6 @@ func (a *AppStruct) NewFSFromCtx(ctx iris.Context) *FS {
 		App: a,
 		UGN: ugn,
 	}
-	fs.initAbility()
 	return fs
 }
 
@@ -35,17 +34,7 @@ func (a *AppStruct) NewFSFromUserGroupNamespace(ugn *utils.UserGroupNamespace) *
 		UGN: ugn,
 		api: gateway.NewStorageApi(ugn),
 	}
-	fs.initAbility()
 	return fs
-}
-
-func (fs *FS) initAbility() {
-	fs.Ability = new(Ability)
-	fs.Ability.KV = fs.NewKV()
-	fs.Ability.FFmpeg = fs.NewFFmpeg()
-	fs.Ability.Schedule = fs.NewSchedule()
-	fs.Ability.AI = fs.NewAIHelperApi()
-	fs.Ability.Message = new(Message)
 }
 
 // Open  打开文件
