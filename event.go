@@ -77,13 +77,13 @@ type EventHolder struct {
 
 // PreferOptions 事件偏好选项
 type PreferOptions struct {
-	MediaType     MediaType                                 `json:"mediaType"`     // 媒体类型
-	FileEventType int                                       `json:"fileEventType"` // 事件类型
-	FollowDirs    []string                                  `json:"followDirs"`    // 关注目录（不设置默认所有）
-	ExcludeExts   []string                                  `json:"excludeExts"`   // 排除的文件后缀
-	Description   string                                    `json:"description"`   // 描述
-	Priority      TaskLevel                                 `json:"priority"`      // 优先级（资源占用等级）
-	Handler       func(fs *EventFS) (ConsumeStatus, string) `json:"-"`             // 处理器
+	MediaType     MediaType                                   `json:"mediaType"`     // 媒体类型
+	FileEventType int                                         `json:"fileEventType"` // 事件类型
+	FollowDirs    []string                                    `json:"followDirs"`    // 关注目录（不设置默认所有）
+	ExcludeExts   []string                                    `json:"excludeExts"`   // 排除的文件后缀
+	Description   string                                      `json:"description"`   // 描述
+	Priority      TaskLevel                                   `json:"priority"`      // 优先级（资源占用等级）
+	Handler       func(fe *FileEvent) (ConsumeStatus, string) `json:"-"`             // 处理器
 }
 
 // WithEventHolder 初始化事件监听器
@@ -139,12 +139,10 @@ func (e *EventHolder) Listen() {
 				return
 			}
 			eventCode := msg.Header.Get("eventCode")
-			eventfs := e.app.newEventFSFromFileEvent(&fe)
 
 			// 异步执行具体任务
 			go func() {
-				cs, m := e.optionsMap[eventCode].Handler(eventfs)
-				eventfs.Destroy()
+				cs, m := e.optionsMap[eventCode].Handler(&fe)
 				var resMsg = nats.NewMsg(msg.Reply)
 				resMsg.Data = []byte(m)
 				resMsg.Header.Set("status", strconv.Itoa(int(cs)))
@@ -160,7 +158,7 @@ func (p *PreferOptions) parseToEventCode(appCode string) string {
 }
 
 func registerAppEvent(appCode string, options []PreferOptions) error {
-	api := gateway.OSURL + "/faas/app/event/register"
+	api := gateway.OSServiceURL + "/faas/app/event/register"
 	response := restclient.PostRequest[any](
 		nil,
 		api,

@@ -18,8 +18,10 @@ func NewAppBuilder(appCode string) *AppBuilder {
 	customApp := &AppStruct{}
 
 	// init the necessary things
+
 	// init http client
 	restclient.InitHttpClient()
+
 	// get app info
 	if appCode == "" {
 		appCode = os.Getenv(AppCodeEnvKey)
@@ -32,6 +34,10 @@ func NewAppBuilder(appCode string) *AppBuilder {
 	if err != nil {
 		panic(err)
 	}
+
+	// init ability
+	App.Ability = &Ability{}
+
 	return &AppBuilder{
 		app: customApp,
 	}

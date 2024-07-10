@@ -2,7 +2,6 @@ package ability
 
 import (
 	"errors"
-	siyouyunsdk "github.com/siyouyun-open/siyouyun_sdk"
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
@@ -18,7 +17,7 @@ type Schedule struct {
 
 type ScheduleEventHandler struct {
 	Name    string
-	Handler func(fs *siyouyunsdk.EventFS, se *ScheduleEvent)
+	Handler func(se *ScheduleEvent)
 }
 
 type ScheduleEvent struct {

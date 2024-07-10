@@ -13,7 +13,7 @@ type storageMetaApi struct {
 	UGN  *utils.UserGroupNamespace
 }
 
-var storageCoreGatewayAddr = OSURL + "/fs"
+var storageCoreGatewayAddr = OSServiceURL + "/fs"
 
 func newStorageMetaApi(ugn *utils.UserGroupNamespace) *storageMetaApi {
 	return &storageMetaApi{

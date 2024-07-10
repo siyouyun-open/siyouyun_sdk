@@ -8,7 +8,7 @@ import (
 )
 
 func GetAppInfo(code string) (*sdkdto.AppRegisterInfo, error) {
-	api := OSURL + "/faas/app/info"
+	api := OSServiceURL + "/faas/app/info"
 	response := restclient.GetRequest[sdkdto.AppRegisterInfo](nil, api, map[string]string{"appCode": code})
 	if response.Code != sdkconst.Success {
 		return nil, errors.New(response.Msg)
@@ -21,7 +21,7 @@ func GetAppInfo(code string) (*sdkdto.AppRegisterInfo, error) {
 }
 
 func RegisterAppMessageRobot(appCode, robotDesc string) error {
-	api := OSURL + "/faas/app/robot/register"
+	api := OSServiceURL + "/faas/app/robot/register"
 	response := restclient.PostRequest[any](
 		nil,
 		api,

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/nats-io/nats.go"
-	"github.com/siyouyun-open/siyouyun_sdk/internal/ability"
+	"github.com/siyouyun-open/siyouyun_sdk/ability"
 	"log"
 )
 
@@ -25,6 +25,13 @@ type Ability struct {
 	schedule *ability.Schedule // schedule remind
 	message  *ability.Message  // message bot
 	ai       *ability.AI       // ai inference
+	fs       *ability.FS       // fs file handler
+}
+
+// WithFS add fs support
+func (a *AppStruct) WithFS() {
+	a.Ability.fs = ability.NewFS(&a.AppCode, a.db)
+	log.Printf("[INFO] [%v] ability is supported", a.Ability.fs.Name())
 }
 
 // WithKV add kv support
@@ -62,9 +69,7 @@ func (a *AppStruct) WithScheduleEvent() {
 			if h, ok := a.Ability.schedule.Handler[se.Name]; !ok {
 				return
 			} else {
-				eventfs := a.newEventFSFromScheduleEvent(&se)
-				h.Handler(eventfs, &se)
-				eventfs.Destroy()
+				h.Handler(&se)
 			}
 			return
 		})
@@ -81,6 +86,13 @@ func (a *AppStruct) WithMessage() {
 func (a *AppStruct) WithAI() {
 	a.Ability.ai = ability.NewAI()
 	log.Printf("[INFO] [%v] ability is supported", a.Ability.ai.Name())
+}
+
+func (a *Ability) FS() (*ability.FS, error) {
+	if a.kv == nil {
+		return nil, abilityNotEnableErr
+	}
+	return a.fs, nil
 }
 
 func (a *Ability) KV() (*ability.KV, error) {

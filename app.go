@@ -3,7 +3,7 @@ package siyouyunsdk
 import (
 	"encoding/json"
 	"github.com/nats-io/nats.go"
-	"github.com/siyouyun-open/siyouyun_sdk/internal/ability"
+	"github.com/siyouyun-open/siyouyun_sdk/ability"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/mysql"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
@@ -64,6 +64,7 @@ func NewApp() *AppStruct {
 
 	// init ability
 	App.Ability = &Ability{}
+	App.WithFS()
 
 	// init api
 	App.Api = make(SiyouFaaSApi)
