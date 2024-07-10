@@ -38,7 +38,6 @@ func (f *FS) newCommonFS(ugn *utils.UserGroupNamespace) *SyyFS {
 		db:  f.db,
 		api: gateway.NewStorageApi(ugn),
 	}
-
 }
 
 func (f *FS) NewFSFromCtx(ctx iris.Context) GenericFS {

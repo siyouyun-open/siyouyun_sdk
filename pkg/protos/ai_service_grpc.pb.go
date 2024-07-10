@@ -4,7 +4,7 @@
 // - protoc             v5.26.1
 // source: ai_service.proto
 
-package protos
+package sdkprotos
 
 import (
 	context "context"

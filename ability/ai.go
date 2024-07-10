@@ -2,7 +2,7 @@ package ability
 
 import (
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/protos"
+	sdkprotos "github.com/siyouyun-open/siyouyun_sdk/pkg/protos"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
@@ -10,7 +10,7 @@ import (
 
 type AI struct {
 	conn *grpc.ClientConn
-	protos.AIServiceClient
+	sdkprotos.AIServiceClient
 }
 
 func NewAI() *AI {
@@ -21,7 +21,7 @@ func NewAI() *AI {
 	}
 	return &AI{
 		conn:            conn,
-		AIServiceClient: protos.NewAIServiceClient(conn),
+		AIServiceClient: sdkprotos.NewAIServiceClient(conn),
 	}
 }
 

@@ -36,7 +36,7 @@ func NewAppBuilder(appCode string) *AppBuilder {
 	}
 
 	// init ability
-	App.Ability = &Ability{}
+	customApp.Ability = &Ability{}
 
 	return &AppBuilder{
 		app: customApp,

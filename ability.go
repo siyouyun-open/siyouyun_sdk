@@ -88,11 +88,8 @@ func (a *AppStruct) WithAI() {
 	log.Printf("[INFO] [%v] ability is supported", a.Ability.ai.Name())
 }
 
-func (a *Ability) FS() (*ability.FS, error) {
-	if a.kv == nil {
-		return nil, abilityNotEnableErr
-	}
-	return a.fs, nil
+func (a *Ability) FS() *ability.FS {
+	return a.fs
 }
 
 func (a *Ability) KV() (*ability.KV, error) {

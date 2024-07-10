@@ -79,11 +79,12 @@ func NewApp() *AppStruct {
 
 func (a *AppStruct) Destroy() {
 	a.Ability.Destroy()
-	sqlDB, err := a.db.DB()
-	if err == nil {
-		_ = sqlDB.Close()
+	if a.db != nil {
+		sqlDB, err := a.db.DB()
+		if err == nil {
+			_ = sqlDB.Close()
+		}
 	}
-	a.nc.Close()
 }
 
 func (a *AppStruct) listenSysMsg() {
