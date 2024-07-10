@@ -10,7 +10,6 @@ type EventFS struct {
 	FileEvent *FileEvent
 	FS        *FS
 	AppFS     *AppFS
-	*Ability
 }
 
 func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
@@ -19,7 +18,6 @@ func (a *AppStruct) newEventFSFromFileEvent(fe *FileEvent) *EventFS {
 		FS:        a.NewFSFromUserGroupNamespace(fe.UGN),
 		AppFS:     a.NewAppFSFromUserGroupNamespace(fe.UGN),
 	}
-	efs.Ability = efs.FS.Ability
 	return efs
 }
 
@@ -28,7 +26,6 @@ func (a *AppStruct) newEventFSFromScheduleEvent(se *ability.ScheduleEvent) *Even
 		FS:    a.NewFSFromUserGroupNamespace(&se.UGN),
 		AppFS: a.NewAppFSFromUserGroupNamespace(&se.UGN),
 	}
-	efs.Ability = efs.FS.Ability
 	return efs
 }
 

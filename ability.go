@@ -73,7 +73,7 @@ func (a *AppStruct) WithScheduleEvent() {
 
 // WithMessage add message support
 func (a *AppStruct) WithMessage() {
-	a.Ability.message = ability.NewMessage(a.nc)
+	a.Ability.message = ability.NewMessage(&a.AppCode, a.nc)
 	log.Printf("[INFO] [%v] ability is supported", a.Ability.message.Name())
 }
 

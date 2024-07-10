@@ -12,7 +12,6 @@ import (
 
 // FS fs
 type FS struct {
-	*Ability
 	api *gateway.StorageApi
 	App *AppStruct
 	UGN *utils.UserGroupNamespace

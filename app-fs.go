@@ -18,7 +18,6 @@ const (
 type AppFS struct {
 	appNormalPath string
 	fs            *FS
-	*Ability
 }
 
 func (a *AppStruct) NewAppFSFromCtx(ctx iris.Context) *AppFS {
@@ -26,7 +25,6 @@ func (a *AppStruct) NewAppFSFromCtx(ctx iris.Context) *AppFS {
 		fs: a.NewFSFromCtx(ctx),
 	}
 	afs.appNormalPath = afs.getNormalAppPrefix()
-	afs.Ability = afs.fs.Ability
 	return afs
 }
 
@@ -35,7 +33,6 @@ func (a *AppStruct) NewAppFSFromUserGroupNamespace(ugn *utils.UserGroupNamespace
 		fs: a.NewFSFromUserGroupNamespace(ugn),
 	}
 	afs.appNormalPath = afs.getNormalAppPrefix()
-	afs.Ability = afs.fs.Ability
 	return afs
 }
 

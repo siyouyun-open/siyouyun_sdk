@@ -3,20 +3,34 @@ package ability
 import (
 	"encoding/json"
 	"github.com/nats-io/nats.go"
-	"github.com/siyouyun-open/siyouyun_sdk"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"log"
+	"regexp"
+	"sync"
 )
 
+type handler func(ugn *utils.UserGroupNamespace, content string) (reply bool, replyContent string, replyToUUID bool)
+
 type Message struct {
-	nc *nats.Conn
+	appCode *string
+	nc      *nats.Conn
+
+	mu                 sync.Mutex
+	triggerPhrasePerls map[string]string
+	handlers           map[string]handler
 }
 
-func NewMessage(nc *nats.Conn) *Message {
-	return &Message{
-		nc: nc,
+func NewMessage(appCode *string, nc *nats.Conn) *Message {
+	m := &Message{
+		appCode:            appCode,
+		nc:                 nc,
+		mu:                 sync.Mutex{},
+		triggerPhrasePerls: make(map[string]string),
+		handlers:           make(map[string]handler),
 	}
+	m.enableListener()
+	return m
 }
 
 func (m *Message) Name() string {
@@ -30,7 +44,43 @@ func (m *Message) Close() {
 // ugn		:	用户与空间
 // content 	:	消息正文
 func (m *Message) SendMsg(ugn *utils.UserGroupNamespace, content string) error {
-	return gateway.SendMessage(ugn, siyouyunsdk.App.AppCode, content, "")
+	return gateway.SendMessage(ugn, *m.appCode, content, "")
+}
+
+// AddHandler 添加消息机器人处理器
+// desc:
+//
+//	消息机器人的功能描述
+//
+// triggerPhrasePerl:
+//
+//	触发处理器的短语模式正则
+//
+// handler func(content string) (reply bool, replyContent string, replyToUUID bool):
+//
+//	入参:
+//		- content 用户发送到机器人的消息正文
+//	返回值:
+//		- reply 		:	是否需要回复
+//		- replyContent	:	回复的正文
+//		- replyToUUID	:	回复时是否引用用户消息
+func (m *Message) AddHandler(desc string, triggerPhrasePerl string, handler func(ugn *utils.UserGroupNamespace, content string) (reply bool, replyContent string, replyToUUID bool)) {
+	if desc == "" {
+		// 处理器命名不能为空
+		return
+	}
+	if triggerPhrasePerl == "" {
+		// 触发条件不能为空
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.handlers[desc]; ok {
+		return
+	} else {
+		m.handlers[desc] = handler
+		m.triggerPhrasePerls[desc] = triggerPhrasePerl
+	}
 }
 
 // MessageEvent 消息在事件中传递的结构
@@ -43,39 +93,12 @@ type MessageEvent struct {
 	SendByAdmin bool `json:"sendByAdmin"`
 }
 
-type MessageHandlerStruct struct {
-	RobotCode string                                                                                             `json:"robotCode"`
-	RobotDesc string                                                                                             `json:"robotDesc"`
-	Handler   func(appfs *siyouyunsdk.AppFS, content string) (reply bool, replyContent string, replyToUUID bool) `json:"-"`
-}
-
-// EnableMessage 开启消息机器人
-// desc:
-//
-//	消息机器人的功能描述
-//
-// handler func(content string) (reply bool, replyContent string, replyToUUID bool):
-//
-//	入参:
-//		- content 用户发送到机器人的消息正文
-//	返回值:
-//		- reply 		:	是否需要回复
-//		- replyContent	:	回复的正文
-//		- replyToUUID	:	回复时是否引用用户消息
-func (m *Message) EnableMessage(desc string, handler func(appfs *siyouyunsdk.AppFS, content string) (reply bool, replyContent string, replyToUUID bool)) error {
-	// 开启监听
-	m.ListenMsg(&MessageHandlerStruct{
-		RobotCode: siyouyunsdk.App.AppCode + "_msg",
-		RobotDesc: desc,
-		Handler:   handler,
-	})
-	return nil
-}
-
-func (m *Message) ListenMsg(mh *MessageHandlerStruct) {
+// 开启监听器
+func (m *Message) enableListener() {
+	robotCode := *m.appCode + "_msg"
 	go func() {
-		log.Printf("start ListenBizMsg at:%v", mh.RobotCode)
-		_, _ = m.nc.Subscribe(mh.RobotCode, func(msg *nats.Msg) {
+		log.Printf("start ListenBizMsg at:%v", robotCode)
+		_, _ = m.nc.Subscribe(robotCode, func(msg *nats.Msg) {
 			var mes []MessageEvent
 			defer func() {
 				if err := recover(); err != nil {
@@ -84,27 +107,39 @@ func (m *Message) ListenMsg(mh *MessageHandlerStruct) {
 			}()
 			err := json.Unmarshal(msg.Data, &mes)
 			if err != nil {
-				panic(err)
+				return
 			}
 			for i := range mes {
 				ugn := utils.NewUserGroupNamespace(mes[i].UGN.Username, mes[i].UGN.GroupName, mes[i].UGN.Namespace)
 				if !mes[i].SendByAdmin {
-					fs := siyouyunsdk.App.NewAppFSFromUserGroupNamespace(ugn)
-					// 获取消息正文
-					reply, content, replyToUUID := mh.Handler(fs, mes[i].Content)
-					if reply {
-						var replyUUID string
-						if replyToUUID {
-							replyUUID = mes[i].UUID
-						}
-						err = gateway.SendMessage(ugn, siyouyunsdk.App.AppCode, content, replyUUID)
+					var handlers []handler
+					for i1 := range m.triggerPhrasePerls {
+						// 解析正文匹配那个正则处理器
+						match, err := regexp.Match(m.triggerPhrasePerls[i1], []byte(mes[i].Content))
 						if err != nil {
-							return
+							continue
+						}
+						if match {
+							if _, ok := m.handlers[i1]; ok {
+								handlers = append(handlers, m.handlers[i1])
+							}
+						}
+					}
+					for i2 := range handlers {
+						reply, content, replyToUUID := handlers[i2](ugn, mes[i].Content)
+						if reply {
+							var replyUUID string
+							if replyToUUID {
+								replyUUID = mes[i].UUID
+							}
+							err = gateway.SendMessage(ugn, *m.appCode, content, replyUUID)
+							if err != nil {
+								continue
+							}
 						}
 					}
 				}
 			}
-			return
 		})
 	}()
 }
