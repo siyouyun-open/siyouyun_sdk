@@ -104,9 +104,9 @@ func (a *AppStruct) listenSysMsg() {
 					log.Printf("nats panic:[%v]-[%v]", err, mes)
 				}
 			}()
-			err := json.Unmarshal(msg.Data, &mes)
+			err = json.Unmarshal(msg.Data, &mes)
 			if err != nil {
-				panic(err)
+				return
 			}
 			for i := range mes {
 				ugn := utils.NewUserGroupNamespace(mes[i].UGN.Username, mes[i].UGN.GroupName, mes[i].UGN.Namespace)
