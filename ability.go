@@ -26,6 +26,7 @@ type Ability struct {
 	message  *ability.Message  // message bot
 	ai       *ability.AI       // ai inference
 	fs       *ability.FS       // fs file handler
+	milvus   *ability.Milvus   // milvus db
 }
 
 // WithFS add fs support
@@ -46,8 +47,8 @@ func (a *AppStruct) WithFFmpeg() {
 	log.Printf("[INFO] [%v] ability is supported", a.Ability.ffmpeg.Name())
 }
 
-// WithScheduleEvent add schedule support
-func (a *AppStruct) WithScheduleEvent() {
+// WithSchedule add schedule support
+func (a *AppStruct) WithSchedule() {
 	a.Ability.schedule = ability.NewSchedule(&a.AppCode)
 	log.Printf("[INFO] [%v] ability is supported", a.Ability.schedule.Name())
 	//启动监听event
@@ -86,6 +87,17 @@ func (a *AppStruct) WithMessage() {
 func (a *AppStruct) WithAI() {
 	a.Ability.ai = ability.NewAI()
 	log.Printf("[INFO] [%v] ability is supported", a.Ability.ai.Name())
+}
+
+// WithMilvus add milvus support
+func (a *AppStruct) WithMilvus() {
+	var err error
+	a.Ability.milvus, err = ability.NewMilvus(&a.AppCode)
+	if err != nil {
+		log.Printf("[ERROR] [%v] ability enable err: %v", a.Ability.milvus.Name(), err)
+		return
+	}
+	log.Printf("[INFO] [%v] ability is supported", a.Ability.milvus.Name())
 }
 
 func (a *Ability) FS() *ability.FS {
@@ -127,10 +139,30 @@ func (a *Ability) AI() (*ability.AI, error) {
 	return a.ai, nil
 }
 
+func (a *Ability) Milvus() (*ability.Milvus, error) {
+	if a.milvus == nil {
+		return nil, abilityNotEnableErr
+	}
+	return a.milvus, nil
+}
+
 func (a *Ability) Destroy() {
-	a.kv.Close()
-	a.ffmpeg.Close()
-	a.schedule.Close()
-	a.message.Close()
-	a.ai.Close()
+	if a.kv != nil {
+		a.kv.Close()
+	}
+	if a.ffmpeg != nil {
+		a.ffmpeg.Close()
+	}
+	if a.schedule != nil {
+		a.schedule.Close()
+	}
+	if a.message != nil {
+		a.message.Close()
+	}
+	if a.ai != nil {
+		a.ai.Close()
+	}
+	if a.milvus != nil {
+		a.milvus.Close()
+	}
 }
