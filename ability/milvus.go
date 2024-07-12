@@ -57,50 +57,48 @@ func (m *Milvus) GenPartitionName(ugn *utils.UserGroupNamespace) string {
 }
 
 // LoadAppCollection load app collection and set the expiration time
-func (m *Milvus) LoadAppCollection(ugn *utils.UserGroupNamespace, collectionName string, expireTime ...time.Duration) error {
+func (m *Milvus) LoadAppCollection(ugn *utils.UserGroupNamespace, collectionName string, expireTime ...time.Duration) (err error) {
 	if m.Client == nil {
 		return merr.ErrServiceUnavailable
-	}
-	partitionNames := []string{m.GenPartitionName(ugn)}
-	state, err := m.GetLoadState(context.Background(), collectionName, partitionNames)
-	if err != nil {
-		return err
-	}
-	if state == entity.LoadStateNotExist {
-		return merr.ErrPartitionNotFound
 	}
 
 	// finally set the collection expiration time
 	defer func() {
-		if len(expireTime) > 0 {
+		if len(expireTime) > 0 && err == nil {
 			m.setExpireTimer(ugn, collectionName, expireTime[0])
 		}
 	}()
 
-	if state == entity.LoadStateLoaded {
-		return nil
-	}
-	if state == entity.LoadStateLoading {
-		// waiting collection loaded
-		var maxWaitCount = 10
-		for i := 0; i < maxWaitCount; i++ {
-			state, err = m.GetLoadState(context.Background(), collectionName, partitionNames)
+	var partitionNames = []string{m.GenPartitionName(ugn)}
+	var maxLoopCount = 10
+	var state entity.LoadState
+	for i := 0; i < maxLoopCount; i++ {
+		state, err = m.GetLoadState(context.Background(), collectionName, partitionNames)
+		if err != nil {
+			return
+		}
+		switch state {
+		case entity.LoadStateLoaded:
+			// partition already loaded
+			return
+		case entity.LoadStateNotExist:
+			// partition not found
+			err = m.CreatePartition(context.Background(), collectionName, m.GenPartitionName(ugn))
 			if err != nil {
 				return err
 			}
-			if state == entity.LoadStateLoaded {
-				return nil
-			}
+			err = m.LoadPartitions(context.Background(), collectionName, partitionNames, false)
+			return
+		case entity.LoadStateNotLoad:
+			// partition not load
+			err = m.Client.LoadPartitions(context.Background(), collectionName, partitionNames, false)
+			return
+		case entity.LoadStateLoading:
+			// waiting partition loaded
 			time.Sleep(3 * time.Second)
 		}
-		return merr.ErrPartitionNotFullyLoaded
 	}
-	if state == entity.LoadStateNotLoad {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		return m.Client.LoadPartitions(ctx, collectionName, partitionNames, false)
-	}
-	return nil
+	return merr.ErrPartitionNotFullyLoaded
 }
 
 func (m *Milvus) setExpireTimer(ugn *utils.UserGroupNamespace, collectionName string, d time.Duration) {
