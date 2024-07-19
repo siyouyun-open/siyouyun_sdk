@@ -71,6 +71,11 @@ func NewApp() *AppStruct {
 	App.Api.Get("/alive", Alive)
 	App.Api.Get("/icon", GetIcon)
 
+	// 注册应用消息
+	err = gateway.RegisterAppMessageRobot(App.AppCode, App.appInfo.AppName)
+	if err != nil {
+		log.Printf("[ERROR] RegisterAppMessageRobot err: %v", err)
+	}
 	// listen sys message
 	App.listenSysMsg()
 
@@ -88,12 +93,6 @@ func (a *AppStruct) Destroy() {
 }
 
 func (a *AppStruct) listenSysMsg() {
-	// 注册应用消息
-	err := gateway.RegisterAppMessageRobot(a.AppCode, a.appInfo.AppName)
-	if err != nil {
-		log.Printf("[ERROR] RegisterAppMessageRobot err: %v", err)
-		return
-	}
 	robotCode := a.AppCode + "_msg"
 	// 开启监听
 	go func() {
@@ -105,7 +104,7 @@ func (a *AppStruct) listenSysMsg() {
 					log.Printf("nats panic:[%v]-[%v]", err, mes)
 				}
 			}()
-			err = json.Unmarshal(msg.Data, &mes)
+			err := json.Unmarshal(msg.Data, &mes)
 			if err != nil {
 				return
 			}

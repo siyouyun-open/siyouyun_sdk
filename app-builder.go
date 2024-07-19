@@ -4,6 +4,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"gorm.io/gorm"
+	"log"
 	"os"
 )
 
@@ -37,6 +38,11 @@ func NewAppBuilder(appCode string) *AppBuilder {
 
 	// init ability
 	customApp.Ability = &Ability{}
+
+	err = gateway.RegisterAppMessageRobot(customApp.AppCode, customApp.appInfo.AppName)
+	if err != nil {
+		log.Printf("[ERROR] RegisterAppMessageRobot err: %v", err)
+	}
 
 	return &AppBuilder{
 		app: customApp,

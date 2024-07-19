@@ -6,28 +6,27 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"log"
-	"regexp"
 	"sync"
 )
 
-type handler func(ugn *utils.UserGroupNamespace, content string) (reply bool, replyContent string, replyToUUID bool)
+type handler func(ugn *utils.UserGroupNamespace, content, uuid string) (reply bool, replyContent string, replyToUUID bool)
 
 type Message struct {
 	appCode *string
 	nc      *nats.Conn
 
-	mu                 sync.Mutex
-	triggerPhrasePerls map[string]string
-	handlers           map[string]handler
+	mu sync.Mutex
+	//triggerPhrasePerls map[string]string
+	handlers map[string]handler
 }
 
 func NewMessage(appCode *string, nc *nats.Conn) *Message {
 	m := &Message{
-		appCode:            appCode,
-		nc:                 nc,
-		mu:                 sync.Mutex{},
-		triggerPhrasePerls: make(map[string]string),
-		handlers:           make(map[string]handler),
+		appCode: appCode,
+		nc:      nc,
+		mu:      sync.Mutex{},
+		//triggerPhrasePerls: make(map[string]string),
+		handlers: make(map[string]handler),
 	}
 	m.enableListener()
 	return m
@@ -43,8 +42,8 @@ func (m *Message) Close() {
 // SendMsg 发送消息给用户,只有权限发送给拥有此app的用户
 // ugn		:	用户与空间
 // content 	:	消息正文
-func (m *Message) SendMsg(ugn *utils.UserGroupNamespace, content string) error {
-	return gateway.SendMessage(ugn, *m.appCode, content, "")
+func (m *Message) SendMsg(ugn *utils.UserGroupNamespace, content, replyUUID string) error {
+	return gateway.SendMessage(ugn, *m.appCode, content, replyUUID)
 }
 
 // AddHandler 添加消息机器人处理器
@@ -64,22 +63,23 @@ func (m *Message) SendMsg(ugn *utils.UserGroupNamespace, content string) error {
 //		- reply 		:	是否需要回复
 //		- replyContent	:	回复的正文
 //		- replyToUUID	:	回复时是否引用用户消息
-func (m *Message) AddHandler(desc string, triggerPhrasePerl string, handler func(ugn *utils.UserGroupNamespace, content string) (reply bool, replyContent string, replyToUUID bool)) {
+func (m *Message) AddHandler(desc string, triggerPhrasePerl string, handler func(ugn *utils.UserGroupNamespace, content, uuid string) (reply bool, replyContent string, replyToUUID bool)) {
 	if desc == "" {
 		// 处理器命名不能为空
 		return
 	}
-	if triggerPhrasePerl == "" {
-		// 触发条件不能为空
-		return
-	}
+	//if triggerPhrasePerl == "" {
+	// 触发条件不能为空
+	//return
+	//}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if _, ok := m.handlers[desc]; ok {
 		return
 	} else {
+		log.Printf("添加消息机器人处理器:[%v]", desc)
 		m.handlers[desc] = handler
-		m.triggerPhrasePerls[desc] = triggerPhrasePerl
+		//m.triggerPhrasePerls[desc] = triggerPhrasePerl
 	}
 }
 
@@ -112,21 +112,21 @@ func (m *Message) enableListener() {
 			for i := range mes {
 				ugn := utils.NewUserGroupNamespace(mes[i].UGN.Username, mes[i].UGN.GroupName, mes[i].UGN.Namespace)
 				if !mes[i].SendByAdmin {
-					var handlers []handler
-					for i1 := range m.triggerPhrasePerls {
-						// 解析正文匹配那个正则处理器
-						match, err := regexp.Match(m.triggerPhrasePerls[i1], []byte(mes[i].Content))
-						if err != nil {
-							continue
-						}
-						if match {
-							if _, ok := m.handlers[i1]; ok {
-								handlers = append(handlers, m.handlers[i1])
-							}
-						}
-					}
-					for i2 := range handlers {
-						reply, content, replyToUUID := handlers[i2](ugn, mes[i].Content)
+					//var handlers []handler
+					//for i1 := range m.triggerPhrasePerls {
+					// 解析正文匹配那个正则处理器
+					//match, err := regexp.Match(m.triggerPhrasePerls[i1], []byte(mes[i].Content))
+					//if err != nil {
+					//	continue
+					//}
+					//if match {
+					//	if _, ok := m.handlers[i1]; ok {
+					//handlers = append(handlers, m.handlers[i1])
+					//}
+					//}
+					//}
+					for i2 := range m.handlers {
+						reply, content, replyToUUID := m.handlers[i2](ugn, mes[i].Content, mes[i].UUID)
 						if reply {
 							var replyUUID string
 							if replyToUUID {
