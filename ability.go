@@ -136,6 +136,14 @@ func (a *Ability) AI() (*ability.AI, error) {
 	if a.ai == nil {
 		return nil, abilityNotEnableErr
 	}
+	// conn not ready, retry
+	if a.ai.AIServiceClient == nil {
+		a.ai = ability.NewAI()
+		// check again
+		if a.ai.AIServiceClient == nil {
+			return nil, errors.New("ai service conn err")
+		}
+	}
 	return a.ai, nil
 }
 

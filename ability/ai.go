@@ -17,7 +17,7 @@ func NewAI() *AI {
 	conn, err := grpc.Dial(sdkconst.AIServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Printf("[ERROR] AI service conn err: %v", err)
-		return nil
+		return &AI{}
 	}
 	return &AI{
 		conn:            conn,
