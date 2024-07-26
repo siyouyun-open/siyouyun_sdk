@@ -5,17 +5,18 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
+	"log"
 )
 
 func GetAppInfo(code string) (*sdkdto.AppRegisterInfo, error) {
 	api := OSServiceURL + "/faas/app/info"
 	response := restclient.GetRequest[sdkdto.AppRegisterInfo](nil, api, map[string]string{"appCode": code})
 	if response.Code != sdkconst.Success {
+		log.Printf("[ERROR] GetAppInfo err: %v", response.Msg)
 		return nil, errors.New(response.Msg)
 	}
-	data := response.Data
-	if data == nil {
-		return nil, nil
+	if response.Data == nil {
+		return nil, errors.New("app not exist")
 	}
 	return response.Data, nil
 }
