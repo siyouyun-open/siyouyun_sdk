@@ -102,7 +102,7 @@ func (a *AppStruct) listenSysMsg() {
 	// 开启监听
 	go func() {
 		log.Printf("[INFO] start ListenSysMsg at:%v", robotCode)
-		_, _ = a.nc.Subscribe(robotCode, func(msg *nats.Msg) {
+		_, err := a.nc.Subscribe(robotCode, func(msg *nats.Msg) {
 			var mes []ability.MessageEvent
 			defer func() {
 				if err := recover(); err != nil {
@@ -111,6 +111,7 @@ func (a *AppStruct) listenSysMsg() {
 			}()
 			err := json.Unmarshal(msg.Data, &mes)
 			if err != nil {
+				log.Printf("[ERROR] listenSysMsg Unmarshal err: %v", err)
 				return
 			}
 			for i := range mes {
@@ -125,6 +126,9 @@ func (a *AppStruct) listenSysMsg() {
 			}
 			return
 		})
+		if err != nil {
+			log.Printf("[ERROR] listenSysMsg Subscribe err: %v", err)
+		}
 	}()
 }
 
