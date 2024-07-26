@@ -18,10 +18,11 @@ func NewAppBuilder(appCode string) *AppBuilder {
 	var err error
 	customApp := &AppStruct{}
 
-	// init the necessary things
-
 	// init http client
 	restclient.InitHttpClient()
+
+	// detect env
+	customApp.detectEnv()
 
 	// get app info
 	if appCode == "" {

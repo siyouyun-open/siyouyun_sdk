@@ -23,12 +23,6 @@ const (
 
 	SiyouFSMountPrefix = "/siyouyun/mnt"
 	UserSpacePrefix    = "user_"
-)
 
-const (
-	CoreServiceURL   = "http://10.62.0.1:40100/syy"
-	OSURL            = "http://10.62.0.1:40000/os"
-	UnixSocketFile   = "/siyouyun/unix-socket/syy_os_file.socket"
-	AIServiceURL     = "10.62.0.1:40051"
-	MilvusServiceURL = "10.62.0.1:19530"
+	UnixSocketFile = "/siyouyun/unix-socket/syy_os_file.socket"
 )

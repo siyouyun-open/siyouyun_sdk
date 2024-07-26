@@ -1,8 +1,8 @@
 package ability
 
 import (
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	sdkprotos "github.com/siyouyun-open/siyouyun_sdk/pkg/protos"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
@@ -14,7 +14,7 @@ type AI struct {
 }
 
 func NewAI() *AI {
-	conn, err := grpc.Dial(sdkconst.AIServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(utils.GetAIServiceURL(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Printf("[ERROR] AI service conn err: %v", err)
 		return &AI{}

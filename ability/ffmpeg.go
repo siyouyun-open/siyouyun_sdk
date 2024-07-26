@@ -14,7 +14,7 @@ type FFmpeg struct {
 
 func NewFFmpeg() *FFmpeg {
 	return &FFmpeg{
-		gatewayAddr: sdkconst.OSURL + "/codec",
+		gatewayAddr: utils.GetOSServiceURL() + "/codec",
 	}
 }
 

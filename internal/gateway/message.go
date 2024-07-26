@@ -8,12 +8,12 @@ import (
 )
 
 func SendMessage(ugn *utils.UserGroupNamespace, appCode, content, replyUUID string) error {
-	api := CoreServiceURL + "/msg/robot/session/send"
+	api := utils.GetCoreServiceURL() + "/msg/robot/session/send"
 	response := restclient.PostRequest[any](
 		ugn,
 		api,
 		map[string]string{
-			"robotCode":   appCode + "_msg", // todo use uuid
+			"robotCode":   appCode + "_msg",
 			"content":     content,
 			"replyToUUID": replyUUID,
 		},

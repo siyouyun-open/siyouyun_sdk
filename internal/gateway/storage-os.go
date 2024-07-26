@@ -22,7 +22,7 @@ type storageOSApi struct {
 
 func newStorageOSApi(ugn *utils.UserGroupNamespace) *storageOSApi {
 	return &storageOSApi{
-		Host: OSServiceURL + "/fs",
+		Host: utils.GetOSServiceURL() + "/fs",
 		UGN:  ugn,
 	}
 }
@@ -34,7 +34,7 @@ func (sos *storageOSApi) Open(path string) (*os.File, error) {
 
 // OpenFile 打开或创建文件
 func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
-	laddr, err := net.ResolveUnixAddr("unix", UnixSocketFile)
+	laddr, err := net.ResolveUnixAddr("unix", sdkconst.UnixSocketFile)
 	if err != nil {
 		panic(err)
 	}
@@ -66,7 +66,7 @@ func (sos *storageOSApi) OpenFile(path string, flag int, perm os.FileMode) (*os.
 
 // OpenAvatarFile 打开替身文件
 func (sos *storageOSApi) OpenAvatarFile(path string) (*os.File, error) {
-	laddr, err := net.ResolveUnixAddr("unix", UnixSocketFile)
+	laddr, err := net.ResolveUnixAddr("unix", sdkconst.UnixSocketFile)
 	if err != nil {
 		panic(err)
 	}

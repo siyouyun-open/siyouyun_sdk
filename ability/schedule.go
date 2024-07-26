@@ -30,7 +30,7 @@ type ScheduleEvent struct {
 func NewSchedule(appCode *string) *Schedule {
 	return &Schedule{
 		Handler:     make(map[string]ScheduleEventHandler),
-		gatewayAddr: sdkconst.CoreServiceURL + "/schedule",
+		gatewayAddr: utils.GetCoreServiceURL() + "/schedule",
 		appCode:     appCode,
 	}
 }

@@ -5,11 +5,12 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"log"
 )
 
 func GetAppInfo(code string) (*sdkdto.AppRegisterInfo, error) {
-	api := OSServiceURL + "/faas/app/info"
+	api := utils.GetOSServiceURL() + "/faas/app/info"
 	response := restclient.GetRequest[sdkdto.AppRegisterInfo](nil, api, map[string]string{"appCode": code})
 	if response.Code != sdkconst.Success {
 		log.Printf("[ERROR] GetAppInfo err: %v", response.Msg)
@@ -22,7 +23,7 @@ func GetAppInfo(code string) (*sdkdto.AppRegisterInfo, error) {
 }
 
 func RegisterAppMessageRobot(appCode, robotDesc string) error {
-	api := OSServiceURL + "/faas/app/robot/register"
+	api := utils.GetOSServiceURL() + "/faas/app/robot/register"
 	response := restclient.PostRequest[any](
 		nil,
 		api,

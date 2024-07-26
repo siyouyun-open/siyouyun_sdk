@@ -5,7 +5,6 @@ import (
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 	"github.com/milvus-io/milvus-sdk-go/v2/merr"
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"sync"
 	"time"
@@ -25,7 +24,7 @@ func NewMilvus(appCode *string) (*Milvus, error) {
 	for i := 0; i < maxRetry; i++ {
 		c, err = client.NewDefaultGrpcClient(
 			context.Background(),
-			sdkconst.MilvusServiceURL,
+			utils.GetMilvusServiceURL(),
 		)
 		if err == nil {
 			break

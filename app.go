@@ -13,6 +13,8 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -42,6 +44,9 @@ func NewApp() *AppStruct {
 
 	// init http client
 	restclient.InitHttpClient()
+
+	// detect env
+	App.detectEnv()
 
 	App.AppCode = os.Getenv(AppCodeEnvKey)
 
@@ -143,4 +148,16 @@ func (a *AppStruct) exec(ugn *utils.UserGroupNamespace, f func(*gorm.DB) error) 
 		return err
 	}
 	return nil
+}
+
+// detectEnv detect the environment, docker or host
+func (a *AppStruct) detectEnv() {
+	inDocker := true
+	content, err := os.ReadFile("/proc/1/cgroup")
+	if err == nil {
+		if !strings.Contains(string(content), "openfaas") {
+			inDocker = false
+		}
+	}
+	os.Setenv("IN_DOCKER", strconv.FormatBool(inDocker))
 }

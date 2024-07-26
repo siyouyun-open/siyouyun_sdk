@@ -22,7 +22,7 @@ type KV struct {
 
 func NewKV(appCode *string) *KV {
 	return &KV{
-		gatewayAddr: sdkconst.CoreServiceURL + "/faas/kv",
+		gatewayAddr: utils.GetCoreServiceURL() + "/faas/kv",
 		appCode:     appCode,
 	}
 }

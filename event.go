@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/nats-io/nats.go"
-	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
@@ -89,7 +88,7 @@ type PreferOptions struct {
 // WithEventHolder 初始化事件监听器
 func (a *AppStruct) WithEventHolder(nc ...*nats.Conn) {
 	if len(nc) == 0 {
-		c, _ := nats.Connect("nats://10.62.0.1:4222")
+		c, _ := nats.Connect(utils.GetNatsServiceURL())
 		a.nc = c
 	} else {
 		a.nc = nc[0]
@@ -158,7 +157,7 @@ func (p *PreferOptions) parseToEventCode(appCode string) string {
 }
 
 func registerAppEvent(appCode string, options []PreferOptions) error {
-	api := gateway.OSServiceURL + "/faas/app/event/register"
+	api := utils.GetOSServiceURL() + "/faas/app/event/register"
 	response := restclient.PostRequest[any](
 		nil,
 		api,
