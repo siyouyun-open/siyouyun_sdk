@@ -56,6 +56,12 @@ func NewApp() *AppStruct {
 		panic(err)
 	}
 
+	// init nc
+	App.nc, err = nats.Connect(utils.GetNatsServiceURL())
+	if err != nil {
+		panic(err)
+	}
+
 	// init db
 	db, _ := gorm.Open(mysql.Open(App.appInfo.AppDSN), &gorm.Config{
 		Logger: siyoumysql.NewLogger(),
@@ -111,7 +117,6 @@ func (a *AppStruct) listenSysMsg() {
 			}()
 			err := json.Unmarshal(msg.Data, &mes)
 			if err != nil {
-				log.Printf("[ERROR] listenSysMsg Unmarshal err: %v", err)
 				return
 			}
 			for i := range mes {

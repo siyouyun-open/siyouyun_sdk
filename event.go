@@ -86,13 +86,7 @@ type PreferOptions struct {
 }
 
 // WithEventHolder 初始化事件监听器
-func (a *AppStruct) WithEventHolder(nc ...*nats.Conn) {
-	if len(nc) == 0 {
-		c, _ := nats.Connect(utils.GetNatsServiceURL())
-		a.nc = c
-	} else {
-		a.nc = nc[0]
-	}
+func (a *AppStruct) WithEventHolder() {
 	a.Event = &EventHolder{
 		app:        a,
 		optionsMap: make(map[string]PreferOptions),
@@ -125,7 +119,7 @@ func (e *EventHolder) Listen() {
 		panic(err)
 	}
 	go func() {
-		_, _ = nc.Subscribe(e.app.AppCode+"_event", func(msg *nats.Msg) {
+		_, err = nc.Subscribe(e.app.AppCode+"_event", func(msg *nats.Msg) {
 			defer func() {
 				if err := recover(); err != nil {
 					log.Printf("[PANIC] event handler panic: %v", err)
@@ -148,6 +142,9 @@ func (e *EventHolder) Listen() {
 				_ = nc.PublishMsg(resMsg)
 			}()
 		})
+		if err != nil {
+			log.Printf("[ERROR] EventHolder subscribe err: %v", err)
+		}
 	}()
 }
 

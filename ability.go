@@ -56,7 +56,7 @@ func (a *AppStruct) WithSchedule() {
 		return
 	}
 	go func() {
-		_, _ = a.nc.Subscribe(a.AppCode+"_schedule", func(msg *nats.Msg) {
+		_, err := a.nc.Subscribe(a.AppCode+"_schedule", func(msg *nats.Msg) {
 			var se ability.ScheduleEvent
 			defer func() {
 				if err := recover(); err != nil {
@@ -74,6 +74,9 @@ func (a *AppStruct) WithSchedule() {
 			}
 			return
 		})
+		if err != nil {
+			log.Printf("[ERROR] WithSchedule subscribe err: %v", err)
+		}
 	}()
 }
 

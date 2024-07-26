@@ -98,7 +98,7 @@ func (m *Message) enableListener() {
 	robotCode := *m.appCode + "_msg"
 	go func() {
 		log.Printf("start ListenBizMsg at:%v", robotCode)
-		_, _ = m.nc.Subscribe(robotCode, func(msg *nats.Msg) {
+		_, err := m.nc.Subscribe(robotCode, func(msg *nats.Msg) {
 			var mes []MessageEvent
 			defer func() {
 				if err := recover(); err != nil {
@@ -141,5 +141,8 @@ func (m *Message) enableListener() {
 				}
 			}
 		})
+		if err != nil {
+			log.Printf("[ERROR] enableListener subscribe err: %v", err)
+		}
 	}()
 }
