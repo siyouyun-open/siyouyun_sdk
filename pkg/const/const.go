@@ -21,8 +21,9 @@ const (
 	CommonNamespace      = "common"
 	SiyouFSMysqlDBPrefix = "siyou"
 
-	SiyouFSMountPrefix = "/siyouyun/mnt"
-	UserSpacePrefix    = "user_"
+	SystemPool          = "siyouyun"
+	StoragePoolMountDir = "/siyouyun/pool"
+	UserSpacePrefix     = "user_"
 
 	UnixSocketFile = "/siyouyun/unix-socket/syy_os_file.socket"
 )

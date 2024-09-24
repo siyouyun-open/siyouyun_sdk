@@ -29,11 +29,11 @@ func NewUserGroupNamespace(username, groupname, namespace string) *UserGroupName
 	}
 }
 
-func (ugn *UserGroupNamespace) GetRealPrefix() string {
+func (ugn *UserGroupNamespace) GetRealPrefix(poolName string) string {
 	if ugn.GroupName == "" {
 		ugn.GroupName = ugn.Username
 	}
-	return filepath.Join(sdkconst.SiyouFSMountPrefix, sdkconst.UserSpacePrefix+ugn.GroupName, ugn.Namespace)
+	return filepath.Join(sdkconst.StoragePoolMountDir, poolName, sdkconst.UserSpacePrefix+ugn.GroupName, ugn.Namespace)
 }
 
 func (ugn *UserGroupNamespace) DatabaseName() string {

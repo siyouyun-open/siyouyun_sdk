@@ -2,27 +2,43 @@ package ability
 
 import (
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/gorm"
+	"io"
 	"os"
 	"time"
 )
 
 type GenericFS interface {
-	Open(path string) (*os.File, error)
-	OpenByInode(inode uint64) (*os.File, error)
-	OpenFile(path string, flag int, perm os.FileMode) (*os.File, error)
-	OpenAvatarFile(path string) (*os.File, error)
-	MkdirAll(path string) error
-	Remove(path string) error
-	RemoveAll(path string) error
-	Rename(oldPath, newPath string) error
-	Chtimes(path string, atime time.Time, mtime time.Time) error
-	FileExists(path string) bool
-	EnsureDirExist(path string)
-	PathToInode(path string) uint64
-	InodeToPath(inode uint64) string
-	InodeToFileInfo(inode uint64) *sdkdto.FileInfoRes
-	InodesToFileInfos(inodes ...uint64) map[uint64]*sdkdto.FileInfoRes
-	Destroy()
+	Open(ufi *utils.UFI) (File, error)
+	OpenFile(ufi *utils.UFI, flag int, perm os.FileMode) (File, error)
+	OpenAvatarFile(ufi *utils.UFI) (File, error)
+	MkdirAll(ufi *utils.UFI) error
+	Remove(ufi *utils.UFI) error
+	RemoveAll(ufi *utils.UFI) error
+	Rename(oldUFI *utils.UFI, newUFI *utils.UFI) error
+	Chtimes(ufi *utils.UFI, atime time.Time, mtime time.Time) error
+	FileExists(ufi *utils.UFI) bool
 	Exec(f func(*gorm.DB) error) error
+	AppOpenFile(path string, flag int, perm os.FileMode) (File, error)
+	AppMkdirAll(path string) error
+	AppRemoveAll(path string) error
+	AppFileExists(path string) bool
+}
+
+type File interface {
+	io.Closer
+	io.Reader
+	io.ReaderAt
+	io.Seeker
+	io.Writer
+	io.WriterAt
+
+	Name() string
+	Readdir(count int) ([]*sdkdto.SiyouFileBasicInfo, error)
+	Readdirnames(n int) ([]string, error)
+	Stat() (*sdkdto.SiyouFileBasicInfo, error)
+	Sync() error
+	Truncate(size int64) error
+	WriteString(s string) (ret int, err error)
 }

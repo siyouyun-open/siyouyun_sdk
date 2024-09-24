@@ -63,10 +63,9 @@ const (
 
 type FileEvent struct {
 	UGN        *utils.UserGroupNamespace `json:"ugn"`
-	Inode      uint64                    `json:"inode"`
-	FullPath   string                    `json:"fullPath"`
+	UFI        *utils.UFI                `json:"ufi"`
 	Action     int                       `json:"action"`
-	WithAvatar bool                      `json:"withAvatar"` // 事件是否通过替身处理
+	WithAvatar bool                      `json:"withAvatar"`
 }
 
 type EventHolder struct {
