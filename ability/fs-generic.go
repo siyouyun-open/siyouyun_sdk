@@ -51,7 +51,7 @@ func (fs *SyyFS) openFile(ufi *utils.UFI, flag int, perm os.FileMode, avatar boo
 			"flag":   fmt.Sprintf("%d", flag),
 			"perm":   fmt.Sprintf("%d", perm),
 			"avatar": strconv.FormatBool(avatar),
-		}).Get(utils.GetCoreServiceURL() + "/v2/file/open")
+		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/open")
 	if err != nil || res.Data == nil {
 		return nil, errors.New("request error")
 	}
@@ -63,7 +63,7 @@ func (fs *SyyFS) openFile(ufi *utils.UFI, flag int, perm os.FileMode, avatar boo
 }
 
 func (fs *SyyFS) MkdirAll(ufi *utils.UFI) error {
-	api := utils.GetCoreServiceURL() + "/v2/fs/mkdir/all"
+	api := utils.GetCoreServiceURL() + "/v2/faas/fs/mkdir/all"
 	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi.Serialize()}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
@@ -72,7 +72,7 @@ func (fs *SyyFS) MkdirAll(ufi *utils.UFI) error {
 }
 
 func (fs *SyyFS) Remove(ufi *utils.UFI) error {
-	api := utils.GetCoreServiceURL() + "/v2/fs/remove"
+	api := utils.GetCoreServiceURL() + "/v2/faas/fs/remove"
 	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi.Serialize()}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
@@ -81,7 +81,7 @@ func (fs *SyyFS) Remove(ufi *utils.UFI) error {
 }
 
 func (fs *SyyFS) RemoveAll(ufi *utils.UFI) error {
-	api := utils.GetCoreServiceURL() + "/v2/fs/remove/all"
+	api := utils.GetCoreServiceURL() + "/v2/faas/fs/remove/all"
 	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi.Serialize()}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
@@ -90,7 +90,7 @@ func (fs *SyyFS) RemoveAll(ufi *utils.UFI) error {
 }
 
 func (fs *SyyFS) Rename(oldUFI *utils.UFI, newUFI *utils.UFI) error {
-	api := utils.GetCoreServiceURL() + "/v2/fs/rename"
+	api := utils.GetCoreServiceURL() + "/v2/faas/fs/rename"
 	resp := restclient.PostRequest[any](fs.ugn, api,
 		map[string]string{
 			"ufi1": oldUFI.Serialize(),
@@ -103,7 +103,7 @@ func (fs *SyyFS) Rename(oldUFI *utils.UFI, newUFI *utils.UFI) error {
 }
 
 func (fs *SyyFS) Chtimes(ufi *utils.UFI, atime time.Time, mtime time.Time) error {
-	api := utils.GetCoreServiceURL() + "/v2/fs/chtimes"
+	api := utils.GetCoreServiceURL() + "/v2/faas/fs/chtimes"
 	resp := restclient.PostRequest[any](fs.ugn, api,
 		map[string]string{
 			"ufi":   ufi.Serialize(),
@@ -117,7 +117,7 @@ func (fs *SyyFS) Chtimes(ufi *utils.UFI, atime time.Time, mtime time.Time) error
 }
 
 func (fs *SyyFS) FileExists(ufi *utils.UFI) bool {
-	api := utils.GetCoreServiceURL() + "/v2/fs/exists"
+	api := utils.GetCoreServiceURL() + "/v2/faas/fs/exists"
 	resp := restclient.GetRequest[bool](fs.ugn, api, map[string]string{"ufi": ufi.Serialize()})
 	if resp.Code != sdkconst.Success {
 		return false
