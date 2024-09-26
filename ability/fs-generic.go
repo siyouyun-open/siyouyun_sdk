@@ -22,20 +22,24 @@ type SyyFS struct {
 }
 
 func (fs *SyyFS) Open(ufi *utils.UFI) (File, error) {
-	return fs.openFile(ufi, os.O_RDONLY, 0, false)
+	return fs.openFile(ufi.Serialize(), os.O_RDONLY, 0, false)
+}
+
+func (fs *SyyFS) Open2(ufiStr string) (File, error) {
+	return fs.openFile(ufiStr, os.O_RDONLY, 0, false)
 }
 
 // OpenFile open file with privilege
 func (fs *SyyFS) OpenFile(ufi *utils.UFI, flag int, perm os.FileMode) (File, error) {
-	return fs.openFile(ufi, flag, perm, false)
+	return fs.openFile(ufi.Serialize(), flag, perm, false)
 }
 
 // OpenAvatarFile open avatar file
 func (fs *SyyFS) OpenAvatarFile(ufi *utils.UFI) (File, error) {
-	return fs.openFile(ufi, os.O_RDONLY, 0, true)
+	return fs.openFile(ufi.Serialize(), os.O_RDONLY, 0, true)
 }
 
-func (fs *SyyFS) openFile(ufi *utils.UFI, flag int, perm os.FileMode, avatar bool) (File, error) {
+func (fs *SyyFS) openFile(ufiStr string, flag int, perm os.FileMode, avatar bool) (File, error) {
 	file := new(HTTPFile)
 	file.ugn = fs.ugn
 	res := rj.Response[bfsApiRet]{}
@@ -47,7 +51,7 @@ func (fs *SyyFS) openFile(ufi *utils.UFI, flag int, perm os.FileMode, avatar boo
 			sdkconst.NamespaceHeader: file.ugn.Namespace,
 		}).
 		SetQueryParams(map[string]string{
-			"ufi":    ufi.Serialize(),
+			"ufi":    ufiStr,
 			"flag":   fmt.Sprintf("%d", flag),
 			"perm":   fmt.Sprintf("%d", perm),
 			"avatar": strconv.FormatBool(avatar),
@@ -72,8 +76,12 @@ func (fs *SyyFS) MkdirAll(ufi *utils.UFI) error {
 }
 
 func (fs *SyyFS) Remove(ufi *utils.UFI) error {
+	return fs.Remove2(ufi.Serialize())
+}
+
+func (fs *SyyFS) Remove2(ufiStr string) error {
 	api := utils.GetCoreServiceURL() + "/v2/faas/fs/remove"
-	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi.Serialize()}, nil)
+	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufiStr}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
 	}
@@ -81,8 +89,12 @@ func (fs *SyyFS) Remove(ufi *utils.UFI) error {
 }
 
 func (fs *SyyFS) RemoveAll(ufi *utils.UFI) error {
+	return fs.RemoveAll2(ufi.Serialize())
+}
+
+func (fs *SyyFS) RemoveAll2(ufiStr string) error {
 	api := utils.GetCoreServiceURL() + "/v2/faas/fs/remove/all"
-	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi.Serialize()}, nil)
+	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufiStr}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
 	}
@@ -103,10 +115,14 @@ func (fs *SyyFS) Rename(oldUFI *utils.UFI, newUFI *utils.UFI) error {
 }
 
 func (fs *SyyFS) Chtimes(ufi *utils.UFI, atime time.Time, mtime time.Time) error {
+	return fs.Chtimes2(ufi.Serialize(), atime, mtime)
+}
+
+func (fs *SyyFS) Chtimes2(ufiStr string, atime time.Time, mtime time.Time) error {
 	api := utils.GetCoreServiceURL() + "/v2/faas/fs/chtimes"
 	resp := restclient.PostRequest[any](fs.ugn, api,
 		map[string]string{
-			"ufi":   ufi.Serialize(),
+			"ufi":   ufiStr,
 			"atime": strconv.FormatInt(atime.UnixMilli(), 10),
 			"mtime": strconv.FormatInt(mtime.UnixMilli(), 10),
 		}, nil)
@@ -149,7 +165,7 @@ func (fs *SyyFS) Exec(f func(*gorm.DB) error) error {
 
 func (fs *SyyFS) AppOpenFile(path string, flag int, perm os.FileMode) (File, error) {
 	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, utils.PathUFI, filepath.Join(fs.appPrefix, path))
-	return fs.openFile(ufi, flag, perm, false)
+	return fs.openFile(ufi.Serialize(), flag, perm, false)
 }
 
 func (fs *SyyFS) AppMkdirAll(path string) error {

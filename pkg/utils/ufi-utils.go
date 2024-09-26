@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -111,4 +112,39 @@ func NewUFI[T IdentifierType](storageType StorageType, uuid string, mode UFIMode
 		Mode:        mode,
 		Identifier:  fmt.Sprintf("%v", identifier),
 	}
+}
+
+func NewUFIFromSerialize(UFIString string) (*UFI, error) {
+	splitUFIString := strings.SplitN(strings.TrimSpace(strings.Trim(UFIString, "/")), "/", 5)
+	if len(splitUFIString) < 4 {
+		return nil, errors.New("ufi format err")
+	}
+	mode := UFIMode(splitUFIString[3])
+	var identifier string
+	switch mode {
+	case IdUFI:
+		if len(splitUFIString) < 5 {
+			return nil, errors.New("ufi format err")
+		}
+		identifier = splitUFIString[4]
+	case PathUFI:
+		if len(splitUFIString) == 4 {
+			identifier = "/"
+		} else {
+			identifier = splitUFIString[4]
+		}
+	default:
+		return nil, errors.New("ufi format err")
+	}
+	ufi := &UFI{
+		ufiProtocol: UFIProtocol(strings.ReplaceAll(splitUFIString[0], "/", "")),
+		StorageType: StorageType(splitUFIString[1]),
+		UUID:        splitUFIString[2],
+		Mode:        UFIMode(splitUFIString[3]),
+		Identifier:  identifier,
+	}
+	if !ufi.Validate() {
+		return nil, errors.New("ufi invalid")
+	}
+	return ufi, nil
 }

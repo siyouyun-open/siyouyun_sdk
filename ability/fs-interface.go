@@ -11,13 +11,17 @@ import (
 
 type GenericFS interface {
 	Open(ufi *utils.UFI) (File, error)
+	Open2(ufiStr string) (File, error)
 	OpenFile(ufi *utils.UFI, flag int, perm os.FileMode) (File, error)
 	OpenAvatarFile(ufi *utils.UFI) (File, error)
 	MkdirAll(ufi *utils.UFI) error
 	Remove(ufi *utils.UFI) error
+	Remove2(ufiStr string) error
 	RemoveAll(ufi *utils.UFI) error
+	RemoveAll2(ufiStr string) error
 	Rename(oldUFI *utils.UFI, newUFI *utils.UFI) error
 	Chtimes(ufi *utils.UFI, atime time.Time, mtime time.Time) error
+	Chtimes2(ufiStr string, atime time.Time, mtime time.Time) error
 	FileExists(ufi *utils.UFI) bool
 	Exec(f func(*gorm.DB) error) error
 	AppOpenFile(path string, flag int, perm os.FileMode) (File, error)
