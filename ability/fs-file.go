@@ -3,7 +3,6 @@ package ability
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
@@ -13,22 +12,14 @@ import (
 	"strconv"
 )
 
-type errCode int
-
-const (
-	NoErr errCode = iota
-	NotInitErr
-	ParamErr
-	OpenFileErr
-	CantFindOpenFileErr
-	FileActionErr
-	FileEOF
+var (
+	fsRequestErr = errors.New("fs request error")
 )
 
 type bfsApiRet struct {
-	N       int64   `json:"n"`
-	ErrCode errCode `json:"errCode"`
-	Content []byte  `json:"content"`
+	N       int64  `json:"n"`
+	Error   string `json:"error"`
+	Content []byte `json:"content"`
 }
 
 // HTTPFile file implement by http
@@ -50,10 +41,10 @@ func (H *HTTPFile) Close() error {
 			"fd": strconv.FormatInt(H.fd, 10),
 		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/close")
 	if err != nil || res.Data == nil {
-		return errors.New("request error")
+		return fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return errors.New(res.Data.Error)
 	}
 	return nil
 }
@@ -72,13 +63,13 @@ func (H *HTTPFile) Read(p []byte) (int, error) {
 			"bufLen": strconv.Itoa(len(p)),
 		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/read")
 	if err != nil || res.Data == nil {
-		return 0, errors.New("request error")
+		return 0, fsRequestErr
 	}
-	if res.Data.ErrCode != 0 && res.Data.ErrCode != FileEOF {
-		return 0, errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" && res.Data.Error != io.EOF.Error() {
+		return 0, errors.New(res.Data.Error)
 	}
 	copy(p, res.Data.Content)
-	if res.Data.ErrCode == FileEOF {
+	if res.Data.Error == io.EOF.Error() {
 		return int(res.Data.N), io.EOF
 	}
 	return int(res.Data.N), nil
@@ -99,13 +90,13 @@ func (H *HTTPFile) ReadAt(p []byte, off int64) (int, error) {
 			"offset": strconv.FormatInt(off, 10),
 		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/read/at")
 	if err != nil || res.Data == nil {
-		return 0, errors.New("请求失败")
+		return 0, fsRequestErr
 	}
-	if res.Data.ErrCode != 0 && res.Data.ErrCode != FileEOF {
-		return 0, errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" && res.Data.Error != io.EOF.Error() {
+		return 0, errors.New(res.Data.Error)
 	}
 	copy(p, res.Data.Content)
-	if res.Data.ErrCode == FileEOF {
+	if res.Data.Error == io.EOF.Error() {
 		return int(res.Data.N), io.EOF
 	}
 	return int(res.Data.N), nil
@@ -126,10 +117,10 @@ func (H *HTTPFile) Seek(offset int64, whence int) (int64, error) {
 			"whence": strconv.Itoa(whence),
 		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/seek")
 	if err != nil || res.Data == nil {
-		return 0, errors.New("请求失败")
+		return 0, fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return res.Data.N, errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return res.Data.N, errors.New(res.Data.Error)
 	}
 	return res.Data.N, nil
 }
@@ -148,10 +139,10 @@ func (H *HTTPFile) Write(p []byte) (int, error) {
 			"fd": strconv.FormatInt(H.fd, 10),
 		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/write")
 	if err != nil || res.Data == nil {
-		return 0, errors.New("请求失败")
+		return 0, fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return int(res.Data.N), errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return int(res.Data.N), errors.New(res.Data.Error)
 	}
 	return int(res.Data.N), nil
 }
@@ -171,10 +162,10 @@ func (H *HTTPFile) WriteAt(p []byte, off int64) (int, error) {
 			"offset": strconv.FormatInt(off, 10),
 		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/write/at")
 	if err != nil || res.Data == nil {
-		return 0, errors.New("请求失败")
+		return 0, fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return int(res.Data.N), errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return int(res.Data.N), errors.New(res.Data.Error)
 	}
 	return int(res.Data.N), nil
 }
@@ -194,7 +185,7 @@ func (H *HTTPFile) Name() string {
 	if err != nil || res.Data == nil {
 		return ""
 	}
-	if res.Data.ErrCode != 0 {
+	if res.Data.Error != "" {
 		return ""
 	}
 	return string(res.Data.Content)
@@ -214,10 +205,10 @@ func (H *HTTPFile) Readdir(n int) ([]*sdkdto.SiyouFileBasicInfo, error) {
 			"n":  strconv.Itoa(n),
 		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/readdir")
 	if err != nil || res.Data == nil {
-		return nil, errors.New("请求失败")
+		return nil, fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return nil, errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return nil, errors.New(res.Data.Error)
 	}
 	var resJson []*sdkdto.SiyouFileBasicInfo
 	err = json.Unmarshal(res.Data.Content, &resJson)
@@ -241,10 +232,10 @@ func (H *HTTPFile) Readdirnames(n int) ([]string, error) {
 			"n":  strconv.Itoa(n),
 		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/readdirnames")
 	if err != nil || res.Data == nil {
-		return nil, errors.New("请求失败")
+		return nil, fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return nil, errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return nil, errors.New(res.Data.Error)
 	}
 	var resJson []string
 	err = json.Unmarshal(res.Data.Content, &resJson)
@@ -267,10 +258,10 @@ func (H *HTTPFile) Stat() (*sdkdto.SiyouFileBasicInfo, error) {
 			"fd": strconv.FormatInt(H.fd, 10),
 		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/stat")
 	if err != nil || res.Data == nil {
-		return nil, errors.New("请求失败")
+		return nil, fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return nil, errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return nil, errors.New(res.Data.Error)
 	}
 	var resJson sdkdto.SiyouFileBasicInfo
 	err = json.Unmarshal(res.Data.Content, &resJson)
@@ -293,10 +284,10 @@ func (H *HTTPFile) Sync() error {
 			"fd": strconv.FormatInt(H.fd, 10),
 		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/sync")
 	if err != nil || res.Data == nil {
-		return errors.New("请求失败")
+		return fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return errors.New(res.Data.Error)
 	}
 	return nil
 }
@@ -315,10 +306,10 @@ func (H *HTTPFile) Truncate(size int64) error {
 			"size": strconv.FormatInt(size, 10),
 		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/truncate")
 	if err != nil || res.Data == nil {
-		return errors.New("请求失败")
+		return fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return errors.New(res.Data.Error)
 	}
 	return nil
 }
@@ -337,10 +328,10 @@ func (H *HTTPFile) WriteString(s string) (int, error) {
 			"fd": strconv.FormatInt(H.fd, 10),
 		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/write/string")
 	if err != nil || res.Data == nil {
-		return 0, errors.New("请求失败")
+		return 0, fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return int(res.Data.N), errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return int(res.Data.N), errors.New(res.Data.Error)
 	}
 	return int(res.Data.N), nil
 }

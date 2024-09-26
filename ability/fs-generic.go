@@ -53,10 +53,10 @@ func (fs *SyyFS) openFile(ufi *utils.UFI, flag int, perm os.FileMode, avatar boo
 			"avatar": strconv.FormatBool(avatar),
 		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/open")
 	if err != nil || res.Data == nil {
-		return nil, errors.New("request error")
+		return nil, fsRequestErr
 	}
-	if res.Data.ErrCode != 0 {
-		return nil, errors.New(fmt.Sprintf("%v", res.Data.ErrCode))
+	if res.Data.Error != "" {
+		return nil, errors.New(res.Data.Error)
 	}
 	file.fd = res.Data.N
 	return file, err
