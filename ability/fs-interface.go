@@ -2,7 +2,6 @@ package ability
 
 import (
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/gorm"
 	"io"
 	"os"
@@ -10,19 +9,15 @@ import (
 )
 
 type GenericFS interface {
-	Open(ufi *utils.UFI) (File, error)
-	Open2(ufiStr string) (File, error)
-	OpenFile(ufi *utils.UFI, flag int, perm os.FileMode) (File, error)
-	OpenAvatarFile(ufi *utils.UFI) (File, error)
-	MkdirAll(ufi *utils.UFI) error
-	Remove(ufi *utils.UFI) error
-	Remove2(ufiStr string) error
-	RemoveAll(ufi *utils.UFI) error
-	RemoveAll2(ufiStr string) error
-	Rename(oldUFI *utils.UFI, newUFI *utils.UFI) error
-	Chtimes(ufi *utils.UFI, atime time.Time, mtime time.Time) error
-	Chtimes2(ufiStr string, atime time.Time, mtime time.Time) error
-	FileExists(ufi *utils.UFI) bool
+	Open(ufi string) (File, error)
+	OpenFile(ufi string, flag int, perm os.FileMode) (File, error)
+	OpenAvatarFile(ufi string) (File, error)
+	MkdirAll(ufi string) error
+	Remove(ufi string) error
+	RemoveAll(ufi string) error
+	Rename(oldUFI string, newUFI string) error
+	Chtimes(ufi string, atime time.Time, mtime time.Time) error
+	FileExists(ufi string) bool
 	Exec(f func(*gorm.DB) error) error
 	AppOpenFile(path string, flag int, perm os.FileMode) (File, error)
 	AppMkdirAll(path string) error

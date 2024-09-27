@@ -3,7 +3,6 @@ package ability
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
@@ -268,13 +267,6 @@ func (H *HTTPFile) Stat() (*sdkdto.SiyouFileBasicInfo, error) {
 	err = json.Unmarshal(res.Data.Content, &info)
 	if err != nil {
 		return nil, err
-	}
-	// if it's siyouyun storage, convert path ufi to id ufi
-	ufi, err := utils.NewUFIFromSerialize(info.UFI)
-	if err == nil && ufi.StorageType.IsSiyouyunStorage() {
-		ufi.Mode = utils.IdUFI
-		ufi.Identifier = fmt.Sprintf("%v", info.Id)
-		info.UFI = ufi.Serialize()
 	}
 	return &info, nil
 }

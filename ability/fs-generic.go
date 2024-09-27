@@ -21,25 +21,21 @@ type SyyFS struct {
 	db        *gorm.DB
 }
 
-func (fs *SyyFS) Open(ufi *utils.UFI) (File, error) {
-	return fs.openFile(ufi.Serialize(), os.O_RDONLY, 0, false)
-}
-
-func (fs *SyyFS) Open2(ufiStr string) (File, error) {
-	return fs.openFile(ufiStr, os.O_RDONLY, 0, false)
+func (fs *SyyFS) Open(ufi string) (File, error) {
+	return fs.openFile(ufi, os.O_RDONLY, 0, false)
 }
 
 // OpenFile open file with privilege
-func (fs *SyyFS) OpenFile(ufi *utils.UFI, flag int, perm os.FileMode) (File, error) {
-	return fs.openFile(ufi.Serialize(), flag, perm, false)
+func (fs *SyyFS) OpenFile(ufi string, flag int, perm os.FileMode) (File, error) {
+	return fs.openFile(ufi, flag, perm, false)
 }
 
 // OpenAvatarFile open avatar file
-func (fs *SyyFS) OpenAvatarFile(ufi *utils.UFI) (File, error) {
-	return fs.openFile(ufi.Serialize(), os.O_RDONLY, 0, true)
+func (fs *SyyFS) OpenAvatarFile(ufi string) (File, error) {
+	return fs.openFile(ufi, os.O_RDONLY, 0, true)
 }
 
-func (fs *SyyFS) openFile(ufiStr string, flag int, perm os.FileMode, avatar bool) (File, error) {
+func (fs *SyyFS) openFile(ufi string, flag int, perm os.FileMode, avatar bool) (File, error) {
 	file := new(HTTPFile)
 	file.ugn = fs.ugn
 	res := rj.Response[bfsApiRet]{}
@@ -51,7 +47,7 @@ func (fs *SyyFS) openFile(ufiStr string, flag int, perm os.FileMode, avatar bool
 			sdkconst.NamespaceHeader: file.ugn.Namespace,
 		}).
 		SetQueryParams(map[string]string{
-			"ufi":    ufiStr,
+			"ufi":    ufi,
 			"flag":   fmt.Sprintf("%d", flag),
 			"perm":   fmt.Sprintf("%d", perm),
 			"avatar": strconv.FormatBool(avatar),
@@ -66,47 +62,39 @@ func (fs *SyyFS) openFile(ufiStr string, flag int, perm os.FileMode, avatar bool
 	return file, err
 }
 
-func (fs *SyyFS) MkdirAll(ufi *utils.UFI) error {
+func (fs *SyyFS) MkdirAll(ufi string) error {
 	api := utils.GetCoreServiceURL() + "/v2/faas/fs/mkdir/all"
-	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi.Serialize()}, nil)
+	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
 	}
 	return nil
 }
 
-func (fs *SyyFS) Remove(ufi *utils.UFI) error {
-	return fs.Remove2(ufi.Serialize())
-}
-
-func (fs *SyyFS) Remove2(ufiStr string) error {
+func (fs *SyyFS) Remove(ufi string) error {
 	api := utils.GetCoreServiceURL() + "/v2/faas/fs/remove"
-	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufiStr}, nil)
+	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
 	}
 	return nil
 }
 
-func (fs *SyyFS) RemoveAll(ufi *utils.UFI) error {
-	return fs.RemoveAll2(ufi.Serialize())
-}
-
-func (fs *SyyFS) RemoveAll2(ufiStr string) error {
+func (fs *SyyFS) RemoveAll(ufi string) error {
 	api := utils.GetCoreServiceURL() + "/v2/faas/fs/remove/all"
-	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufiStr}, nil)
+	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
 	}
 	return nil
 }
 
-func (fs *SyyFS) Rename(oldUFI *utils.UFI, newUFI *utils.UFI) error {
+func (fs *SyyFS) Rename(oldUFI string, newUFI string) error {
 	api := utils.GetCoreServiceURL() + "/v2/faas/fs/rename"
 	resp := restclient.PostRequest[any](fs.ugn, api,
 		map[string]string{
-			"ufi1": oldUFI.Serialize(),
-			"ufi2": newUFI.Serialize(),
+			"ufi1": oldUFI,
+			"ufi2": newUFI,
 		}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
@@ -114,15 +102,11 @@ func (fs *SyyFS) Rename(oldUFI *utils.UFI, newUFI *utils.UFI) error {
 	return nil
 }
 
-func (fs *SyyFS) Chtimes(ufi *utils.UFI, atime time.Time, mtime time.Time) error {
-	return fs.Chtimes2(ufi.Serialize(), atime, mtime)
-}
-
-func (fs *SyyFS) Chtimes2(ufiStr string, atime time.Time, mtime time.Time) error {
+func (fs *SyyFS) Chtimes(ufi string, atime time.Time, mtime time.Time) error {
 	api := utils.GetCoreServiceURL() + "/v2/faas/fs/chtimes"
 	resp := restclient.PostRequest[any](fs.ugn, api,
 		map[string]string{
-			"ufi":   ufiStr,
+			"ufi":   ufi,
 			"atime": strconv.FormatInt(atime.UnixMilli(), 10),
 			"mtime": strconv.FormatInt(mtime.UnixMilli(), 10),
 		}, nil)
@@ -132,9 +116,9 @@ func (fs *SyyFS) Chtimes2(ufiStr string, atime time.Time, mtime time.Time) error
 	return nil
 }
 
-func (fs *SyyFS) FileExists(ufi *utils.UFI) bool {
+func (fs *SyyFS) FileExists(ufi string) bool {
 	api := utils.GetCoreServiceURL() + "/v2/faas/fs/exists"
-	resp := restclient.GetRequest[bool](fs.ugn, api, map[string]string{"ufi": ufi.Serialize()})
+	resp := restclient.GetRequest[bool](fs.ugn, api, map[string]string{"ufi": ufi})
 	if resp.Code != sdkconst.Success {
 		return false
 	}
@@ -164,21 +148,21 @@ func (fs *SyyFS) Exec(f func(*gorm.DB) error) error {
 }
 
 func (fs *SyyFS) AppOpenFile(path string, flag int, perm os.FileMode) (File, error) {
-	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, utils.PathUFI, filepath.Join(fs.appPrefix, path))
+	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, filepath.Join(fs.appPrefix, path))
 	return fs.openFile(ufi.Serialize(), flag, perm, false)
 }
 
 func (fs *SyyFS) AppMkdirAll(path string) error {
-	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, utils.PathUFI, filepath.Join(fs.appPrefix, path))
-	return fs.MkdirAll(ufi)
+	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, filepath.Join(fs.appPrefix, path))
+	return fs.MkdirAll(ufi.Serialize())
 }
 
 func (fs *SyyFS) AppRemoveAll(path string) error {
-	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, utils.PathUFI, filepath.Join(fs.appPrefix, path))
-	return fs.RemoveAll(ufi)
+	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, filepath.Join(fs.appPrefix, path))
+	return fs.RemoveAll(ufi.Serialize())
 }
 
 func (fs *SyyFS) AppFileExists(path string) bool {
-	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, utils.PathUFI, filepath.Join(fs.appPrefix, path))
-	return fs.FileExists(ufi)
+	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, filepath.Join(fs.appPrefix, path))
+	return fs.FileExists(ufi.Serialize())
 }
