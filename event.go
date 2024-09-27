@@ -39,10 +39,11 @@ const (
 	MediaTypeOther      MediaType = "other"       // 其他类型
 )
 
-// 文件事件类型，文件创建与文件删除
+// 文件事件类型
 const (
-	FileEventAdd = iota + 1
-	FileEventDelete
+	FileEventAdd    = iota + 1 // 文件创建
+	FileEventDelete            // 文件删除
+	FileEventRename            // 文件重命名
 )
 
 type ConsumeStatus int
@@ -63,6 +64,7 @@ const (
 
 type FileEvent struct {
 	UGN        *utils.UserGroupNamespace `json:"ugn"`
+	OldUFI     string                    `json:"oldUfi"`
 	UFI        string                    `json:"ufi"`
 	Inode      uint64                    `json:"inode"`
 	Action     int                       `json:"action"`
