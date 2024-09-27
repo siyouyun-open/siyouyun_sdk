@@ -64,6 +64,7 @@ const (
 type FileEvent struct {
 	UGN        *utils.UserGroupNamespace `json:"ugn"`
 	UFI        string                    `json:"ufi"`
+	Inode      uint64                    `json:"inode"`
 	Action     int                       `json:"action"`
 	WithAvatar bool                      `json:"withAvatar"`
 }

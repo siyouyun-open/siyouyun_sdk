@@ -3,7 +3,7 @@ module github.com/siyouyun-open/siyouyun_sdk
 go 1.22.0
 
 require (
-	github.com/go-resty/resty/v2 v2.15.2
+	github.com/go-resty/resty/v2 v2.15.3
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/milvus-io/milvus-sdk-go/v2 v2.4.1
 	github.com/nats-io/nats.go v1.37.0
