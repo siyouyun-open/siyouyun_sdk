@@ -126,6 +126,9 @@ func (H *HTTPFile) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (H *HTTPFile) Write(p []byte) (int, error) {
+	if p == nil || len(p) == 0 {
+		return 0, nil
+	}
 	res := rj.Response[bfsApiRet]{}
 	_, err := restclient.Client.R().
 		SetResult(&res).
@@ -148,6 +151,9 @@ func (H *HTTPFile) Write(p []byte) (int, error) {
 }
 
 func (H *HTTPFile) WriteAt(p []byte, off int64) (int, error) {
+	if p == nil || len(p) == 0 {
+		return 0, nil
+	}
 	res := rj.Response[bfsApiRet]{}
 	_, err := restclient.Client.R().
 		SetResult(&res).
