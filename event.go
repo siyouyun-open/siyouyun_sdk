@@ -137,9 +137,17 @@ func (e *EventHolder) Listen() {
 
 			// 异步执行具体任务
 			go func() {
-				cs, m := e.optionsMap[eventCode].Handler(&fe)
+				var cs ConsumeStatus
+				var message string
+				options, ok := e.optionsMap[eventCode]
+				if ok {
+					cs, message = options.Handler(&fe)
+				} else {
+					cs = ConsumeFail
+					message = "event handler not exist"
+				}
 				var resMsg = nats.NewMsg(msg.Reply)
-				resMsg.Data = []byte(m)
+				resMsg.Data = []byte(message)
 				resMsg.Header.Set("status", strconv.Itoa(int(cs)))
 				_ = nc.PublishMsg(resMsg)
 			}()

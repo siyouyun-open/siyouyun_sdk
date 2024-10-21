@@ -65,7 +65,7 @@ func NewUFI(storageType StorageType, uuid string, fullPath string) *UFI {
 		ufiProtocol: UFIv1,
 		StorageType: storageType,
 		UUID:        uuid,
-		FullPath:    fullPath,
+		FullPath:    filepath.Join("/", fullPath),
 	}
 }
 
@@ -94,7 +94,7 @@ func NewUFIFromSerialize(UFIString string) (*UFI, error) {
 		ufiProtocol: UFIProtocol(strings.ReplaceAll(splitUFIString[0], "/", "")),
 		StorageType: StorageType(splitUFIString[1]),
 		UUID:        splitUFIString[2],
-		FullPath:    fullPath,
+		FullPath:    filepath.Join("/", fullPath),
 	}
 	if !ufi.Validate() {
 		return nil, errors.New("ufi invalid")
