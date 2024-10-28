@@ -26,11 +26,11 @@ const (
 	AliyunOSS   StorageType = "aliyun-oss"
 	TencentOSS  StorageType = "tencent-oss"
 	SambaClient StorageType = "smb-client"
-	UFSMeta     StorageType = "siyouyun-meta"
-	UFSRaw      StorageType = "siyouyun-raw"
-	UFSSandbox  StorageType = "siyouyun-sandbox"
-	Snapshot    StorageType = "siyouyun-snapshot"
-	Trash       StorageType = "siyouyun-trash"
+	UFSMeta     StorageType = "pool-meta"
+	UFSRaw      StorageType = "pool-raw"
+	UFSSandbox  StorageType = "pool-sandbox"
+	Snapshot    StorageType = "pool-snapshot"
+	Trash       StorageType = "pool-trash"
 	Webdav      StorageType = "webdav"
 	FTP         StorageType = "ftp"
 )
@@ -40,7 +40,7 @@ func (t StorageType) String() string {
 }
 
 func (t StorageType) IsSiyouyunStorage() bool {
-	return strings.HasPrefix(string(t), "siyouyun")
+	return strings.HasPrefix(string(t), "pool")
 }
 
 // UFI Uniform Resource Identifier
