@@ -20,10 +20,6 @@ const (
 	PrivateNamespace     = "private"
 	CommonNamespace      = "common"
 	SiyouFSMysqlDBPrefix = "siyou"
-
-	SystemPool          = "siyouyun"
-	StoragePoolMountDir = "/siyouyun/pool"
-	UserSpacePrefix     = "user_"
-
-	UnixSocketFile = "/siyouyun/unix-socket/syy_os_file.socket"
+	SiyouSysPool         = "syspool"
+	UserHomeDir          = "/home"
 )

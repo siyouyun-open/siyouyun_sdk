@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/go-resty/resty/v2 v2.15.3
 	github.com/kataras/iris/v12 v12.2.11
-	github.com/milvus-io/milvus-sdk-go/v2 v2.4.1
+	github.com/milvus-io/milvus-sdk-go/v2 v2.4.2
 	github.com/nats-io/nats.go v1.37.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	google.golang.org/grpc v1.48.0
@@ -51,7 +51,7 @@ require (
 	github.com/mailgun/raymond/v2 v2.0.48 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.26 // indirect
-	github.com/milvus-io/milvus-proto/go-api/v2 v2.4.3 // indirect
+	github.com/milvus-io/milvus-proto/go-api/v2 v2.4.10-0.20240819025435-512e3b98866a // indirect
 	github.com/nats-io/nkeys v0.4.7 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -70,6 +70,7 @@ require (
 	github.com/yosssi/ace v0.0.5 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.6.0 // indirect

@@ -33,7 +33,10 @@ func (ugn *UserGroupNamespace) GetRealPrefix(poolName string) string {
 	if ugn.GroupName == "" {
 		ugn.GroupName = ugn.Username
 	}
-	return filepath.Join(sdkconst.StoragePoolMountDir, poolName, sdkconst.UserSpacePrefix+ugn.GroupName, ugn.Namespace)
+	if poolName == "" {
+		poolName = sdkconst.SiyouSysPool
+	}
+	return filepath.Join(sdkconst.UserHomeDir, ugn.GroupName, ugn.Namespace, poolName)
 }
 
 func (ugn *UserGroupNamespace) DatabaseName() string {

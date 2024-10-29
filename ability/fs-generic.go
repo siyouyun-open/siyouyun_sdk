@@ -148,21 +148,21 @@ func (fs *SyyFS) Exec(f func(*gorm.DB) error) error {
 }
 
 func (fs *SyyFS) AppOpenFile(path string, flag int, perm os.FileMode) (File, error) {
-	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, filepath.Join(fs.appPrefix, path))
+	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SiyouSysPool, filepath.Join(fs.appPrefix, path))
 	return fs.openFile(ufi.Serialize(), flag, perm, false)
 }
 
 func (fs *SyyFS) AppMkdirAll(path string) error {
-	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, filepath.Join(fs.appPrefix, path))
+	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SiyouSysPool, filepath.Join(fs.appPrefix, path))
 	return fs.MkdirAll(ufi.Serialize())
 }
 
 func (fs *SyyFS) AppRemoveAll(path string) error {
-	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, filepath.Join(fs.appPrefix, path))
+	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SiyouSysPool, filepath.Join(fs.appPrefix, path))
 	return fs.RemoveAll(ufi.Serialize())
 }
 
 func (fs *SyyFS) AppFileExists(path string) bool {
-	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SystemPool, filepath.Join(fs.appPrefix, path))
+	ufi := utils.NewUFI(utils.UFSMeta, sdkconst.SiyouSysPool, filepath.Join(fs.appPrefix, path))
 	return fs.FileExists(ufi.Serialize())
 }
