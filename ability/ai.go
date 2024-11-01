@@ -14,7 +14,7 @@ type AI struct {
 }
 
 func NewAI() *AI {
-	conn, err := grpc.Dial(utils.GetAIServiceURL(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(utils.GetAIServiceURL(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Printf("[ERROR] AI service conn err: %v", err)
 		return &AI{}

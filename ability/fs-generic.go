@@ -126,25 +126,16 @@ func (fs *SyyFS) FileExists(ufi string) bool {
 }
 
 func (fs *SyyFS) Exec(f func(*gorm.DB) error) error {
-	err := fs.db.Transaction(func(tx *gorm.DB) (err error) {
-		dbname := fs.ugn.DatabaseName()
-		if dbname == "" {
-			return
+	return fs.db.Transaction(func(tx *gorm.DB) error {
+		if fs.ugn == nil {
+			return errors.New("ugn is empty")
 		}
-		err = tx.Exec("use " + dbname).Error
+		err := tx.Exec(fmt.Sprintf("SET search_path TO %s, public;", fs.ugn.SchemaName())).Error
 		if err != nil {
 			return err
 		}
-		err = f(tx)
-		if err != nil {
-			return err
-		}
-		return nil
+		return f(tx)
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (fs *SyyFS) AppOpenFile(path string, flag int, perm os.FileMode) (File, error) {

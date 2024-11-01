@@ -5,11 +5,11 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/siyouyun-open/siyouyun_sdk/ability"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
-	"github.com/siyouyun-open/siyouyun_sdk/internal/mysql"
+	"github.com/siyouyun-open/siyouyun_sdk/internal/rdb"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
 	"os"
@@ -63,8 +63,8 @@ func NewApp() *AppStruct {
 	}
 
 	// init db
-	db, _ := gorm.Open(mysql.Open(App.appInfo.AppDSN), &gorm.Config{
-		Logger: siyoumysql.NewLogger(),
+	db, _ := gorm.Open(postgres.Open(App.appInfo.AppDSN), &gorm.Config{
+		Logger: rdb.NewLogger(),
 	})
 	sqlDB, _ := db.DB()
 	sqlDB.SetConnMaxLifetime(time.Minute * 30)
@@ -124,7 +124,7 @@ func (a *AppStruct) listenSysMsg() {
 				if mes[i].SendByAdmin {
 					switch mes[i].Content {
 					case "autoMigrate":
-						log.Printf("[INFO] autoMigrate: %v", mes[i].Content)
+						log.Printf("[INFO] AutoMigrate, ugn: %s, ", mes[i].UGN)
 						a.setUserWithModel(ugn)
 					}
 				}
@@ -135,28 +135,6 @@ func (a *AppStruct) listenSysMsg() {
 			log.Printf("[ERROR] listenSysMsg Subscribe err: %v", err)
 		}
 	}()
-}
-
-func (a *AppStruct) exec(ugn *utils.UserGroupNamespace, f func(*gorm.DB) error) error {
-	err := a.db.Transaction(func(tx *gorm.DB) (err error) {
-		dbname := ugn.DatabaseName()
-		if dbname == "" {
-			return
-		}
-		err = tx.Exec("use " + dbname).Error
-		if err != nil {
-			return err
-		}
-		err = f(tx)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // detectEnv detect the environment, docker or host

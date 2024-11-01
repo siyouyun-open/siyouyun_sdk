@@ -6,22 +6,26 @@ import (
 	"log"
 )
 
-// WithModel 自动迁移表
+// WithModel auto migrate tables
 func (a *AppStruct) WithModel(models ...interface{}) {
 	a.models = append(a.models, models...)
-	var ul = a.appInfo.UGNList
-	for i := range ul {
-		_ = a.exec(&ul[i], func(db *gorm.DB) error {
-			return db.AutoMigrate(models...)
+	for i := range a.appInfo.UGNList {
+		fs := a.Ability.FS().NewFSFromUserGroupNamespace(&a.appInfo.UGNList[i])
+		_ = fs.Exec(func(db *gorm.DB) error {
+			err := db.AutoMigrate(models...)
+			if err != nil {
+				log.Printf(err.Error())
+			}
+			return err
 		})
 	}
 }
 
-// UpdateModel 更新表（需要删除更改字段或索引时使用）
+// UpdateModel Update table (used when changing fields or indexes need to be removed)
 func (a *AppStruct) UpdateModel(f func(gorm.Migrator)) {
-	var ul = a.appInfo.UGNList
-	for i := range ul {
-		_ = a.exec(&ul[i], func(db *gorm.DB) error {
+	for i := range a.appInfo.UGNList {
+		fs := a.Ability.FS().NewFSFromUserGroupNamespace(&a.appInfo.UGNList[i])
+		_ = fs.Exec(func(db *gorm.DB) error {
 			f(db.Migrator())
 			return nil
 		})
@@ -30,12 +34,12 @@ func (a *AppStruct) UpdateModel(f func(gorm.Migrator)) {
 
 // 增加用户追加建立数据表
 func (a *AppStruct) setUserWithModel(ugn *utils.UserGroupNamespace) {
-	_ = a.exec(ugn, func(db *gorm.DB) error {
+	fs := a.Ability.FS().NewFSFromUserGroupNamespace(ugn)
+	_ = fs.Exec(func(db *gorm.DB) error {
 		err := db.AutoMigrate(a.models...)
 		if err != nil {
 			log.Printf(err.Error())
-			return err
 		}
-		return nil
+		return err
 	})
 }

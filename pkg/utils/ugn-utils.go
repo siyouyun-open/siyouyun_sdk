@@ -39,7 +39,7 @@ func (ugn *UserGroupNamespace) GetRealPrefix(poolName string) string {
 	return filepath.Join(sdkconst.UserHomeDir, ugn.GroupName, ugn.Namespace, poolName)
 }
 
-func (ugn *UserGroupNamespace) DatabaseName() string {
+func (ugn *UserGroupNamespace) SchemaName() string {
 	if ugn.GroupName == "" {
 		ugn.GroupName = ugn.Username
 	}

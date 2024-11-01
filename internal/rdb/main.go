@@ -1,4 +1,4 @@
-package siyoumysql
+package rdb
 
 import (
 	"gorm.io/gorm/logger"

@@ -26,7 +26,6 @@ type Ability struct {
 	message  *ability.Message  // message bot
 	ai       *ability.AI       // ai inference
 	fs       *ability.FS       // fs file handler
-	milvus   *ability.Milvus   // milvus db
 }
 
 // WithFS add fs support
@@ -92,17 +91,6 @@ func (a *AppStruct) WithAI() {
 	log.Printf("[INFO] [%v] ability is supported", a.Ability.ai.Name())
 }
 
-// WithMilvus add milvus support
-func (a *AppStruct) WithMilvus() {
-	var err error
-	a.Ability.milvus, err = ability.NewMilvus(&a.AppCode)
-	if err != nil {
-		log.Printf("[ERROR] [%v] ability enable err: %v", a.Ability.milvus.Name(), err)
-		return
-	}
-	log.Printf("[INFO] [%v] ability is supported", a.Ability.milvus.Name())
-}
-
 func (a *Ability) FS() *ability.FS {
 	return a.fs
 }
@@ -150,13 +138,6 @@ func (a *Ability) AI() (*ability.AI, error) {
 	return a.ai, nil
 }
 
-func (a *Ability) Milvus() (*ability.Milvus, error) {
-	if a.milvus == nil {
-		return nil, abilityNotEnableErr
-	}
-	return a.milvus, nil
-}
-
 func (a *Ability) Destroy() {
 	if a.kv != nil {
 		a.kv.Close()
@@ -172,8 +153,5 @@ func (a *Ability) Destroy() {
 	}
 	if a.ai != nil {
 		a.ai.Close()
-	}
-	if a.milvus != nil {
-		a.milvus.Close()
 	}
 }
