@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	rj "github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
@@ -19,6 +20,10 @@ type SyyFS struct {
 	ugn       *utils.UserGroupNamespace
 	appPrefix string
 	db        *gorm.DB
+}
+
+func (fs *SyyFS) GetUGN() *utils.UserGroupNamespace {
+	return fs.ugn
 }
 
 func (fs *SyyFS) Open(ufi string) (File, error) {
@@ -60,6 +65,15 @@ func (fs *SyyFS) openFile(ufi string, flag int, perm os.FileMode, avatar bool) (
 	}
 	file.fd = res.Data.N
 	return file, err
+}
+
+func (fs *SyyFS) Stat(ufi string) (*sdkdto.SiyouFileInfo, error) {
+	api := utils.GetCoreServiceURL() + "/v2/faas/fs/object/detail"
+	resp := restclient.GetRequest[sdkdto.SiyouFileInfo](fs.ugn, api, map[string]string{"ufi": ufi})
+	if resp.Code != sdkconst.Success {
+		return nil, errors.New(resp.Msg)
+	}
+	return resp.Data, nil
 }
 
 func (fs *SyyFS) MkdirAll(ufi string) error {

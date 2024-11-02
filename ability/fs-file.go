@@ -197,7 +197,7 @@ func (H *HTTPFile) Name() string {
 	return string(res.Data.Content)
 }
 
-func (H *HTTPFile) Readdir(n int) ([]*sdkdto.SiyouFileBasicInfo, error) {
+func (H *HTTPFile) Readdir(n int) ([]*sdkdto.SiyouFileInfo, error) {
 	res := rj.Response[bfsApiRet]{}
 	_, err := restclient.Client.R().
 		SetResult(&res).
@@ -216,7 +216,7 @@ func (H *HTTPFile) Readdir(n int) ([]*sdkdto.SiyouFileBasicInfo, error) {
 	if res.Data.Error != "" {
 		return nil, errors.New(res.Data.Error)
 	}
-	var resJson []*sdkdto.SiyouFileBasicInfo
+	var resJson []*sdkdto.SiyouFileInfo
 	err = json.Unmarshal(res.Data.Content, &resJson)
 	if err != nil {
 		return nil, err
@@ -251,7 +251,7 @@ func (H *HTTPFile) Readdirnames(n int) ([]string, error) {
 	return resJson, nil
 }
 
-func (H *HTTPFile) Stat() (*sdkdto.SiyouFileBasicInfo, error) {
+func (H *HTTPFile) Stat() (*sdkdto.SiyouFileInfo, error) {
 	res := rj.Response[bfsApiRet]{}
 	_, err := restclient.Client.R().
 		SetResult(&res).
@@ -269,7 +269,7 @@ func (H *HTTPFile) Stat() (*sdkdto.SiyouFileBasicInfo, error) {
 	if res.Data.Error != "" {
 		return nil, errors.New(res.Data.Error)
 	}
-	var info sdkdto.SiyouFileBasicInfo
+	var info sdkdto.SiyouFileInfo
 	err = json.Unmarshal(res.Data.Content, &info)
 	if err != nil {
 		return nil, err

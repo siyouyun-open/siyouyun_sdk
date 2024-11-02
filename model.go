@@ -21,18 +21,21 @@ func (a *AppStruct) WithModel(models ...interface{}) {
 	}
 }
 
-// UpdateModel Update table (used when changing fields or indexes need to be removed)
-func (a *AppStruct) UpdateModel(f func(gorm.Migrator)) {
+// UpdateModel Update table, used when changing fields or indexes
+func (a *AppStruct) UpdateModel(f func(db *gorm.DB)) error {
 	for i := range a.appInfo.UGNList {
 		fs := a.Ability.FS().NewFSFromUserGroupNamespace(&a.appInfo.UGNList[i])
-		_ = fs.Exec(func(db *gorm.DB) error {
-			f(db.Migrator())
+		err := fs.Exec(func(db *gorm.DB) error {
+			f(db)
 			return nil
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-// 增加用户追加建立数据表
 func (a *AppStruct) setUserWithModel(ugn *utils.UserGroupNamespace) {
 	fs := a.Ability.FS().NewFSFromUserGroupNamespace(ugn)
 	_ = fs.Exec(func(db *gorm.DB) error {

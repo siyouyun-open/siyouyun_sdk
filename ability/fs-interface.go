@@ -2,6 +2,7 @@ package ability
 
 import (
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/gorm"
 	"io"
 	"os"
@@ -9,9 +10,11 @@ import (
 )
 
 type GenericFS interface {
+	GetUGN() *utils.UserGroupNamespace
 	Open(ufi string) (File, error)
 	OpenFile(ufi string, flag int, perm os.FileMode) (File, error)
 	OpenAvatarFile(ufi string) (File, error)
+	Stat(ufi string) (*sdkdto.SiyouFileInfo, error)
 	MkdirAll(ufi string) error
 	Remove(ufi string) error
 	RemoveAll(ufi string) error
@@ -34,9 +37,9 @@ type File interface {
 	io.WriterAt
 
 	Name() string
-	Readdir(count int) ([]*sdkdto.SiyouFileBasicInfo, error)
+	Readdir(count int) ([]*sdkdto.SiyouFileInfo, error)
 	Readdirnames(n int) ([]string, error)
-	Stat() (*sdkdto.SiyouFileBasicInfo, error)
+	Stat() (*sdkdto.SiyouFileInfo, error)
 	Sync() error
 	Truncate(size int64) error
 	WriteString(s string) (ret int, err error)
