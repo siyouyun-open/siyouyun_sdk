@@ -24,15 +24,15 @@ const (
 )
 
 type AppStruct struct {
-	AppCode string
-	Event   *EventHolder
-	Ability *Ability     // app ability
-	Api     SiyouFaaSApi // app interfaces
-
-	db      *gorm.DB
-	nc      *nats.Conn
-	models  []interface{}           // app table models
-	appInfo *sdkdto.AppRegisterInfo // app register info
+	AppCode       string
+	Event         *EventHolder
+	Ability       *Ability                // app ability
+	Api           SiyouFaaSApi            // app interfaces
+	appInfo       *sdkdto.AppRegisterInfo // app register info
+	nc            *nats.Conn              // nats conn
+	db            *gorm.DB                // gorm db instance
+	migrateSchema MigrateFunc             // app db migrate schema function
+	migrateData   MigrateFunc             // app db migrate data function
 }
 
 var App *AppStruct
@@ -120,12 +120,11 @@ func (a *AppStruct) listenSysMsg() {
 				return
 			}
 			for i := range mes {
-				ugn := utils.NewUserGroupNamespace(mes[i].UGN.Username, mes[i].UGN.GroupName, mes[i].UGN.Namespace)
 				if mes[i].SendByAdmin {
 					switch mes[i].Content {
 					case "autoMigrate":
 						log.Printf("[INFO] AutoMigrate, ugn: %s, ", mes[i].UGN)
-						a.setUserWithModel(ugn)
+						a.migrateWithUser(&mes[i].UGN)
 					}
 				}
 			}
