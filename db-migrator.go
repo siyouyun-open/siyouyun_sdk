@@ -26,10 +26,12 @@ func (a *AppStruct) WithSchemaMigrator(migrateSchema func(db *gorm.DB) error, af
 			return
 		}
 		// Execute outside the transaction
-		err = afterFunc(ugn)
-		if err != nil {
-			log.Printf("[ERROR] WithSchemaMigrator schema after func err: %v", err)
-			return
+		if afterFunc != nil {
+			err = afterFunc(ugn)
+			if err != nil {
+				log.Printf("[ERROR] WithSchemaMigrator schema after func err: %v", err)
+				return
+			}
 		}
 	}
 }
