@@ -63,9 +63,13 @@ func NewApp() *AppStruct {
 	}
 
 	// init db
-	db, _ := gorm.Open(postgres.Open(App.appInfo.AppDSN), &gorm.Config{
-		Logger: rdb.NewLogger(),
-	})
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  App.appInfo.AppDSN,
+		PreferSimpleProtocol: true,
+	}), &gorm.Config{Logger: rdb.NewLogger()})
+	if err != nil {
+		panic(err)
+	}
 	sqlDB, _ := db.DB()
 	sqlDB.SetConnMaxLifetime(time.Minute * 30)
 	sqlDB.SetConnMaxIdleTime(time.Minute * 3)
