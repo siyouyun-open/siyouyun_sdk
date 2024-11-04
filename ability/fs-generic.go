@@ -26,6 +26,10 @@ func (fs *SyyFS) GetUGN() *utils.UserGroupNamespace {
 	return fs.ugn
 }
 
+func (fs *SyyFS) GetDB() *gorm.DB {
+	return fs.db
+}
+
 func (fs *SyyFS) Open(ufi string) (File, error) {
 	return fs.openFile(ufi, os.O_RDONLY, 0, false)
 }
@@ -139,17 +143,30 @@ func (fs *SyyFS) FileExists(ufi string) bool {
 	return *resp.Data
 }
 
-func (fs *SyyFS) Exec(f func(*gorm.DB) error) error {
-	return fs.db.Transaction(func(tx *gorm.DB) error {
-		if fs.ugn == nil {
-			return errors.New("ugn is empty")
-		}
-		err := tx.Exec(fmt.Sprintf("SET search_path TO %s, public;", fs.ugn.SchemaName())).Error
+func (fs *SyyFS) Exec(f func(*gorm.DB) error, transactional ...bool) error {
+	if fs.ugn == nil {
+		return errors.New("ugn is empty")
+	}
+	flag := true // default use transaction
+	if len(transactional) > 0 {
+		flag = transactional[0]
+	}
+	if flag {
+		return fs.db.Transaction(func(tx *gorm.DB) error {
+			err := tx.Exec(fmt.Sprintf("SET search_path TO %s, public;", fs.ugn.SchemaName())).Error
+			if err != nil {
+				return err
+			}
+			return f(tx)
+		})
+	} else {
+		session := fs.db.Session(&gorm.Session{})
+		err := session.Exec(fmt.Sprintf("SET search_path TO %s, public;", fs.ugn.SchemaName())).Error
 		if err != nil {
 			return err
 		}
-		return f(tx)
-	})
+		return f(session)
+	}
 }
 
 func (fs *SyyFS) AppOpenFile(path string, flag int, perm os.FileMode) (File, error) {

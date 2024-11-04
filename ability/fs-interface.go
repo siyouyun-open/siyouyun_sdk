@@ -11,6 +11,7 @@ import (
 
 type GenericFS interface {
 	GetUGN() *utils.UserGroupNamespace
+	GetDB() *gorm.DB
 	Open(ufi string) (File, error)
 	OpenFile(ufi string, flag int, perm os.FileMode) (File, error)
 	OpenAvatarFile(ufi string) (File, error)
@@ -21,7 +22,7 @@ type GenericFS interface {
 	Rename(oldUFI string, newUFI string) error
 	Chtimes(ufi string, atime time.Time, mtime time.Time) error
 	FileExists(ufi string) bool
-	Exec(f func(*gorm.DB) error) error
+	Exec(f func(*gorm.DB) error, transactional ...bool) error
 	AppOpenFile(path string, flag int, perm os.FileMode) (File, error)
 	AppMkdirAll(path string) error
 	AppRemoveAll(path string) error
