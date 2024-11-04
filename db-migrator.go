@@ -6,84 +6,60 @@ import (
 	"log"
 )
 
-// WithSchemaMigrator Migrate db schema
-// The schema is migrated when the application is started
-// After the migrateSchema processing of each UGN is completed, afterFunc is executed (After the transaction is committed)
-func (a *AppStruct) WithSchemaMigrator(migrateSchema func(db *gorm.DB) error, afterFunc func(*utils.UserGroupNamespace) error) {
+// WithModel auto migrate models
+// Automatically migrate table models, which is a simplified version of WithSchemaMigrator
+func (a *AppStruct) WithModel(models ...any) {
+	if len(models) == 0 {
+		return
+	}
+	a.migrateSchema = func(ugn *utils.UserGroupNamespace) error {
+		fs := a.Ability.FS().NewFSFromUserGroupNamespace(ugn)
+		return fs.Exec(func(db *gorm.DB) error {
+			return db.AutoMigrate(models...)
+		})
+	}
+	for i := range a.appInfo.UGNList {
+		if err := a.migrateSchema(&a.appInfo.UGNList[i]); err != nil {
+			log.Printf("[ERROR] WithModel err: %v", err)
+			return
+		}
+	}
+}
+
+// WithSchemaMigrator Migrate schema
+// Migrated when invoked and user registered
+func (a *AppStruct) WithSchemaMigrator(migrateSchema func(ugn *utils.UserGroupNamespace) error) {
 	if migrateSchema == nil {
 		return
 	}
 	a.migrateSchema = migrateSchema
-	a.schemaAfterFunc = afterFunc
 	for i := range a.appInfo.UGNList {
-		ugn := &a.appInfo.UGNList[i]
-		fs := a.Ability.FS().NewFSFromUserGroupNamespace(ugn)
-		err := fs.Exec(func(db *gorm.DB) error {
-			return migrateSchema(db)
-		})
-		if err != nil {
-			log.Printf("[ERROR] WithSchemaMigrator schema err: %v", err)
+		if err := migrateSchema(&a.appInfo.UGNList[i]); err != nil {
+			log.Printf("[ERROR] WithSchemaMigrator err: %v", err)
 			return
-		}
-		// Execute outside the transaction
-		if afterFunc != nil {
-			err = afterFunc(ugn)
-			if err != nil {
-				log.Printf("[ERROR] WithSchemaMigrator schema after func err: %v", err)
-				return
-			}
 		}
 	}
 }
 
-// WithDataMigrator Migrate db data
-// The data is migrated when the user is registered
-// After the migrateData processing of each UGN is completed, afterFunc is executed (After the transaction is committed)
-func (a *AppStruct) WithDataMigrator(migrateData func(db *gorm.DB) error, afterFunc func(*utils.UserGroupNamespace) error) {
-	if migrateData == nil {
-		return
-	}
+// WithDataMigrator Migrate data
+// Migrated when user registered
+func (a *AppStruct) WithDataMigrator(migrateData func(ugn *utils.UserGroupNamespace) error) {
 	a.migrateData = migrateData
-	a.dataAfterFunc = afterFunc
 }
 
 // migrateWithUser migrate scheme and data when user register, auto trigger
 func (a *AppStruct) migrateWithUser(ugn *utils.UserGroupNamespace) {
-	fs := a.Ability.FS().NewFSFromUserGroupNamespace(ugn)
 	// migrate schema
 	if a.migrateSchema != nil {
-		err := fs.Exec(func(db *gorm.DB) error {
-			return a.migrateSchema(db)
-		})
-		if err != nil {
-			log.Printf("[ERROR] migrateWithUser schema err: %v", err)
+		if err := a.migrateSchema(ugn); err != nil {
+			log.Printf("[ERROR] migrateWithUser migrate schema err: %v", err)
 			return
 		}
 	}
-	// handle schema after func
-	if a.schemaAfterFunc != nil {
-		err := a.schemaAfterFunc(ugn)
-		if err != nil {
-			log.Printf("[ERROR] migrateWithUser schema after func err: %v", err)
-			return
-		}
-	}
-
 	// migrate data
 	if a.migrateData != nil {
-		err := fs.Exec(func(db *gorm.DB) error {
-			return a.migrateData(db)
-		})
-		if err != nil {
-			log.Printf("[ERROR] migrateWithUser data err: %v", err)
-			return
-		}
-	}
-	// handle data after func
-	if a.dataAfterFunc != nil {
-		err := a.dataAfterFunc(ugn)
-		if err != nil {
-			log.Printf("[ERROR] migrateWithUser data after func err: %v", err)
+		if err := a.migrateData(ugn); err != nil {
+			log.Printf("[ERROR] migrateWithUser migrate data err: %v", err)
 			return
 		}
 	}

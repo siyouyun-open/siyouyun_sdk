@@ -24,17 +24,15 @@ const (
 )
 
 type AppStruct struct {
-	AppCode         string
-	Event           *EventHolder
-	Ability         *Ability                              // app ability
-	Api             SiyouFaaSApi                          // app interfaces
-	appInfo         *sdkdto.AppRegisterInfo               // app register info
-	nc              *nats.Conn                            // nats conn
-	db              *gorm.DB                              // gorm db instance
-	migrateSchema   func(db *gorm.DB) error               // app db migrate schema function
-	schemaAfterFunc func(*utils.UserGroupNamespace) error // app db migrate schema postprocessing
-	migrateData     func(db *gorm.DB) error               // app db migrate data function
-	dataAfterFunc   func(*utils.UserGroupNamespace) error // app db migrate data postprocessing
+	AppCode       string
+	Event         *EventHolder
+	Ability       *Ability                              // app ability
+	Api           SiyouFaaSApi                          // app interfaces
+	appInfo       *sdkdto.AppRegisterInfo               // app register info
+	nc            *nats.Conn                            // nats conn
+	db            *gorm.DB                              // gorm db instance
+	migrateSchema func(*utils.UserGroupNamespace) error // app migrate schema function
+	migrateData   func(*utils.UserGroupNamespace) error // app migrate data function
 }
 
 var App *AppStruct
