@@ -58,7 +58,7 @@ func (a *AppStruct) handleEvent(msg jetstream.Msg) {
 	// migration event
 	case faaSMigrationEvent:
 		var ugn utils.UserGroupNamespace
-		err = json.Unmarshal(msg.Data(), &ugn)
+		err = json.Unmarshal(event.Payload, &ugn)
 		if err != nil {
 			log.Printf("[ERROR] handleEvent parse err: %v", err)
 			return
