@@ -3,6 +3,7 @@ package siyouyunsdk
 import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/gorm"
+	"hash/fnv"
 	"log"
 )
 
@@ -14,8 +15,14 @@ func (a *AppStruct) WithModel(models ...any) {
 	}
 	a.migrateSchema = func(ugn *utils.UserGroupNamespace) error {
 		fs := a.Ability.FS().NewFSFromUserGroupNamespace(ugn)
-		return fs.Exec(func(db *gorm.DB) error {
-			return db.AutoMigrate(models...)
+		lockKey := hashStringToInt(ugn.String())
+		return fs.Exec(func(tx *gorm.DB) error {
+			// Get schema migration lock
+			err := tx.Exec("SELECT pg_advisory_xact_lock(?)", lockKey).Error
+			if err != nil {
+				return err
+			}
+			return tx.AutoMigrate(models...)
 		})
 	}
 	for i := range a.appInfo.UGNList {
@@ -63,4 +70,10 @@ func (a *AppStruct) migrateWithUser(ugn *utils.UserGroupNamespace) {
 			return
 		}
 	}
+}
+
+func hashStringToInt(s string) int64 {
+	h := fnv.New64a()
+	h.Write([]byte(s))
+	return int64(h.Sum64() % (1 << 62))
 }
