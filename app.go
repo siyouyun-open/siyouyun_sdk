@@ -1,9 +1,7 @@
 package siyouyunsdk
 
 import (
-	"encoding/json"
 	"github.com/nats-io/nats.go"
-	"github.com/siyouyun-open/siyouyun_sdk/ability"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/rdb"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
@@ -11,7 +9,6 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -86,13 +83,8 @@ func NewApp() *AppStruct {
 	App.Api.Get("/alive", Alive)
 	App.Api.Get("/icon", GetIcon)
 
-	// 注册应用消息
-	err = gateway.RegisterAppMessageRobot(App.AppCode, App.appInfo.AppName)
-	if err != nil {
-		log.Printf("[ERROR] RegisterAppMessageRobot err: %v", err)
-	}
-	// listen sys message
-	App.listenSysMsg()
+	// listen sys event
+	go App.listenSysEvent()
 
 	return App
 }
@@ -105,39 +97,6 @@ func (a *AppStruct) Destroy() {
 			_ = sqlDB.Close()
 		}
 	}
-}
-
-func (a *AppStruct) listenSysMsg() {
-	robotCode := a.AppCode + "_msg"
-	// 开启监听
-	go func() {
-		log.Printf("[INFO] start ListenSysMsg at:%v", robotCode)
-		_, err := a.nc.Subscribe(robotCode, func(msg *nats.Msg) {
-			var mes []ability.MessageEvent
-			defer func() {
-				if err := recover(); err != nil {
-					log.Printf("nats panic:[%v]-[%v]", err, mes)
-				}
-			}()
-			err := json.Unmarshal(msg.Data, &mes)
-			if err != nil {
-				return
-			}
-			for i := range mes {
-				if mes[i].SendByAdmin {
-					switch mes[i].Content {
-					case "autoMigrate":
-						log.Printf("[INFO] AutoMigrate, ugn: %s, ", mes[i].UGN)
-						a.migrateWithUser(&mes[i].UGN)
-					}
-				}
-			}
-			return
-		})
-		if err != nil {
-			log.Printf("[ERROR] listenSysMsg Subscribe err: %v", err)
-		}
-	}()
 }
 
 // detectEnv detect the environment, docker or host
