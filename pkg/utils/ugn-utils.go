@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/kataras/iris/v12"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	"hash/fnv"
 	"path/filepath"
 	"strings"
 )
@@ -51,4 +52,10 @@ func (ugn *UserGroupNamespace) String() string {
 		ugn.GroupName = ugn.Username
 	}
 	return ugn.GroupName + "-" + ugn.Namespace
+}
+
+func (ugn *UserGroupNamespace) HashInt() int64 {
+	h := fnv.New64a()
+	h.Write([]byte(ugn.String()))
+	return int64(h.Sum64() % (1 << 62))
 }

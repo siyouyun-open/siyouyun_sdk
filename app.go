@@ -21,15 +21,12 @@ const (
 )
 
 type AppStruct struct {
-	AppCode       string
-	Event         *EventHolder
-	Ability       *Ability                              // app ability
-	Api           SiyouFaaSApi                          // app interfaces
-	appInfo       *sdkdto.AppRegisterInfo               // app register info
-	nc            *nats.Conn                            // nats conn
-	db            *gorm.DB                              // gorm db instance
-	migrateSchema func(*utils.UserGroupNamespace) error // app migrate schema function
-	migrateData   func(*utils.UserGroupNamespace) error // app migrate data function
+	AppCode string
+	Ability *Ability                // app ability
+	Api     SiyouFaaSApi            // app interfaces
+	appInfo *sdkdto.AppRegisterInfo // app register info
+	nc      *nats.Conn              // nats conn
+	db      *gorm.DB                // gorm db instance
 }
 
 var App *AppStruct
@@ -75,16 +72,12 @@ func NewApp() *AppStruct {
 	App.db = db
 
 	// init ability
-	App.Ability = &Ability{}
-	App.WithFS()
+	App.InitAbility()
 
 	// init api
 	App.Api = make(SiyouFaaSApi)
 	App.Api.Get("/alive", Alive)
 	App.Api.Get("/icon", GetIcon)
-
-	// listen sys event
-	go App.listenSysEvent()
 
 	return App
 }

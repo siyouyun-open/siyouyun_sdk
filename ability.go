@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/nats-io/nats.go"
 	"github.com/siyouyun-open/siyouyun_sdk/ability"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"log"
 )
 
@@ -20,12 +21,22 @@ type AbilityInterface interface {
 
 // Ability app ability set
 type Ability struct {
-	kv       *ability.KV       // kv store
-	ffmpeg   *ability.FFmpeg   // ffmpeg info
-	schedule *ability.Schedule // schedule remind
-	message  *ability.Message  // message bot
-	ai       *ability.AI       // ai inference
-	fs       *ability.FS       // fs file handler
+	fs       *ability.FS               // fs file handler
+	kv       *ability.KV               // kv store
+	ffmpeg   *ability.FFmpeg           // ffmpeg info
+	schedule *ability.Schedule         // schedule remind
+	message  *ability.Message          // message bot
+	ai       *ability.AI               // ai inference
+	fem      *ability.FileEventMonitor // fs event monitor
+	migrator *ability.Migrator         // migrator
+}
+
+// InitAbility init ability
+func (a *AppStruct) InitAbility() {
+	a.Ability = &Ability{
+		// default add fs support
+		fs: ability.NewFS(&a.AppCode, a.db),
+	}
 }
 
 // WithFS add fs support
@@ -91,6 +102,24 @@ func (a *AppStruct) WithAI() {
 	log.Printf("[INFO] [%v] ability is supported", a.Ability.ai.Name())
 }
 
+// WithFileEventMonitor add file event monitor support
+func (a *AppStruct) WithFileEventMonitor(preferOps ...sdkdto.PreferOptions) {
+	if len(preferOps) == 0 {
+		return
+	}
+	a.Ability.fem = ability.NewFileEventMonitor(&a.AppCode, a.nc, preferOps...)
+	log.Printf("[INFO] [%v] ability is supported", a.Ability.fem.Name())
+}
+
+// WithMigrator add migrator
+func (a *AppStruct) WithMigrator(migrator ability.IMigrator) {
+	if migrator == nil {
+		return
+	}
+	a.Ability.migrator = ability.NewMigrator(a.Ability.fs, a.appInfo, a.nc, migrator)
+	log.Printf("[INFO] [%v] ability is supported", a.Ability.migrator.Name())
+}
+
 func (a *Ability) FS() *ability.FS {
 	return a.fs
 }
@@ -139,6 +168,9 @@ func (a *Ability) AI() (*ability.AI, error) {
 }
 
 func (a *Ability) Destroy() {
+	if a.fs != nil {
+		a.fs.Close()
+	}
 	if a.kv != nil {
 		a.kv.Close()
 	}
@@ -153,5 +185,11 @@ func (a *Ability) Destroy() {
 	}
 	if a.ai != nil {
 		a.ai.Close()
+	}
+	if a.fem != nil {
+		a.fem.Close()
+	}
+	if a.migrator != nil {
+		a.migrator.Close()
 	}
 }
