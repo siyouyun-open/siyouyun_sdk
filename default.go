@@ -16,7 +16,7 @@ func NewModelMigrator(models ...any) *ModelMigrator {
 	}
 }
 
-func (m *ModelMigrator) MigrateSchema(ugn *utils.UserGroupNamespace) error {
+func (m *ModelMigrator) Migrate(ugn *utils.UserGroupNamespace) error {
 	if len(m.models) == 0 {
 		return nil
 	}
@@ -24,8 +24,4 @@ func (m *ModelMigrator) MigrateSchema(ugn *utils.UserGroupNamespace) error {
 	return fs.Exec(func(db *gorm.DB) error {
 		return db.AutoMigrate(m.models...)
 	})
-}
-
-func (m *ModelMigrator) MigrateData(_ *utils.UserGroupNamespace) error {
-	return nil
 }

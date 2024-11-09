@@ -27,10 +27,8 @@ type Migrator struct {
 }
 
 type IMigrator interface {
-	// MigrateSchema migrate schema when start migrator and user registered
-	MigrateSchema(ugn *utils.UserGroupNamespace) error
-	// MigrateData migrate data when user registered
-	MigrateData(ugn *utils.UserGroupNamespace) error
+	// Migrate everything you want, schema or data
+	Migrate(ugn *utils.UserGroupNamespace) error
 }
 
 func NewMigrator(fs *FS, appInfo *sdkdto.AppRegisterInfo, nc *nats.Conn, handler IMigrator) *Migrator {
@@ -40,9 +38,9 @@ func NewMigrator(fs *FS, appInfo *sdkdto.AppRegisterInfo, nc *nats.Conn, handler
 		nc:      nc,
 		handler: handler,
 	}
-	// start all ugn schema when first migration
+	// migrate all ugn when app startup
 	for i := range appInfo.UGNList {
-		if err := handler.MigrateSchema(&appInfo.UGNList[i]); err != nil {
+		if err := handler.Migrate(&appInfo.UGNList[i]); err != nil {
 			log.Printf("[ERROR] NewMigrator first migration err: %v", err)
 			break
 		}
@@ -113,16 +111,9 @@ func (m *Migrator) handleEvent(msg jetstream.Msg) {
 }
 
 func (m *Migrator) migrateWithUser(ugn *utils.UserGroupNamespace) {
-	// migrate schema
-	err := m.handler.MigrateSchema(ugn)
+	err := m.handler.Migrate(ugn)
 	if err != nil {
-		log.Printf("[ERROR] migrateWithUser migrate schema err: %v", err)
-		return
-	}
-	// migrate data
-	err = m.handler.MigrateData(ugn)
-	if err != nil {
-		log.Printf("[ERROR] migrateWithUser migrate data err: %v", err)
+		log.Printf("[ERROR] migrateWithUser migrate err: %v", err)
 		return
 	}
 }
