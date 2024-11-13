@@ -67,8 +67,8 @@ func NewApp() *AppStruct {
 	sqlDB, _ := db.DB()
 	sqlDB.SetConnMaxLifetime(time.Minute * 30)
 	sqlDB.SetConnMaxIdleTime(time.Minute * 3)
-	sqlDB.SetMaxOpenConns(5)
-	sqlDB.SetMaxIdleConns(1)
+	sqlDB.SetMaxOpenConns(10)
+	sqlDB.SetMaxIdleConns(2)
 	App.db = db
 
 	// init ability
