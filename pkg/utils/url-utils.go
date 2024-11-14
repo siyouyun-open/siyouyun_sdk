@@ -17,10 +17,6 @@ func GetAIServiceURL() string {
 	return fmt.Sprintf("%s:40051", getIPByEnv())
 }
 
-func GetMilvusServiceURL() string {
-	return fmt.Sprintf("%s:19530", getIPByEnv())
-}
-
 func GetNatsServiceURL() string {
 	return fmt.Sprintf("nats://%s:4222", getIPByEnv())
 }

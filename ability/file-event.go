@@ -61,12 +61,6 @@ func (m *FileEventMonitor) listen() {
 		panic(err)
 	}
 	m.sub, err = m.nc.Subscribe(*m.appCode+"_event", func(msg *nats.Msg) {
-		defer func() {
-			if err := recover(); err != nil {
-				log.Printf("[PANIC] event handler panic: %v", err)
-				return
-			}
-		}()
 		var fe sdkdto.FileEvent
 		err := json.Unmarshal(msg.Data, &fe)
 		if err != nil {
@@ -76,6 +70,12 @@ func (m *FileEventMonitor) listen() {
 
 		// Execute specific task asynchronously
 		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					log.Printf("[PANIC] event handler panic: %v", err)
+					return
+				}
+			}()
 			var cs sdkconst.ConsumeStatus
 			var message string
 			options, ok := m.preferOptions[eventCode]
