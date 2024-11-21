@@ -1,2 +1,2 @@
 # siyouyun_sdk
-Siyouyun FaaS Service SDK
+Siyouyun Mini App SDK

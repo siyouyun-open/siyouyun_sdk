@@ -3,13 +3,13 @@ module github.com/siyouyun-open/siyouyun_sdk
 go 1.22.7
 
 require (
-	github.com/go-resty/resty/v2 v2.16.0
+	github.com/go-resty/resty/v2 v2.16.1
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/nats-io/nats.go v1.37.0
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
 	google.golang.org/grpc v1.68.0
 	google.golang.org/protobuf v1.35.2
-	gorm.io/driver/postgres v1.5.9
+	gorm.io/driver/postgres v1.5.10
 	gorm.io/gorm v1.25.12
 )
 

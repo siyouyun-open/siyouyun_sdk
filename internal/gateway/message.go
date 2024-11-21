@@ -8,7 +8,7 @@ import (
 )
 
 func SendMessage(ugn *utils.UserGroupNamespace, appCode, content, replyUUID string) error {
-	api := utils.GetCoreServiceURL() + "/v2/faas/msg/session/send"
+	api := utils.GetCoreServiceURL() + "/v2/app/msg/session/send"
 	response := restclient.PostRequest[any](
 		ugn,
 		api,

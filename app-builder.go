@@ -1,6 +1,7 @@
 package siyouyunsdk
 
 import (
+	"github.com/kataras/iris/v12"
 	"github.com/nats-io/nats.go"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
@@ -20,9 +21,6 @@ func NewAppBuilder(appCode string) *AppBuilder {
 
 	// init http client
 	restclient.InitHttpClient()
-
-	// detect env
-	customApp.detectEnv()
 
 	// get app info
 	if appCode == "" {
@@ -45,8 +43,8 @@ func NewAppBuilder(appCode string) *AppBuilder {
 	}
 }
 
-func (b *AppBuilder) WithApi(api SiyouFaaSApi) *AppBuilder {
-	b.app.Api = api
+func (b *AppBuilder) WithWebServer() *AppBuilder {
+	b.app.server = iris.New()
 	return b
 }
 

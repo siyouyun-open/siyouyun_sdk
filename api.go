@@ -2,45 +2,33 @@ package siyouyunsdk
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/core/router"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
 	"io"
 	"os"
 )
 
-type SiyouFaaSApi map[string]func(iris.Context)
-
-func (api SiyouFaaSApi) Get(uri string, f func(iris.Context)) {
-	api[iris.MethodGet+" "+uri] = f
+// GetAPIBuilder get web server api builder
+func (a *AppStruct) GetAPIBuilder() *router.APIBuilder {
+	if a.server == nil {
+		return nil
+	}
+	return a.server.APIBuilder
 }
 
-func (api SiyouFaaSApi) Post(uri string, f func(iris.Context)) {
-	api[iris.MethodPost+" "+uri] = f
-}
-
-func (api SiyouFaaSApi) Put(uri string, f func(iris.Context)) {
-	api[iris.MethodPut+" "+uri] = f
-}
-
-func (api SiyouFaaSApi) Delete(uri string, f func(iris.Context)) {
-	api[iris.MethodDelete+" "+uri] = f
-}
-
-// Alive 激活函数接口
-func Alive(ctx iris.Context) {
-	ctx.JSON(restjson.SuccessResJson("alive"))
-}
-
-// GetIcon 获取图标
-func GetIcon(ctx iris.Context) {
-	stat, err := os.Stat(IconPath)
+// GetIcon get app icon file
+func (a *AppStruct) GetIcon(ctx iris.Context) {
+	iconPath := fmt.Sprintf("/siyouyun/app/miniapp/static/%s/icon.png", a.AppCode)
+	stat, err := os.Stat(iconPath)
 	if err != nil || stat == nil || stat.IsDir() {
-		ctx.JSON(restjson.ErrorResJsonWithMsg("未找到默认图标"))
+		ctx.JSON(restjson.ErrorResJsonWithMsg("no icon"))
 		return
 	}
-	iconData, err := os.ReadFile(IconPath)
+	iconData, err := os.ReadFile(iconPath)
 	if err != nil || len(iconData) == 0 {
-		ctx.JSON(restjson.ErrorResJsonWithMsg("图标读取失败"))
+		ctx.JSON(restjson.ErrorResJsonWithMsg("read icon error"))
 		return
 	}
 	io.Copy(ctx.ResponseWriter(), io.NopCloser(bytes.NewReader(iconData)))

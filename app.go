@@ -1,29 +1,29 @@
 package siyouyunsdk
 
 import (
+	stdContext "context"
+	"github.com/kataras/iris/v12"
 	"github.com/nats-io/nats.go"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/rdb"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"net/http"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 )
 
 const (
 	AppCodeEnvKey = "APPCODE"
-	IconPath      = "/home/app/icon.png"
 )
 
 type AppStruct struct {
-	AppCode string
+	AppCode string                  // app code
 	Ability *Ability                // app ability
-	Api     SiyouFaaSApi            // app interfaces
+	server  *iris.Application       // app iris web server
 	appInfo *sdkdto.AppRegisterInfo // app register info
 	nc      *nats.Conn              // nats conn
 	db      *gorm.DB                // gorm db instance
@@ -34,13 +34,12 @@ var App *AppStruct
 // NewApp new standard app
 func NewApp() *AppStruct {
 	var err error
-	App = &AppStruct{}
+	App = &AppStruct{
+		server: iris.New(),
+	}
 
 	// init http client
 	restclient.InitHttpClient()
-
-	// detect env
-	App.detectEnv()
 
 	App.AppCode = os.Getenv(AppCodeEnvKey)
 
@@ -74,12 +73,24 @@ func NewApp() *AppStruct {
 	// init ability
 	App.InitAbility()
 
-	// init api
-	App.Api = make(SiyouFaaSApi)
-	App.Api.Get("/alive", Alive)
-	App.Api.Get("/icon", GetIcon)
-
 	return App
+}
+
+func (a *AppStruct) StartWebServer() {
+	idleConnsClosed := make(chan struct{})
+	iris.RegisterOnInterrupt(func() {
+		timeout := 10 * time.Second
+		ctx, cancel := stdContext.WithTimeout(stdContext.Background(), timeout)
+		defer cancel()
+		a.Destroy()
+		a.server.Shutdown(ctx)
+		close(idleConnsClosed)
+	})
+	// add default router
+	a.server.Head("/health", func(ctx iris.Context) { ctx.StatusCode(http.StatusOK) })
+	a.server.Get("/icon", a.GetIcon)
+	a.server.Listen(a.appInfo.AppAddr, iris.WithoutInterruptHandler, iris.WithoutServerError(iris.ErrServerClosed))
+	<-idleConnsClosed
 }
 
 func (a *AppStruct) Destroy() {
@@ -90,16 +101,4 @@ func (a *AppStruct) Destroy() {
 			_ = sqlDB.Close()
 		}
 	}
-}
-
-// detectEnv detect the environment, docker or host
-func (a *AppStruct) detectEnv() {
-	inDocker := true
-	content, err := os.ReadFile("/proc/1/cgroup")
-	if err == nil {
-		if !strings.Contains(string(content), "openfaas") {
-			inDocker = false
-		}
-	}
-	os.Setenv("IN_DOCKER", strconv.FormatBool(inDocker))
 }

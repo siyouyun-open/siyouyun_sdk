@@ -39,7 +39,7 @@ func (H *HTTPFile) Close() error {
 		}).
 		SetQueryParams(map[string]string{
 			"fd": strconv.FormatInt(H.fd, 10),
-		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/close")
+		}).Post(utils.GetCoreServiceURL() + "/v2/app/file/close")
 	if err != nil || res.Data == nil {
 		return fsRequestErr
 	}
@@ -61,7 +61,7 @@ func (H *HTTPFile) Read(p []byte) (int, error) {
 		SetQueryParams(map[string]string{
 			"fd":     strconv.FormatInt(H.fd, 10),
 			"bufLen": strconv.Itoa(len(p)),
-		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/read")
+		}).Get(utils.GetCoreServiceURL() + "/v2/app/file/read")
 	if err != nil || res.Data == nil {
 		return 0, fsRequestErr
 	}
@@ -88,7 +88,7 @@ func (H *HTTPFile) ReadAt(p []byte, off int64) (int, error) {
 			"fd":     strconv.FormatInt(H.fd, 10),
 			"bufLen": strconv.Itoa(len(p)),
 			"offset": strconv.FormatInt(off, 10),
-		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/read/at")
+		}).Get(utils.GetCoreServiceURL() + "/v2/app/file/read/at")
 	if err != nil || res.Data == nil {
 		return 0, fsRequestErr
 	}
@@ -115,7 +115,7 @@ func (H *HTTPFile) Seek(offset int64, whence int) (int64, error) {
 			"fd":     strconv.FormatInt(H.fd, 10),
 			"offset": strconv.FormatInt(offset, 10),
 			"whence": strconv.Itoa(whence),
-		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/seek")
+		}).Post(utils.GetCoreServiceURL() + "/v2/app/file/seek")
 	if err != nil || res.Data == nil {
 		return 0, fsRequestErr
 	}
@@ -140,7 +140,7 @@ func (H *HTTPFile) Write(p []byte) (int, error) {
 		SetBody(p).
 		SetQueryParams(map[string]string{
 			"fd": strconv.FormatInt(H.fd, 10),
-		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/write")
+		}).Post(utils.GetCoreServiceURL() + "/v2/app/file/write")
 	if err != nil || res.Data == nil {
 		return 0, fsRequestErr
 	}
@@ -166,7 +166,7 @@ func (H *HTTPFile) WriteAt(p []byte, off int64) (int, error) {
 		SetQueryParams(map[string]string{
 			"fd":     strconv.FormatInt(H.fd, 10),
 			"offset": strconv.FormatInt(off, 10),
-		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/write/at")
+		}).Post(utils.GetCoreServiceURL() + "/v2/app/file/write/at")
 	if err != nil || res.Data == nil {
 		return 0, fsRequestErr
 	}
@@ -187,7 +187,7 @@ func (H *HTTPFile) Name() string {
 		}).
 		SetQueryParams(map[string]string{
 			"fd": strconv.FormatInt(H.fd, 10),
-		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/name")
+		}).Get(utils.GetCoreServiceURL() + "/v2/app/file/name")
 	if err != nil || res.Data == nil {
 		return ""
 	}
@@ -209,7 +209,7 @@ func (H *HTTPFile) Readdir(n int) ([]*sdkdto.SiyouFileInfo, error) {
 		SetQueryParams(map[string]string{
 			"fd": strconv.FormatInt(H.fd, 10),
 			"n":  strconv.Itoa(n),
-		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/readdir")
+		}).Get(utils.GetCoreServiceURL() + "/v2/app/file/readdir")
 	if err != nil || res.Data == nil {
 		return nil, fsRequestErr
 	}
@@ -236,7 +236,7 @@ func (H *HTTPFile) Readdirnames(n int) ([]string, error) {
 		SetQueryParams(map[string]string{
 			"fd": strconv.FormatInt(H.fd, 10),
 			"n":  strconv.Itoa(n),
-		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/readdirnames")
+		}).Get(utils.GetCoreServiceURL() + "/v2/app/file/readdirnames")
 	if err != nil || res.Data == nil {
 		return nil, fsRequestErr
 	}
@@ -262,7 +262,7 @@ func (H *HTTPFile) Stat() (*sdkdto.SiyouFileInfo, error) {
 		}).
 		SetQueryParams(map[string]string{
 			"fd": strconv.FormatInt(H.fd, 10),
-		}).Get(utils.GetCoreServiceURL() + "/v2/faas/file/stat")
+		}).Get(utils.GetCoreServiceURL() + "/v2/app/file/stat")
 	if err != nil || res.Data == nil {
 		return nil, fsRequestErr
 	}
@@ -288,7 +288,7 @@ func (H *HTTPFile) Sync() error {
 		}).
 		SetQueryParams(map[string]string{
 			"fd": strconv.FormatInt(H.fd, 10),
-		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/sync")
+		}).Post(utils.GetCoreServiceURL() + "/v2/app/file/sync")
 	if err != nil || res.Data == nil {
 		return fsRequestErr
 	}
@@ -310,7 +310,7 @@ func (H *HTTPFile) Truncate(size int64) error {
 		SetQueryParams(map[string]string{
 			"fd":   strconv.FormatInt(H.fd, 10),
 			"size": strconv.FormatInt(size, 10),
-		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/truncate")
+		}).Post(utils.GetCoreServiceURL() + "/v2/app/file/truncate")
 	if err != nil || res.Data == nil {
 		return fsRequestErr
 	}
@@ -332,7 +332,7 @@ func (H *HTTPFile) WriteString(s string) (int, error) {
 		SetBody([]byte(s)).
 		SetQueryParams(map[string]string{
 			"fd": strconv.FormatInt(H.fd, 10),
-		}).Post(utils.GetCoreServiceURL() + "/v2/faas/file/write/string")
+		}).Post(utils.GetCoreServiceURL() + "/v2/app/file/write/string")
 	if err != nil || res.Data == nil {
 		return 0, fsRequestErr
 	}

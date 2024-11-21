@@ -5,10 +5,9 @@ import (
 )
 
 type AppRegisterInfo struct {
-	AppCode     string                     `json:"appCode"`
-	AppName     string                     `json:"appName"`
-	AppVersion  string                     `json:"appVersion"`
-	AppDSN      string                     `json:"appDSN"`
-	Description string                     `json:"description"`
-	UGNList     []utils.UserGroupNamespace `json:"ugnList"`
+	AppCode string                     `json:"appCode"`
+	AppName string                     `json:"appName"`
+	AppDSN  string                     `json:"appDSN"`
+	AppAddr string                     `json:"appAddr"`
+	UGNList []utils.UserGroupNamespace `json:"ugnList"`
 }

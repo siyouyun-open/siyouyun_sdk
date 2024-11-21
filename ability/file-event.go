@@ -97,7 +97,7 @@ func (m *FileEventMonitor) listen() {
 }
 
 func registerAppEvent(appCode string, options []sdkdto.PreferOptions) error {
-	api := utils.GetOSServiceURL() + "/faas/app/event/register"
+	api := utils.GetOSServiceURL() + "/app/event/register"
 	response := restclient.PostRequest[any](
 		nil,
 		api,

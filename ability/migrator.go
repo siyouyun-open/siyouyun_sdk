@@ -14,9 +14,9 @@ import (
 
 const (
 	jsName             = "SYY_ASYNC_STREAM"
-	jsConsumerTemplate = "faaSConsumer_%s"
-	jsEventPipe        = "async.faas.%s"
-	faaSMigrationEvent = "faas_migration" // faas migration event
+	jsConsumerTemplate = "appConsumer_%s"
+	jsEventPipe        = "async.app.%s"
+	appMigrationEvent  = "app_migration" // app migration event
 )
 
 type Migrator struct {
@@ -96,7 +96,7 @@ func (m *Migrator) handleEvent(msg jetstream.Msg) {
 	_ = json.Unmarshal(msg.Data(), &event)
 	switch event.EventName {
 	// migration event
-	case faaSMigrationEvent:
+	case appMigrationEvent:
 		var ugn utils.UserGroupNamespace
 		err = json.Unmarshal(event.Payload, &ugn)
 		if err != nil {
