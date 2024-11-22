@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/nats-io/nats.go"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
-	"log"
 	"sync"
 )
 
@@ -77,7 +77,7 @@ func (m *Message) AddHandler(desc string, triggerPhrasePerl string, handler func
 	if _, ok := m.handlers[desc]; ok {
 		return
 	} else {
-		log.Printf("添加消息机器人处理器:[%v]", desc)
+		sdklog.Logger.Infof("添加消息机器人处理器:[%v]", desc)
 		m.handlers[desc] = handler
 		//m.triggerPhrasePerls[desc] = triggerPhrasePerl
 	}
@@ -97,12 +97,12 @@ type MessageEvent struct {
 func (m *Message) enableListener() {
 	robotCode := *m.appCode + "_msg"
 	go func() {
-		log.Printf("start ListenBizMsg at:%v", robotCode)
+		sdklog.Logger.Infof("start ListenBizMsg at:%v", robotCode)
 		_, err := m.nc.Subscribe(robotCode, func(msg *nats.Msg) {
 			var mes []MessageEvent
 			defer func() {
 				if err := recover(); err != nil {
-					log.Printf("nats panic:[%v]-[%v]", err, mes)
+					sdklog.Logger.Infof("nats panic:[%v]-[%v]", err, mes)
 				}
 			}()
 			err := json.Unmarshal(msg.Data, &mes)
@@ -112,19 +112,6 @@ func (m *Message) enableListener() {
 			for i := range mes {
 				ugn := utils.NewUserGroupNamespace(mes[i].UGN.Username, mes[i].UGN.GroupName, mes[i].UGN.Namespace)
 				if !mes[i].SendByAdmin {
-					//var handlers []handler
-					//for i1 := range m.triggerPhrasePerls {
-					// 解析正文匹配那个正则处理器
-					//match, err := regexp.Match(m.triggerPhrasePerls[i1], []byte(mes[i].Content))
-					//if err != nil {
-					//	continue
-					//}
-					//if match {
-					//	if _, ok := m.handlers[i1]; ok {
-					//handlers = append(handlers, m.handlers[i1])
-					//}
-					//}
-					//}
 					for i2 := range m.handlers {
 						reply, content, replyToUUID := m.handlers[i2](ugn, mes[i].Content, mes[i].UUID)
 						if reply {
@@ -142,7 +129,7 @@ func (m *Message) enableListener() {
 			}
 		})
 		if err != nil {
-			log.Printf("[ERROR] enableListener subscribe err: %v", err)
+			sdklog.Logger.Errorf("enableListener subscribe err: %v", err)
 		}
 	}()
 }

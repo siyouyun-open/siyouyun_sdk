@@ -4,9 +4,11 @@ import (
 	stdContext "context"
 	"github.com/kataras/iris/v12"
 	"github.com/nats-io/nats.go"
+	"github.com/sirupsen/logrus"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/rdb"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/driver/postgres"
@@ -37,6 +39,9 @@ func NewApp() *AppStruct {
 	App = &AppStruct{
 		server: iris.New(),
 	}
+
+	// init log
+	sdklog.InitLogger(logrus.InfoLevel)
 
 	// init http client
 	restclient.InitHttpClient()

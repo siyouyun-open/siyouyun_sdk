@@ -7,8 +7,8 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
-	"log"
 	"time"
 )
 
@@ -41,7 +41,7 @@ func NewMigrator(fs *FS, appInfo *sdkdto.AppRegisterInfo, nc *nats.Conn, handler
 	// migrate all ugn when app startup
 	for i := range appInfo.UGNList {
 		if err := handler.Migrate(&appInfo.UGNList[i]); err != nil {
-			log.Printf("[ERROR] NewMigrator first migration err: %v", err)
+			sdklog.Logger.Errorf("NewMigrator first migration err: %v", err)
 			break
 		}
 	}
@@ -75,7 +75,7 @@ func (m *Migrator) listen() {
 		_ = js.DeleteConsumer(ctx, jsName, consumerCfg.Durable)
 		consumer, err = js.CreateConsumer(ctx, jsName, consumerCfg)
 		if err != nil {
-			log.Printf("[ERROR] Migrator listen err: %v", err)
+			sdklog.Logger.Errorf("Migrator listen err: %v", err)
 			return
 		}
 	}
@@ -100,20 +100,20 @@ func (m *Migrator) handleEvent(msg jetstream.Msg) {
 		var ugn utils.UserGroupNamespace
 		err = json.Unmarshal(event.Payload, &ugn)
 		if err != nil {
-			log.Printf("[ERROR] handleEvent parse err: %v", err)
+			sdklog.Logger.Errorf("handleEvent parse err: %v", err)
 			return
 		}
-		log.Printf("[INFO] migration event, ugn: %+v", ugn)
+		sdklog.Logger.Infof("migration event, ugn: %+v", ugn)
 		m.migrateWithUser(&ugn)
 	default:
-		log.Printf("[WARN] undefined message type: %s", event.EventName)
+		sdklog.Logger.Warnf("undefined message type: %s", event.EventName)
 	}
 }
 
 func (m *Migrator) migrateWithUser(ugn *utils.UserGroupNamespace) {
 	err := m.handler.Migrate(ugn)
 	if err != nil {
-		log.Printf("[ERROR] migrateWithUser migrate err: %v", err)
+		sdklog.Logger.Errorf("migrateWithUser migrate err: %v", err)
 		return
 	}
 }

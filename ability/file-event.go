@@ -6,10 +6,10 @@ import (
 	"github.com/nats-io/nats.go"
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"golang.org/x/exp/maps"
-	"log"
 	"strconv"
 )
 
@@ -72,7 +72,7 @@ func (m *FileEventMonitor) listen() {
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
-					log.Printf("[PANIC] event handler panic: %v", err)
+					sdklog.Logger.Errorf("event handler panic: %v", err)
 					return
 				}
 			}()
@@ -92,7 +92,7 @@ func (m *FileEventMonitor) listen() {
 		}()
 	})
 	if err != nil {
-		log.Printf("[ERROR] FileEventMonitor subscribe err: %v", err)
+		sdklog.Logger.Errorf("FileEventMonitor subscribe err: %v", err)
 	}
 }
 

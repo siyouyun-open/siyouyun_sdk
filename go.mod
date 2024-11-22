@@ -6,6 +6,7 @@ require (
 	github.com/go-resty/resty/v2 v2.16.1
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/nats-io/nats.go v1.37.0
+	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
 	google.golang.org/grpc v1.68.0
 	google.golang.org/protobuf v1.35.2
@@ -49,7 +50,6 @@ require (
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/schollz/closestmatch v2.1.0+incompatible // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/tdewolff/minify/v2 v2.20.19 // indirect
 	github.com/tdewolff/parse/v2 v2.7.12 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

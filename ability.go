@@ -6,7 +6,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/siyouyun-open/siyouyun_sdk/ability"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"log"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 )
 
 var abilityNotEnableErr = errors.New("this ability not enabled yet")
@@ -42,25 +42,25 @@ func (a *AppStruct) InitAbility() {
 // WithFS add fs support
 func (a *AppStruct) WithFS() {
 	a.Ability.fs = ability.NewFS(&a.AppCode, a.db)
-	log.Printf("[INFO] [%v] ability is supported", a.Ability.fs.Name())
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.fs.Name())
 }
 
 // WithKV add kv support
 func (a *AppStruct) WithKV() {
 	a.Ability.kv = ability.NewKV(&a.AppCode)
-	log.Printf("[INFO] [%v] ability is supported", a.Ability.kv.Name())
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.kv.Name())
 }
 
 // WithFFmpeg add ffmpeg support
 func (a *AppStruct) WithFFmpeg() {
 	a.Ability.ffmpeg = ability.NewFFmpeg()
-	log.Printf("[INFO] [%v] ability is supported", a.Ability.ffmpeg.Name())
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.ffmpeg.Name())
 }
 
 // WithSchedule add schedule support
 func (a *AppStruct) WithSchedule() {
 	a.Ability.schedule = ability.NewSchedule(&a.AppCode)
-	log.Printf("[INFO] [%v] ability is supported", a.Ability.schedule.Name())
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.schedule.Name())
 	//启动监听event
 	if a.nc == nil {
 		return
@@ -85,7 +85,7 @@ func (a *AppStruct) WithSchedule() {
 			return
 		})
 		if err != nil {
-			log.Printf("[ERROR] WithSchedule subscribe err: %v", err)
+			sdklog.Logger.Errorf("WithSchedule subscribe err: %v", err)
 		}
 	}()
 }
@@ -93,13 +93,13 @@ func (a *AppStruct) WithSchedule() {
 // WithMessage add message support
 func (a *AppStruct) WithMessage() {
 	a.Ability.message = ability.NewMessage(&a.AppCode, a.nc)
-	log.Printf("[INFO] [%v] ability is supported", a.Ability.message.Name())
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.message.Name())
 }
 
 // WithAI add AI support
 func (a *AppStruct) WithAI() {
 	a.Ability.ai = ability.NewAI()
-	log.Printf("[INFO] [%v] ability is supported", a.Ability.ai.Name())
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.ai.Name())
 }
 
 // WithFileEventMonitor add file event monitor support
@@ -108,7 +108,7 @@ func (a *AppStruct) WithFileEventMonitor(preferOps ...sdkdto.PreferOptions) {
 		return
 	}
 	a.Ability.fem = ability.NewFileEventMonitor(&a.AppCode, a.nc, preferOps...)
-	log.Printf("[INFO] [%v] ability is supported", a.Ability.fem.Name())
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.fem.Name())
 }
 
 // WithMigrator add migrator
@@ -117,7 +117,7 @@ func (a *AppStruct) WithMigrator(migrator ability.IMigrator) {
 		return
 	}
 	a.Ability.migrator = ability.NewMigrator(a.Ability.fs, a.appInfo, a.nc, migrator)
-	log.Printf("[INFO] [%v] ability is supported", a.Ability.migrator.Name())
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.migrator.Name())
 }
 
 func (a *Ability) FS() *ability.FS {

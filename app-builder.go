@@ -3,7 +3,9 @@ package siyouyunsdk
 import (
 	"github.com/kataras/iris/v12"
 	"github.com/nats-io/nats.go"
+	"github.com/sirupsen/logrus"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"gorm.io/gorm"
 	"os"
@@ -18,6 +20,9 @@ type AppBuilder struct {
 func NewAppBuilder(appCode string) *AppBuilder {
 	var err error
 	customApp := &AppStruct{}
+
+	// init log
+	sdklog.InitLogger(logrus.InfoLevel)
 
 	// init http client
 	restclient.InitHttpClient()
