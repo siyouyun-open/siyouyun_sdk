@@ -1,26 +1,15 @@
 package sdklog
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 var Logger = logrus.New()
-
-type SimpleFormatter struct {
-	logrus.TextFormatter
-}
-
-func (f *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	// Trim the caller to only include the file name
-	if entry.HasCaller() {
-		file := filepath.Base(entry.Caller.File)
-		entry.Caller.File = file
-	}
-	return f.TextFormatter.Format(entry)
-}
 
 // InitLogger initializes the logger with default settings.
 func InitLogger(level logrus.Level) {
@@ -33,9 +22,11 @@ func InitLogger(level logrus.Level) {
 	// Set report caller
 	Logger.SetReportCaller(true)
 	// Set log format
-	Logger.SetFormatter(&SimpleFormatter{
-		logrus.TextFormatter{
-			DisableTimestamp: true,
+	Logger.SetFormatter(&logrus.TextFormatter{
+		DisableTimestamp: true,
+		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+			fileName := filepath.Base(frame.File)
+			return fmt.Sprintf("%s:%d", fileName, frame.Line), ""
 		},
 	})
 }

@@ -1,6 +1,7 @@
 package restclient
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
@@ -10,12 +11,22 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var Client *resty.Client
 
 func InitHttpClient() {
 	Client = resty.New()
+	Client.
+		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}).
+		SetRetryCount(2).
+		SetRetryWaitTime(1 * time.Second).
+		AddRetryCondition(
+			func(r *resty.Response, err error) bool {
+				return r.StatusCode() == http.StatusInternalServerError
+			},
+		)
 }
 
 // PostRequest 发起rest post请求
