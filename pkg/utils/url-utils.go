@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 func GetCoreServiceURL() string {
@@ -22,11 +23,11 @@ func GetNatsServiceURL() string {
 }
 
 func getIPByEnv() string {
-	// default in docker
-	inDocker := true
+	// default not in docker
+	inDocker := false
 	value := os.Getenv("IN_DOCKER")
 	if value != "" {
-		inDocker = value == "true"
+		inDocker, _ = strconv.ParseBool(value)
 	}
 	if inDocker {
 		return "10.62.0.1"

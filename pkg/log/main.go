@@ -26,7 +26,7 @@ func InitLogger(level logrus.Level) {
 		DisableTimestamp: true,
 		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
 			fileName := filepath.Base(frame.File)
-			return fmt.Sprintf("%s:%d", fileName, frame.Line), ""
+			return "", fmt.Sprintf("%s:%d", fileName, frame.Line)
 		},
 	})
 }
