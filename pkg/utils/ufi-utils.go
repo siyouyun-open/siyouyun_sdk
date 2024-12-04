@@ -70,13 +70,17 @@ func NewUFI(storageType StorageType, uuid string, fullPath string) *UFI {
 }
 
 func (ufi *UFI) Serialize() string {
-	return filepath.Join(
+	return filepath.Clean(filepath.Join(
 		"/",
 		UFIv1.String(),
 		ufi.StorageType.String(),
 		ufi.UUID,
-		strings.TrimRight(ufi.FullPath, "/"),
-	)
+		ufi.FullPath,
+	))
+}
+
+func GenUFISerialize(storageType StorageType, uuid string, fullPath string) string {
+	return filepath.Clean(filepath.Join("/", UFIv1.String(), storageType.String(), uuid, fullPath))
 }
 
 func NewUFIFromSerialize(UFIString string) (*UFI, error) {
