@@ -8,6 +8,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/rdb"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/localize"
 	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
@@ -91,6 +92,10 @@ func (a *AppStruct) StartWebServer() {
 		a.server.Shutdown(ctx)
 		close(idleConnsClosed)
 	})
+	// config iris i18n
+	if localize.Instance != nil {
+		localize.Instance.ConfigIris(a.server)
+	}
 	// add default router
 	a.server.Head("/health", func(ctx iris.Context) { ctx.StatusCode(http.StatusOK) })
 	a.server.Get("/icon", a.GetIcon)

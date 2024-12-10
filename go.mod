@@ -7,8 +7,8 @@ require (
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/nats-io/nats.go v1.37.0
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
-	google.golang.org/grpc v1.68.0
+	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d
+	google.golang.org/grpc v1.68.1
 	google.golang.org/protobuf v1.35.2
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
@@ -58,7 +58,7 @@ require (
 	github.com/yosssi/ace v0.0.5 // indirect
 	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
 	golang.org/x/time v0.6.0 // indirect

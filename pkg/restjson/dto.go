@@ -1,18 +1,19 @@
 package restjson
 
 import (
+	"errors"
+	"github.com/kataras/iris/v12"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	syyerrors "github.com/siyouyun-open/siyouyun_sdk/pkg/sdkerr"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )
 
-// Response 四有云响应结构体
 type Response[T any] struct {
 	Code string `json:"code"`
 	Data *T     `json:"data"`
 	Msg  string `json:"msg"`
 }
 
-// PagingData 四有云分页数据
 type PagingData struct {
 	*utils.Pagination
 	Total int64       `json:"total"`
@@ -31,16 +32,16 @@ func ResJson[T any](code string, data *T, msg string) Response[T] {
 	return buildResponse[T](code, data, msg)
 }
 
-func SuccessResJson(msg string) Response[any] {
-	return buildResponse[any](sdkconst.Success, nil, msg)
+func SuccessResJson() Response[any] {
+	return buildResponse[any](sdkconst.Success, nil, "ok")
 }
 
-func SuccessResJsonWithData[T any](data *T, msg string) Response[T] {
-	return buildResponse[T](sdkconst.Success, data, msg)
+func SuccessResJsonWithData[T any](data *T) Response[T] {
+	return buildResponse[T](sdkconst.Success, data, "ok")
 }
 
-func SuccessResJsonWithPagingData(data *PagingData, msg string) Response[PagingData] {
-	return buildResponse[PagingData](sdkconst.Success, data, msg)
+func SuccessResJsonWithPagingData(data *PagingData) Response[PagingData] {
+	return buildResponse[PagingData](sdkconst.Success, data, "ok")
 }
 
 func ErrorResJson(code string, errMsg string) Response[any] {
@@ -49,4 +50,11 @@ func ErrorResJson(code string, errMsg string) Response[any] {
 
 func ErrorResJsonWithMsg(errMsg string) Response[any] {
 	return buildResponse[any](sdkconst.ServerError, nil, errMsg)
+}
+
+func ErrorResJsonWithError(ctx iris.Context, err error) Response[any] {
+	if i18nErr := (*syyerrors.I18nError)(nil); errors.As(err, &i18nErr) {
+		return buildResponse[any](sdkconst.ServerError, nil, ctx.Tr(i18nErr.Key, i18nErr.Args))
+	}
+	return buildResponse[any](sdkconst.ServerError, nil, err.Error())
 }
