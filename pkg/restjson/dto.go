@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/kataras/iris/v12"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	syyerrors "github.com/siyouyun-open/siyouyun_sdk/pkg/sdkerr"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/sdkerr"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )
 
@@ -53,7 +53,7 @@ func ErrorResJsonWithMsg(errMsg string) Response[any] {
 }
 
 func ErrorResJsonWithError(ctx iris.Context, err error) Response[any] {
-	if i18nErr := (*syyerrors.I18nError)(nil); errors.As(err, &i18nErr) {
+	if i18nErr := (*sdkerr.I18nError)(nil); errors.As(err, &i18nErr) {
 		return buildResponse[any](sdkconst.ServerError, nil, ctx.Tr(i18nErr.Key, i18nErr.Args))
 	}
 	return buildResponse[any](sdkconst.ServerError, nil, err.Error())

@@ -1,4 +1,4 @@
-package syyerrors
+package sdkerr
 
 type I18nError struct {
 	Key  string
