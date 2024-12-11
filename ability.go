@@ -21,14 +21,14 @@ type AbilityInterface interface {
 
 // Ability app ability set
 type Ability struct {
-	fs       *ability.FS               // fs file handler
-	kv       *ability.KV               // kv store
-	ffmpeg   *ability.FFmpeg           // ffmpeg info
-	schedule *ability.Schedule         // schedule remind
-	message  *ability.Message          // message bot
-	ai       *ability.AI               // ai inference
-	fem      *ability.FileEventMonitor // fs event monitor
-	migrator *ability.Migrator         // migrator
+	fs       *ability.FS                 // fs file handler
+	kv       *ability.KV                 // kv store
+	ffmpeg   *ability.FFmpeg             // ffmpeg info
+	schedule *ability.Schedule           // schedule remind
+	message  *ability.Message            // message bot
+	ai       *ability.AI                 // ai inference
+	fem      *ability.FileEventMonitor   // fs event monitor
+	sem      *ability.SystemEventMonitor // system event monitor
 }
 
 // InitAbility init ability
@@ -111,13 +111,13 @@ func (a *AppStruct) WithFileEventMonitor(preferOps ...sdkdto.PreferOptions) {
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.fem.Name())
 }
 
-// WithMigrator add migrator
-func (a *AppStruct) WithMigrator(migrator ability.IMigrator) {
-	if migrator == nil {
+// WithSystemEventMonitor add system event monitor support
+func (a *AppStruct) WithSystemEventMonitor(opts ...ability.SystemEventOption) {
+	if len(opts) == 0 {
 		return
 	}
-	a.Ability.migrator = ability.NewMigrator(a.Ability.fs, a.appInfo, a.nc, migrator)
-	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.migrator.Name())
+	a.Ability.sem = ability.NewSystemEventMonitor(a.Ability.fs, a.appInfo, a.nc, opts...)
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.sem.Name())
 }
 
 func (a *Ability) FS() *ability.FS {
@@ -189,7 +189,7 @@ func (a *Ability) Destroy() {
 	if a.fem != nil {
 		a.fem.Close()
 	}
-	if a.migrator != nil {
-		a.migrator.Close()
+	if a.sem != nil {
+		a.sem.Close()
 	}
 }

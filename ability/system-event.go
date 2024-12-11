@@ -19,11 +19,29 @@ const (
 	appMigrationEvent  = "app_migration" // app migration event
 )
 
-type Migrator struct {
-	fs      *FS
-	appInfo *sdkdto.AppRegisterInfo
-	nc      *nats.Conn
-	handler IMigrator
+type SystemEventMonitor struct {
+	fs         *FS
+	appInfo    *sdkdto.AppRegisterInfo
+	nc         *nats.Conn
+	handlerMap map[string]func(payload []byte) error
+}
+
+type SystemEventOption func(monitor *SystemEventMonitor)
+
+func NewSystemEventMonitor(fs *FS, appInfo *sdkdto.AppRegisterInfo, nc *nats.Conn, opts ...SystemEventOption) *SystemEventMonitor {
+	m := &SystemEventMonitor{
+		fs:         fs,
+		appInfo:    appInfo,
+		nc:         nc,
+		handlerMap: make(map[string]func(payload []byte) error),
+	}
+	// apply all options
+	for _, opt := range opts {
+		opt(m)
+	}
+	// start listener
+	m.listen()
+	return m
 }
 
 type IMigrator interface {
@@ -31,33 +49,35 @@ type IMigrator interface {
 	Migrate(ugn *utils.UserGroupNamespace) error
 }
 
-func NewMigrator(fs *FS, appInfo *sdkdto.AppRegisterInfo, nc *nats.Conn, handler IMigrator) *Migrator {
-	m := &Migrator{
-		fs:      fs,
-		appInfo: appInfo,
-		nc:      nc,
-		handler: handler,
-	}
-	// migrate all ugn when app startup
-	for i := range appInfo.UGNList {
-		if err := handler.Migrate(&appInfo.UGNList[i]); err != nil {
-			sdklog.Logger.Errorf("NewMigrator first migration err: %v", err)
-			break
+// WithMigrationOption handle migration event
+func WithMigrationOption(migrator IMigrator) SystemEventOption {
+	return func(m *SystemEventMonitor) {
+		m.handlerMap[appMigrationEvent] = func(payload []byte) error {
+			var ugn utils.UserGroupNamespace
+			err := json.Unmarshal(payload, &ugn)
+			if err != nil {
+				return err
+			}
+			return migrator.Migrate(&ugn)
+		}
+		// migrate all ugn when invoked
+		for i := range m.appInfo.UGNList {
+			if err := migrator.Migrate(&m.appInfo.UGNList[i]); err != nil {
+				sdklog.Logger.Errorf("WithMigrationHandler first migration err: %v", err)
+				break
+			}
 		}
 	}
-	// start listener
-	m.listen()
-	return m
 }
 
-func (m *Migrator) Name() string {
-	return "Migrator"
+func (m *SystemEventMonitor) Name() string {
+	return "SystemEventMonitor"
 }
 
-func (m *Migrator) Close() {
+func (m *SystemEventMonitor) Close() {
 }
 
-func (m *Migrator) listen() {
+func (m *SystemEventMonitor) listen() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	// Create event pull consumer
@@ -82,8 +102,7 @@ func (m *Migrator) listen() {
 	consumer.Consume(m.handleEvent)
 }
 
-// handleEvent event handler
-func (m *Migrator) handleEvent(msg jetstream.Msg) {
+func (m *SystemEventMonitor) handleEvent(msg jetstream.Msg) {
 	var err error
 	defer func() {
 		if err == nil {
@@ -94,26 +113,14 @@ func (m *Migrator) handleEvent(msg jetstream.Msg) {
 	}()
 	var event processingEvent
 	_ = json.Unmarshal(msg.Data(), &event)
-	switch event.EventName {
-	// migration event
-	case appMigrationEvent:
-		var ugn utils.UserGroupNamespace
-		err = json.Unmarshal(event.Payload, &ugn)
-		if err != nil {
-			sdklog.Logger.Errorf("handleEvent parse err: %v", err)
-			return
-		}
-		sdklog.Logger.Infof("migration event, ugn: %+v", ugn)
-		m.migrateWithUser(&ugn)
-	default:
-		sdklog.Logger.Warnf("undefined message type: %s", event.EventName)
+	handler, ok := m.handlerMap[event.EventName]
+	if !ok {
+		sdklog.Logger.Errorf("SystemEventMonitor event no handler: %v", event.EventName)
+		return
 	}
-}
-
-func (m *Migrator) migrateWithUser(ugn *utils.UserGroupNamespace) {
-	err := m.handler.Migrate(ugn)
+	err = handler(event.Payload)
 	if err != nil {
-		sdklog.Logger.Errorf("migrateWithUser migrate err: %v", err)
+		sdklog.Logger.Errorf("SystemEventMonitor handle err: %v", err)
 		return
 	}
 }
