@@ -27,6 +27,7 @@ type GenericFS interface {
 	AppMkdirAll(path string) error
 	AppRemoveAll(path string) error
 	AppFileExists(path string) bool
+	AppGenUFI(path string) string
 }
 
 type File interface {
