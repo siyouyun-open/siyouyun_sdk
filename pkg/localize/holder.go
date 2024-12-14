@@ -75,6 +75,11 @@ func (c *ControllerInstance) TrDefault(key string, args ...interface{}) string {
 	return c.holder.Tr(c.defaultLang, key, args...)
 }
 
+// GetDefaultLang get default lang
+func (c *ControllerInstance) GetDefaultLang() string {
+	return c.defaultLang
+}
+
 func (c *ControllerInstance) readDefaultLocale() {
 	c.defaultLang = os.Getenv("LANG")
 	if c.defaultLang == "" {
