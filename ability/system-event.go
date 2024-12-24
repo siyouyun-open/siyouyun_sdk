@@ -9,6 +9,8 @@ import (
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"golang.org/x/sync/errgroup"
+	"runtime/debug"
 	"time"
 )
 
@@ -61,11 +63,16 @@ func WithMigrationOption(migrator IMigrator) SystemEventOption {
 			return migrator.Migrate(&ugn)
 		}
 		// migrate all ugn when invoked
+		var eg errgroup.Group
+		eg.SetLimit(4)
 		for i := range m.appInfo.UGNList {
-			if err := migrator.Migrate(&m.appInfo.UGNList[i]); err != nil {
-				sdklog.Logger.Errorf("WithMigrationHandler first migration err: %v", err)
-				break
-			}
+			j := i
+			eg.Go(func() error {
+				return migrator.Migrate(&m.appInfo.UGNList[j])
+			})
+		}
+		if err := eg.Wait(); err != nil {
+			sdklog.Logger.Errorf("WithMigrationHandler first migration err: %v", err)
 		}
 	}
 }
@@ -105,6 +112,11 @@ func (m *SystemEventMonitor) listen() {
 func (m *SystemEventMonitor) handleEvent(msg jetstream.Msg) {
 	var err error
 	defer func() {
+		if r := recover(); r != nil {
+			sdklog.Logger.Errorf("SystemEventMonitor handleEvent panic: %v\nStack trace:\n%s", r, debug.Stack())
+			_ = msg.NakWithDelay(5 * time.Second)
+			return
+		}
 		if err == nil {
 			_ = msg.Ack()
 		} else {

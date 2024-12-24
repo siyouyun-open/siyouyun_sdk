@@ -63,8 +63,8 @@ func NewApp() *AppStruct {
 
 	// init db
 	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN:                  App.appInfo.AppDSN,
-		PreferSimpleProtocol: true,
+		DSN: App.appInfo.AppDSN,
+		//PreferSimpleProtocol: true,
 	}), &gorm.Config{Logger: rdb.NewLogger()})
 	if err != nil {
 		panic(err)
@@ -75,7 +75,6 @@ func NewApp() *AppStruct {
 	sqlDB.SetMaxOpenConns(10)
 	sqlDB.SetMaxIdleConns(2)
 	App.db = db
-
 	// init ability
 	App.InitAbility()
 
@@ -104,7 +103,9 @@ func (a *AppStruct) StartWebServer() {
 }
 
 func (a *AppStruct) Destroy() {
-	a.Ability.Destroy()
+	if a.Ability != nil {
+		a.Ability.Destroy()
+	}
 	if a.db != nil {
 		sqlDB, err := a.db.DB()
 		if err == nil {

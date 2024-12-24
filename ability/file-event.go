@@ -10,6 +10,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"golang.org/x/exp/maps"
+	"runtime/debug"
 	"strconv"
 )
 
@@ -71,8 +72,8 @@ func (m *FileEventMonitor) listen() {
 		// Execute specific task asynchronously
 		go func() {
 			defer func() {
-				if err := recover(); err != nil {
-					sdklog.Logger.Errorf("event handler panic: %v", err)
+				if r := recover(); r != nil {
+					sdklog.Logger.Errorf("FileEventMonitor handleEvent panic: %v\nStack trace:\n%s", r, debug.Stack())
 					return
 				}
 			}()
