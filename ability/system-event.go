@@ -19,6 +19,7 @@ const (
 	jsConsumerTemplate = "appConsumer_%s"
 	jsEventPipe        = "async.app.%s"
 	appMigrationEvent  = "app_migration" // app migration event
+	appCleanupEvent    = "app_cleanup"   // app cleanup event
 )
 
 type SystemEventMonitor struct {
@@ -51,6 +52,10 @@ type IMigrator interface {
 	Migrate(ugn *utils.UserGroupNamespace) error
 }
 
+type ICleanup interface {
+	Cleanup(ugn *utils.UserGroupNamespace) error
+}
+
 // WithMigrationOption handle migration event
 func WithMigrationOption(migrator IMigrator) SystemEventOption {
 	return func(m *SystemEventMonitor) {
@@ -73,6 +78,20 @@ func WithMigrationOption(migrator IMigrator) SystemEventOption {
 		}
 		if err := eg.Wait(); err != nil {
 			sdklog.Logger.Errorf("WithMigrationHandler first migration err: %v", err)
+		}
+	}
+}
+
+// WithCleanupOption handle cleanup event
+func WithCleanupOption(cleanup ICleanup) SystemEventOption {
+	return func(m *SystemEventMonitor) {
+		m.handlerMap[appCleanupEvent] = func(payload []byte) error {
+			var ugn utils.UserGroupNamespace
+			err := json.Unmarshal(payload, &ugn)
+			if err != nil {
+				return err
+			}
+			return cleanup.Cleanup(&ugn)
 		}
 	}
 }
