@@ -3,13 +3,15 @@ module github.com/siyouyun-open/siyouyun_sdk
 go 1.22.7
 
 require (
-	github.com/go-resty/resty/v2 v2.16.2
+	github.com/go-gormigrate/gormigrate/v2 v2.1.3
+	github.com/go-resty/resty/v2 v2.16.3
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/nats-io/nats.go v1.38.0
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
-	google.golang.org/grpc v1.69.2
-	google.golang.org/protobuf v1.36.1
+	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
+	golang.org/x/sync v0.10.0
+	google.golang.org/grpc v1.69.4
+	google.golang.org/protobuf v1.36.3
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 )
@@ -57,8 +59,7 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yosssi/ace v0.0.5 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.6.0 // indirect

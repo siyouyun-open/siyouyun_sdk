@@ -29,5 +29,5 @@ type PreferOptions struct {
 }
 
 func (p *PreferOptions) ParseToEventCode(appCode string) string {
-	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v%v", appCode, p.FileEventType, p.MediaType, p.Description))))
+	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v", appCode, p.FileEventType, p.MediaType))))
 }

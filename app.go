@@ -61,20 +61,23 @@ func NewApp() *AppStruct {
 		panic(err)
 	}
 
-	// init db
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN: App.appInfo.AppDSN,
-		//PreferSimpleProtocol: true,
-	}), &gorm.Config{Logger: rdb.NewLogger()})
-	if err != nil {
-		panic(err)
+	// init postgres db
+	if App.appInfo.AppDSN != "" {
+		db, err := gorm.Open(postgres.New(postgres.Config{
+			DSN: App.appInfo.AppDSN,
+			//PreferSimpleProtocol: true,
+		}), &gorm.Config{Logger: rdb.NewLogger()})
+		if err != nil {
+			panic(err)
+		}
+		sqlDB, _ := db.DB()
+		sqlDB.SetConnMaxLifetime(time.Minute * 30)
+		sqlDB.SetConnMaxIdleTime(time.Minute * 3)
+		sqlDB.SetMaxOpenConns(10)
+		sqlDB.SetMaxIdleConns(2)
+		App.db = db
 	}
-	sqlDB, _ := db.DB()
-	sqlDB.SetConnMaxLifetime(time.Minute * 30)
-	sqlDB.SetConnMaxIdleTime(time.Minute * 3)
-	sqlDB.SetMaxOpenConns(10)
-	sqlDB.SetMaxIdleConns(2)
-	App.db = db
+
 	// init ability
 	App.InitAbility()
 
