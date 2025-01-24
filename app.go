@@ -116,3 +116,11 @@ func (a *AppStruct) Destroy() {
 		}
 	}
 }
+
+// GetUGNList get all ugn list
+func (a *AppStruct) GetUGNList() []utils.UserGroupNamespace {
+	if a.appInfo == nil {
+		return nil
+	}
+	return a.appInfo.UGNList
+}
