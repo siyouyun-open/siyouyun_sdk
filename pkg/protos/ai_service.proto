@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package ai;
+option go_package = "../sdkprotos";
+
+// 消息类型定义
+message FaceRecognitionRequest {
+  string path = 1;  // 图片路径
+}
+
+message FaceRecognitionResponse {
+  message Face {
+    int32 left = 1;
+    int32 top = 2;
+    int32 right = 3;
+    int32 bottom = 4;
+    repeated float feature = 5;  // 人脸特征向量
+  }
+  repeated Face faces = 1;  // 可能检测到多个人脸
+}
+
+message TextClipRequest {
+  string text = 1;  // 文本内容
+}
+
+message VectorResponse {
+  repeated float feature = 1;  // 特征向量
+}
+
+message ImageClipRequest {
+  string path = 1;  // 图片路径
+}
+
+// 服务定义
+service AIService {
+  // 根据图片路径获取人脸信息
+  rpc RecognizeFaces(FaceRecognitionRequest) returns (FaceRecognitionResponse) {}
+
+  // 获取文字的特征向量
+  rpc TextClip(TextClipRequest) returns (VectorResponse) {}
+
+  // 获取图片的特征向量
+  rpc ImageClip(ImageClipRequest) returns (VectorResponse) {}
+}

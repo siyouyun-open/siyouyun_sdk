@@ -3,11 +3,12 @@ package siyouyunsdk
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/core/router"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
-	"io"
-	"os"
 )
 
 // GetAPIBuilder get web server api builder

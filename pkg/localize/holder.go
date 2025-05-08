@@ -1,11 +1,12 @@
 package localize
 
 import (
-	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/i18n"
 	"io/fs"
 	"log"
 	"os"
+
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/i18n"
 )
 
 var Instance *ControllerInstance

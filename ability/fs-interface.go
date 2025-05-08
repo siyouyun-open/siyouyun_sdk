@@ -1,12 +1,13 @@
 package ability
 
 import (
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
-	"gorm.io/gorm"
 	"io"
 	"os"
 	"time"
+
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"gorm.io/gorm"
 )
 
 type GenericFS interface {

@@ -2,8 +2,9 @@ package restjson
 
 import (
 	"errors"
+
 	"github.com/kataras/iris/v12"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/sdkerr"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )

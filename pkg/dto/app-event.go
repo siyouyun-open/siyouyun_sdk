@@ -3,6 +3,7 @@ package sdkdto
 import (
 	"crypto/md5"
 	"fmt"
+
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )

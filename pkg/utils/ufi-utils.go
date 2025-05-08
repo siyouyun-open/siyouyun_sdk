@@ -9,7 +9,8 @@ import (
 type UFIProtocol string
 
 const (
-	UFIv1 UFIProtocol = "ufi"
+	UFIv1     UFIProtocol = "ufi"
+	Separator             = "/"
 )
 
 func (U UFIProtocol) String() string {
@@ -21,7 +22,9 @@ type StorageType string
 const (
 	RawDisk     StorageType = "raw-disk"
 	USB         StorageType = "usb"
+	Alipan      StorageType = "alipan"
 	Baiduyun    StorageType = "baiduyun"
+	GoogleDrive StorageType = "google-drive"
 	CommonOSS   StorageType = "oss"
 	AliyunOSS   StorageType = "aliyun-oss"
 	TencentOSS  StorageType = "tencent-oss"
@@ -65,43 +68,43 @@ func NewUFI(storageType StorageType, uuid string, fullPath string) *UFI {
 		ufiProtocol: UFIv1,
 		StorageType: storageType,
 		UUID:        uuid,
-		FullPath:    filepath.Join("/", fullPath),
+		FullPath:    filepath.Join(Separator, fullPath),
 	}
 }
 
 func (ufi *UFI) Serialize() string {
-	return filepath.Clean(filepath.Join(
-		"/",
+	return filepath.Join(
+		Separator,
 		UFIv1.String(),
 		ufi.StorageType.String(),
 		ufi.UUID,
 		ufi.FullPath,
-	))
+	)
 }
 
 func GenUFISerialize(storageType StorageType, uuid string, fullPath string) string {
-	return filepath.Clean(filepath.Join("/", UFIv1.String(), storageType.String(), uuid, fullPath))
+	return filepath.Join(Separator, UFIv1.String(), storageType.String(), uuid, fullPath)
 }
 
 func NewUFIFromSerialize(UFIString string) (*UFI, error) {
-	splitUFIString := strings.SplitN(strings.TrimSpace(strings.Trim(UFIString, "/")), "/", 4)
+	splitUFIString := strings.SplitN(strings.TrimSpace(strings.Trim(UFIString, Separator)), Separator, 4)
 	if len(splitUFIString) < 3 {
 		return nil, errors.New("ufi format error")
 	}
 	var fullPath string
 	if len(splitUFIString) == 3 {
-		fullPath = "/"
+		fullPath = Separator
 	} else {
 		fullPath = splitUFIString[3]
 	}
 	ufi := &UFI{
-		ufiProtocol: UFIProtocol(strings.ReplaceAll(splitUFIString[0], "/", "")),
+		ufiProtocol: UFIProtocol(strings.ReplaceAll(splitUFIString[0], Separator, "")),
 		StorageType: StorageType(splitUFIString[1]),
 		UUID:        splitUFIString[2],
-		FullPath:    filepath.Join("/", fullPath),
+		FullPath:    filepath.Join(Separator, fullPath),
 	}
 	if !ufi.Validate() {
-		return nil, errors.New("ufi invalid")
+		return nil, errors.New("ufi validate error")
 	}
 	return ufi, nil
 }

@@ -8,6 +8,7 @@ package sdkprotos
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -19,7 +20,6 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AIService_ClassifyImage_FullMethodName  = "/ai.AIService/ClassifyImage"
 	AIService_RecognizeFaces_FullMethodName = "/ai.AIService/RecognizeFaces"
 	AIService_TextClip_FullMethodName       = "/ai.AIService/TextClip"
 	AIService_ImageClip_FullMethodName      = "/ai.AIService/ImageClip"
@@ -29,8 +29,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AIServiceClient interface {
-	// 根据图片路径获取图片分类
-	ClassifyImage(ctx context.Context, in *ClassificationRequest, opts ...grpc.CallOption) (*ClassificationResponse, error)
 	// 根据图片路径获取人脸信息
 	RecognizeFaces(ctx context.Context, in *FaceRecognitionRequest, opts ...grpc.CallOption) (*FaceRecognitionResponse, error)
 	// 获取文字的特征向量
@@ -45,15 +43,6 @@ type aIServiceClient struct {
 
 func NewAIServiceClient(cc grpc.ClientConnInterface) AIServiceClient {
 	return &aIServiceClient{cc}
-}
-
-func (c *aIServiceClient) ClassifyImage(ctx context.Context, in *ClassificationRequest, opts ...grpc.CallOption) (*ClassificationResponse, error) {
-	out := new(ClassificationResponse)
-	err := c.cc.Invoke(ctx, AIService_ClassifyImage_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *aIServiceClient) RecognizeFaces(ctx context.Context, in *FaceRecognitionRequest, opts ...grpc.CallOption) (*FaceRecognitionResponse, error) {
@@ -87,8 +76,6 @@ func (c *aIServiceClient) ImageClip(ctx context.Context, in *ImageClipRequest, o
 // All implementations must embed UnimplementedAIServiceServer
 // for forward compatibility
 type AIServiceServer interface {
-	// 根据图片路径获取图片分类
-	ClassifyImage(context.Context, *ClassificationRequest) (*ClassificationResponse, error)
 	// 根据图片路径获取人脸信息
 	RecognizeFaces(context.Context, *FaceRecognitionRequest) (*FaceRecognitionResponse, error)
 	// 获取文字的特征向量
@@ -102,9 +89,6 @@ type AIServiceServer interface {
 type UnimplementedAIServiceServer struct {
 }
 
-func (UnimplementedAIServiceServer) ClassifyImage(context.Context, *ClassificationRequest) (*ClassificationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ClassifyImage not implemented")
-}
 func (UnimplementedAIServiceServer) RecognizeFaces(context.Context, *FaceRecognitionRequest) (*FaceRecognitionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RecognizeFaces not implemented")
 }
@@ -125,24 +109,6 @@ type UnsafeAIServiceServer interface {
 
 func RegisterAIServiceServer(s grpc.ServiceRegistrar, srv AIServiceServer) {
 	s.RegisterService(&AIService_ServiceDesc, srv)
-}
-
-func _AIService_ClassifyImage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClassificationRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AIServiceServer).ClassifyImage(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AIService_ClassifyImage_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AIServiceServer).ClassifyImage(ctx, req.(*ClassificationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _AIService_RecognizeFaces_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -206,10 +172,6 @@ var AIService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "ai.AIService",
 	HandlerType: (*AIServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "ClassifyImage",
-			Handler:    _AIService_ClassifyImage_Handler,
-		},
 		{
 			MethodName: "RecognizeFaces",
 			Handler:    _AIService_RecognizeFaces_Handler,

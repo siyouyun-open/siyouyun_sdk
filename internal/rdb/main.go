@@ -1,10 +1,11 @@
 package rdb
 
 import (
-	"gorm.io/gorm/logger"
 	"log"
 	"os"
 	"time"
+
+	"gorm.io/gorm/logger"
 )
 
 func NewLogger() logger.Interface {

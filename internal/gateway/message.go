@@ -2,7 +2,8 @@ package gateway
 
 import (
 	"errors"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )

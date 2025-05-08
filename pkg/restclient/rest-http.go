@@ -4,14 +4,15 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/go-resty/resty/v2"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )
 
 var Client *resty.Client

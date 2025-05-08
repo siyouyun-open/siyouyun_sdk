@@ -1,11 +1,12 @@
 package utils
 
 import (
-	"github.com/kataras/iris/v12"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	"hash/fnv"
 	"path/filepath"
 	"strings"
+
+	"github.com/kataras/iris/v12"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 )
 
 type UserGroupNamespace struct {

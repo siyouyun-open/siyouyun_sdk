@@ -1,6 +1,8 @@
 package siyouyunsdk
 
 import (
+	"os"
+
 	"github.com/kataras/iris/v12"
 	"github.com/nats-io/nats.go"
 	"github.com/sirupsen/logrus"
@@ -8,7 +10,6 @@ import (
 	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"gorm.io/gorm"
-	"os"
 )
 
 // AppBuilder app builder
