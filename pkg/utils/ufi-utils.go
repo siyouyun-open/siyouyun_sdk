@@ -86,6 +86,17 @@ func GenUFISerialize(storageType StorageType, uuid string, fullPath string) stri
 	return filepath.Join(Separator, UFIv1.String(), storageType.String(), uuid, fullPath)
 }
 
+func GenRealPathByUFISerialize(ugn *UserGroupNamespace, ufi string) string {
+	ufiEntity, err := NewUFIFromSerialize(ufi)
+	if err != nil {
+		return ""
+	}
+	if !ufiEntity.StorageType.IsSiyouyunStorage() {
+		return ""
+	}
+	return filepath.Join(ugn.GetRealPrefix(ufiEntity.UUID), ufiEntity.FullPath)
+}
+
 func NewUFIFromSerialize(UFIString string) (*UFI, error) {
 	splitUFIString := strings.SplitN(strings.TrimSpace(strings.Trim(UFIString, Separator)), Separator, 4)
 	if len(splitUFIString) < 3 {

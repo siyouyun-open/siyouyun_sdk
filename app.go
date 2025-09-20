@@ -25,12 +25,13 @@ const (
 )
 
 type AppStruct struct {
-	AppCode string                  // app code
-	Ability *Ability                // app ability
-	server  *iris.Application       // app iris web server
-	appInfo *sdkdto.AppRegisterInfo // app register info
-	nc      *nats.Conn              // nats conn
-	db      *gorm.DB                // gorm db instance
+	AppCode      string                  // app code
+	Ability      *Ability                // app ability
+	server       *iris.Application       // app iris web server
+	appInfo      *sdkdto.AppRegisterInfo // app register info
+	nc           *nats.Conn              // nats conn
+	db           *gorm.DB                // gorm db instance
+	shutdownHook func()                  // shutdown hook func
 }
 
 var App *AppStruct
@@ -91,7 +92,7 @@ func (a *AppStruct) StartWebServer() {
 		timeout := 10 * time.Second
 		ctx, cancel := stdContext.WithTimeout(stdContext.Background(), timeout)
 		defer cancel()
-		a.Destroy()
+		a.destroy()
 		a.server.Shutdown(ctx)
 		close(idleConnsClosed)
 	})
@@ -106,7 +107,15 @@ func (a *AppStruct) StartWebServer() {
 	<-idleConnsClosed
 }
 
-func (a *AppStruct) Destroy() {
+// OnShutdown set shutdown hook
+func (a *AppStruct) OnShutdown(hook func()) {
+	a.shutdownHook = hook
+}
+
+func (a *AppStruct) destroy() {
+	if a.shutdownHook != nil {
+		a.shutdownHook()
+	}
 	if a.Ability != nil {
 		a.Ability.Destroy()
 	}

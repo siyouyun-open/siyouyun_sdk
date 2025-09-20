@@ -82,7 +82,7 @@ func (c *ControllerInstance) GetDefaultLang() string {
 }
 
 func (c *ControllerInstance) readDefaultLocale() {
-	c.defaultLang = os.Getenv("LANG")
+	c.defaultLang = os.Getenv("APP_LANG")
 	if c.defaultLang == "" {
 		c.defaultLang = "zh-CN"
 	}
