@@ -101,6 +101,10 @@ func (m *SystemEventMonitor) Name() string {
 	return "SystemEventMonitor"
 }
 
+func (m *SystemEventMonitor) IsReady() bool {
+	return true
+}
+
 func (m *SystemEventMonitor) Close() {
 }
 

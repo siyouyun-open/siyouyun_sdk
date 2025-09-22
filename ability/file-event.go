@@ -43,6 +43,10 @@ func (m *FileEventMonitor) Name() string {
 	return "FileEventMonitor"
 }
 
+func (m *FileEventMonitor) IsReady() bool {
+	return true
+}
+
 func (m *FileEventMonitor) Close() {
 	if m.sub != nil {
 		_ = m.sub.Unsubscribe()

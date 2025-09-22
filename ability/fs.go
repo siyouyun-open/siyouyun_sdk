@@ -28,6 +28,10 @@ func (f *FS) Name() string {
 	return "FS"
 }
 
+func (f *FS) IsReady() bool {
+	return true
+}
+
 func (f *FS) Close() {
 }
 

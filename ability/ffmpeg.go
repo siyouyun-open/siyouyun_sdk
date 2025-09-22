@@ -23,6 +23,10 @@ func (ff *FFmpeg) Name() string {
 	return "FFmpeg"
 }
 
+func (ff *FFmpeg) IsReady() bool {
+	return utils.IsOSServiceReady()
+}
+
 func (ff *FFmpeg) Close() {
 }
 

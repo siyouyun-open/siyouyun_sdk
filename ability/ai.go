@@ -5,6 +5,7 @@ import (
 	sdkprotos "github.com/siyouyun-open/siyouyun_sdk/pkg/protos"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -27,6 +28,13 @@ func NewAI() *AI {
 
 func (a *AI) Name() string {
 	return "AI"
+}
+
+func (a *AI) IsReady() bool {
+	if a.conn == nil {
+		return false
+	}
+	return a.conn.GetState() == connectivity.Ready
 }
 
 func (a *AI) Close() {

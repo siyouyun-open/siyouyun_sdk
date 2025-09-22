@@ -37,6 +37,10 @@ func (m *Message) Name() string {
 	return "Message"
 }
 
+func (m *Message) IsReady() bool {
+	return true
+}
+
 func (m *Message) Close() {
 }
 

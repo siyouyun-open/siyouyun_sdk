@@ -40,6 +40,10 @@ func (s *Schedule) Name() string {
 	return "Schedule"
 }
 
+func (s *Schedule) IsReady() bool {
+	return utils.IsCoreServiceReady()
+}
+
 func (s *Schedule) Close() {
 }
 

@@ -16,6 +16,8 @@ var abilityNotEnableErr = errors.New("this ability not enabled yet")
 type AbilityInterface interface {
 	// Name of ability
 	Name() string
+	// IsReady if ability is ready
+	IsReady() bool
 	// Close resources
 	Close()
 }
