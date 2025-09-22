@@ -33,7 +33,7 @@ func (kv *KV) Name() string {
 }
 
 func (kv *KV) IsReady() bool {
-	return utils.IsCoreServiceReady()
+	return isCoreServiceReady()
 }
 
 func (kv *KV) Close() {

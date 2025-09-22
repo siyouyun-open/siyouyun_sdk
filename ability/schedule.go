@@ -41,7 +41,7 @@ func (s *Schedule) Name() string {
 }
 
 func (s *Schedule) IsReady() bool {
-	return utils.IsCoreServiceReady()
+	return isCoreServiceReady()
 }
 
 func (s *Schedule) Close() {

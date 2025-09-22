@@ -24,7 +24,7 @@ func (ff *FFmpeg) Name() string {
 }
 
 func (ff *FFmpeg) IsReady() bool {
-	return utils.IsOSServiceReady()
+	return isOSServiceReady()
 }
 
 func (ff *FFmpeg) Close() {
