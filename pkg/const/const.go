@@ -64,8 +64,15 @@ const (
 
 type TaskLevel int
 
+// task level
 const (
 	HighLevel TaskLevel = iota + 1
 	MidLevel
 	LowLevel
+)
+
+// sdk app kv
+const (
+	DefaultAppKeyType = "default"
+	AppDataVersionKey = "dataVersion"
 )

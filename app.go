@@ -4,6 +4,7 @@ import (
 	stdContext "context"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/kataras/iris/v12"
@@ -21,7 +22,8 @@ import (
 )
 
 const (
-	AppCodeEnvKey = "APPCODE"
+	AppCodeEnvKey   = "APPCODE"
+	AppFirstInitKey = "FIRST_INIT"
 )
 
 type AppStruct struct {
@@ -31,6 +33,8 @@ type AppStruct struct {
 	appInfo      *sdkdto.AppRegisterInfo // app register info
 	nc           *nats.Conn              // nats conn
 	db           *gorm.DB                // gorm db instance
+	dataVersion  int                     // app data version
+	isFirstInit  bool                    // is app being initialized for the first time
 	shutdownHook func()                  // shutdown hook func
 }
 
@@ -50,6 +54,7 @@ func NewApp() *AppStruct {
 	restclient.InitHttpClient()
 
 	App.AppCode = os.Getenv(AppCodeEnvKey)
+	App.isFirstInit, _ = strconv.ParseBool(os.Getenv(AppFirstInitKey))
 
 	// get app info
 	App.appInfo, err = gateway.GetAppInfo(App.AppCode)
@@ -103,6 +108,8 @@ func (a *AppStruct) StartWebServer() {
 	// add default router
 	a.server.Head("/health", func(ctx iris.Context) { ctx.StatusCode(http.StatusOK) })
 	a.server.Get("/icon", a.GetIcon)
+	a.server.Get("/data/status", a.CheckAppDataStatus)
+	a.server.Post("/data/refresh", a.RefreshAppData)
 	a.server.Listen(a.appInfo.AppAddr, iris.WithoutInterruptHandler, iris.WithoutServerError(iris.ErrServerClosed))
 	<-idleConnsClosed
 }
@@ -110,6 +117,17 @@ func (a *AppStruct) StartWebServer() {
 // OnShutdown set shutdown hook
 func (a *AppStruct) OnShutdown(hook func()) {
 	a.shutdownHook = hook
+}
+
+// WithDataVersion set data version (need enable kv ability)
+func (a *AppStruct) WithDataVersion(version int) error {
+	// check if kv ability is enabled
+	_, err := a.Ability.KV()
+	if err != nil {
+		return err
+	}
+	a.dataVersion = version
+	return nil
 }
 
 func (a *AppStruct) destroy() {
@@ -133,4 +151,9 @@ func (a *AppStruct) GetUGNList() []utils.UserGroupNamespace {
 		return nil
 	}
 	return a.appInfo.UGNList
+}
+
+// IsFirstInit is app being initialized for the first time
+func (a *AppStruct) IsFirstInit() bool {
+	return a.isFirstInit
 }

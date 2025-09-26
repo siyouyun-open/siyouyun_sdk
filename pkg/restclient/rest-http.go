@@ -30,7 +30,7 @@ func InitHttpClient() {
 		)
 }
 
-// PostRequest 发起rest post请求
+// PostRequest send post request
 func PostRequest[T any](ugn *utils.UserGroupNamespace, fullApi string, query map[string]string, body any) restjson.Response[T] {
 	if query == nil {
 		query = map[string]string{}
@@ -52,12 +52,12 @@ func PostRequest[T any](ugn *utils.UserGroupNamespace, fullApi string, query map
 	}
 	_, err := req.Post(fullApi)
 	if err != nil {
-		return restjson.ResJson[T](sdkconst.RPCError, nil, fmt.Sprintf("远程调用错误:%v", err))
+		return restjson.ResJson[T](sdkconst.RPCError, nil, fmt.Sprintf("remote invoke err:%v", err))
 	}
 	return resp
 }
 
-// GetRequest 发起rest get请求
+// GetRequest send get request
 func GetRequest[T any](ugn *utils.UserGroupNamespace, fullApi string, query map[string]string) restjson.Response[T] {
 	if query == nil {
 		query = map[string]string{}
@@ -76,7 +76,7 @@ func GetRequest[T any](ugn *utils.UserGroupNamespace, fullApi string, query map[
 		SetResult(&resp).
 		Get(fullApi)
 	if err != nil {
-		return restjson.ResJson[T](sdkconst.RPCError, nil, fmt.Sprintf("远程调用错误:%v", err))
+		return restjson.ResJson[T](sdkconst.RPCError, nil, fmt.Sprintf("remote invoke err:%v", err))
 	}
 	return resp
 }
