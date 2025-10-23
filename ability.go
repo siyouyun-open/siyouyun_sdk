@@ -119,7 +119,7 @@ func (a *AppStruct) WithSystemEventMonitor(opts ...ability.SystemEventOption) {
 	if len(opts) == 0 {
 		return
 	}
-	a.Ability.sem = ability.NewSystemEventMonitor(a.Ability.fs, a.appInfo, a.nc, opts...)
+	a.Ability.sem = ability.NewSystemEventMonitor(a.Ability.fs, &a.Ability.kv, a.nc, a.appInfo, &a.dataVersion, opts...)
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.sem.Name())
 }
 

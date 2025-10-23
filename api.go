@@ -47,14 +47,10 @@ func (a *AppStruct) CheckAppDataStatus(ctx iris.Context) {
 		ctx.JSON(rj.SuccessResJsonWithData(&status))
 		return
 	}
-	if a.isFirstInit {
-		status.CurrentVersion = a.dataVersion
-	} else {
-		ugn := utils.NewUserNamespaceFromIris(ctx)
-		kv, ok := a.Ability.kv.GetKV(ugn, sdkconst.DefaultAppKeyType, sdkconst.AppDataVersionKey)
-		if ok {
-			status.CurrentVersion, _ = strconv.Atoi(kv.Value)
-		}
+	ugn := utils.NewUserNamespaceFromIris(ctx)
+	kv, ok := a.Ability.kv.GetKV(ugn, sdkconst.DefaultAppKeyType, sdkconst.AppDataVersionKey)
+	if ok {
+		status.CurrentVersion, _ = strconv.Atoi(kv.Value)
 	}
 	status.LatestVersion = a.dataVersion
 	status.NeedRefresh = status.LatestVersion > status.CurrentVersion

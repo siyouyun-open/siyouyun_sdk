@@ -4,7 +4,6 @@ import (
 	stdContext "context"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/kataras/iris/v12"
@@ -22,8 +21,7 @@ import (
 )
 
 const (
-	AppCodeEnvKey   = "APPCODE"
-	AppFirstInitKey = "FIRST_INIT"
+	AppCodeEnvKey = "APPCODE"
 )
 
 type AppStruct struct {
@@ -34,7 +32,6 @@ type AppStruct struct {
 	nc           *nats.Conn              // nats conn
 	db           *gorm.DB                // gorm db instance
 	dataVersion  int                     // app data version
-	isFirstInit  bool                    // is app being initialized for the first time
 	shutdownHook func()                  // shutdown hook func
 }
 
@@ -54,7 +51,6 @@ func NewApp() *AppStruct {
 	restclient.InitHttpClient()
 
 	App.AppCode = os.Getenv(AppCodeEnvKey)
-	App.isFirstInit, _ = strconv.ParseBool(os.Getenv(AppFirstInitKey))
 
 	// get app info
 	App.appInfo, err = gateway.GetAppInfo(App.AppCode)
@@ -151,9 +147,4 @@ func (a *AppStruct) GetUGNList() []utils.UserGroupNamespace {
 		return nil
 	}
 	return a.appInfo.UGNList
-}
-
-// IsFirstInit is app being initialized for the first time
-func (a *AppStruct) IsFirstInit() bool {
-	return a.isFirstInit
 }

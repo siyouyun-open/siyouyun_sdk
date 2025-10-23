@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime/debug"
+	"strconv"
 	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
@@ -24,20 +26,25 @@ const (
 )
 
 type SystemEventMonitor struct {
-	fs         *FS
-	appInfo    *sdkdto.AppRegisterInfo
-	nc         *nats.Conn
-	handlerMap map[string]func(payload []byte) error
+	fs          *FS
+	kv          **KV
+	nc          *nats.Conn
+	appInfo     *sdkdto.AppRegisterInfo
+	dataVersion *int
+	handlerMap  map[string]func(payload []byte) error
 }
 
 type SystemEventOption func(monitor *SystemEventMonitor)
 
-func NewSystemEventMonitor(fs *FS, appInfo *sdkdto.AppRegisterInfo, nc *nats.Conn, opts ...SystemEventOption) *SystemEventMonitor {
+func NewSystemEventMonitor(fs *FS, kv **KV, nc *nats.Conn,
+	appInfo *sdkdto.AppRegisterInfo, dataVersion *int, opts ...SystemEventOption) *SystemEventMonitor {
 	m := &SystemEventMonitor{
-		fs:         fs,
-		appInfo:    appInfo,
-		nc:         nc,
-		handlerMap: make(map[string]func(payload []byte) error),
+		fs:          fs,
+		kv:          kv,
+		nc:          nc,
+		appInfo:     appInfo,
+		dataVersion: dataVersion,
+		handlerMap:  make(map[string]func(payload []byte) error),
 	}
 	// apply all options
 	for _, opt := range opts {
@@ -66,7 +73,18 @@ func WithMigrationOption(migrator IMigrator) SystemEventOption {
 			if err != nil {
 				return err
 			}
-			return migrator.Migrate(&ugn)
+			err = migrator.Migrate(&ugn)
+			if err != nil {
+				return err
+			}
+			// If a data version is set, the initial version of the data will be automatically written
+			if m.dataVersion != nil && *m.dataVersion > 0 && m.kv != nil && *m.kv != nil {
+				err = (*m.kv).PutKV(&ugn, sdkconst.DefaultAppKeyType, sdkconst.AppDataVersionKey, strconv.Itoa(*m.dataVersion))
+				if err != nil {
+					sdklog.Logger.Errorf("migrate dataVersion err: %v", err)
+				}
+			}
+			return nil
 		}
 		// migrate all ugn when invoked
 		var eg errgroup.Group
