@@ -22,7 +22,7 @@ type FileEvent struct {
 type PreferOptions struct {
 	MediaType     sdkconst.MediaType                                   `json:"mediaType"`     // media type
 	FileEventType int                                                  `json:"fileEventType"` // file event type
-	FollowDirs    []string                                             `json:"followDirs"`    // follow dirs (default all dirs）
+	FollowDirs    []string                                             `json:"followDirs"`    // app default follow dirs ("/Photos" represents the dir in the syspool, "*" represents all dir.)
 	ExcludeExts   []string                                             `json:"excludeExts"`   // excluded file exts
 	Description   string                                               `json:"description"`   // description
 	Priority      sdkconst.TaskLevel                                   `json:"priority"`      // priority (resource occupancy level)

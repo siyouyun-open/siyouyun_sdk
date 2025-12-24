@@ -73,13 +73,16 @@ func NewUFI(storageType StorageType, uuid string, fullPath string) *UFI {
 }
 
 func (ufi *UFI) Serialize() string {
-	return filepath.Join(
-		Separator,
-		UFIv1.String(),
-		ufi.StorageType.String(),
-		ufi.UUID,
-		ufi.FullPath,
-	)
+	var ufiStr string
+	switch {
+	case ufi.StorageType == "":
+		ufiStr = filepath.Join(Separator, ufi.ufiProtocol.String())
+	case ufi.UUID == "":
+		ufiStr = filepath.Join(Separator, ufi.ufiProtocol.String(), ufi.StorageType.String())
+	default:
+		ufiStr = filepath.Join(Separator, ufi.ufiProtocol.String(), ufi.StorageType.String(), ufi.FullPath)
+	}
+	return ufiStr
 }
 
 func GenUFISerialize(storageType StorageType, uuid string, fullPath string) string {
@@ -98,24 +101,34 @@ func GenRealPathByUFISerialize(ugn *UserGroupNamespace, ufi string) string {
 }
 
 func NewUFIFromSerialize(UFIString string) (*UFI, error) {
-	splitUFIString := strings.SplitN(strings.TrimSpace(strings.Trim(UFIString, Separator)), Separator, 4)
-	if len(splitUFIString) < 3 {
-		return nil, errors.New("ufi format error")
+	splitUFISlice := strings.SplitN(strings.TrimSpace(strings.Trim(UFIString, Separator)), Separator, 4)
+	ufiEntity := &UFI{
+		ufiProtocol: UFIProtocol(splitUFISlice[0]),
 	}
-	var fullPath string
-	if len(splitUFIString) == 3 {
-		fullPath = Separator
-	} else {
-		fullPath = splitUFIString[3]
-	}
-	ufi := &UFI{
-		ufiProtocol: UFIProtocol(strings.ReplaceAll(splitUFIString[0], Separator, "")),
-		StorageType: StorageType(splitUFIString[1]),
-		UUID:        splitUFIString[2],
-		FullPath:    filepath.Join(Separator, fullPath),
-	}
-	if !ufi.Validate() {
+	if !ufiEntity.Validate() {
 		return nil, errors.New("ufi validate error")
 	}
-	return ufi, nil
+	switch len(splitUFISlice) {
+	case 1:
+		// example: /ufi
+		ufiEntity.StorageType = ""
+		ufiEntity.UUID = ""
+		ufiEntity.FullPath = ""
+	case 2:
+		// example: /ufi/pool-raw
+		ufiEntity.StorageType = StorageType(splitUFISlice[1])
+		ufiEntity.UUID = ""
+		ufiEntity.FullPath = ""
+	case 3:
+		// example: /ufi/pool-raw/syspool
+		ufiEntity.StorageType = StorageType(splitUFISlice[1])
+		ufiEntity.UUID = splitUFISlice[2]
+		ufiEntity.FullPath = Separator
+	default:
+		// example: /ufi/pool-raw/syspool/Photos
+		ufiEntity.StorageType = StorageType(splitUFISlice[1])
+		ufiEntity.UUID = splitUFISlice[2]
+		ufiEntity.FullPath = filepath.Join(Separator, splitUFISlice[3])
+	}
+	return ufiEntity, nil
 }
