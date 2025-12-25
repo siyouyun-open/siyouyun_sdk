@@ -80,7 +80,7 @@ func (ufi *UFI) Serialize() string {
 	case ufi.UUID == "":
 		ufiStr = filepath.Join(Separator, ufi.ufiProtocol.String(), ufi.StorageType.String())
 	default:
-		ufiStr = filepath.Join(Separator, ufi.ufiProtocol.String(), ufi.StorageType.String(), ufi.FullPath)
+		ufiStr = filepath.Join(Separator, ufi.ufiProtocol.String(), ufi.StorageType.String(), ufi.UUID, ufi.FullPath)
 	}
 	return ufiStr
 }
