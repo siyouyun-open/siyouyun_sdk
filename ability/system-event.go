@@ -10,11 +10,12 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"golang.org/x/sync/errgroup"
+
 	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
-	"golang.org/x/sync/errgroup"
 )
 
 const (

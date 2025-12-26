@@ -6,10 +6,11 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/nats-io/nats.go"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	"gorm.io/gorm"
 )
 
 // AppBuilder app builder

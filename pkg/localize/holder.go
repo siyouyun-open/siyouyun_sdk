@@ -25,7 +25,6 @@ func NewInstance() {
 		log.Printf("[WARN] I18n key not exist: langInput=%s langMatched=%s key=%s\n", langInput, langMatched, key)
 		return key
 	}
-	Instance.readDefaultLocale()
 }
 
 // LoadFS is a method shortcut to load files using
@@ -36,7 +35,7 @@ func (c *ControllerInstance) LoadFS(fileSystem fs.FS, pattern string, languages 
 	if err != nil {
 		return err
 	}
-	c.holder.SetDefault(c.defaultLang)
+	c.setDefaultLangByEnv()
 	return nil
 }
 
@@ -47,7 +46,7 @@ func (c *ControllerInstance) Load(globPattern string, languages ...string) error
 	if err != nil {
 		return err
 	}
-	c.holder.SetDefault(c.defaultLang)
+	c.setDefaultLangByEnv()
 	return nil
 }
 
@@ -81,9 +80,13 @@ func (c *ControllerInstance) GetDefaultLang() string {
 	return c.defaultLang
 }
 
-func (c *ControllerInstance) readDefaultLocale() {
+// setDefaultLangByLocale set default lang by env
+func (c *ControllerInstance) setDefaultLangByEnv() {
 	c.defaultLang = os.Getenv("APP_LANG")
 	if c.defaultLang == "" {
-		c.defaultLang = "zh-CN"
+		c.defaultLang = "en-US"
+	}
+	if !c.holder.SetDefault(c.defaultLang) {
+		c.defaultLang = c.holder.Tags()[0].String()
 	}
 }

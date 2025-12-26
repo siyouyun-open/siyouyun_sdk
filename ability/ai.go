@@ -1,12 +1,13 @@
 package ability
 
 import (
-	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
-	sdkprotos "github.com/siyouyun-open/siyouyun_sdk/pkg/protos"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
+
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
+	sdkprotos "github.com/siyouyun-open/siyouyun_sdk/pkg/protos"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )
 
 type AI struct {

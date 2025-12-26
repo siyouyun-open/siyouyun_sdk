@@ -5,9 +5,10 @@ import (
 	"os"
 
 	"github.com/go-gormigrate/gormigrate/v2"
+	"gorm.io/gorm"
+
 	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
-	"gorm.io/gorm"
 )
 
 // ModelMigrator migrate schema according to the model

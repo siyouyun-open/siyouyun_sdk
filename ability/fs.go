@@ -4,8 +4,9 @@ import (
 	"path/filepath"
 
 	"github.com/kataras/iris/v12"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 	"gorm.io/gorm"
+
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )
 
 const (

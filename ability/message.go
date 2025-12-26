@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/nats-io/nats.go"
+
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"

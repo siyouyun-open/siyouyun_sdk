@@ -9,6 +9,9 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/nats-io/nats.go"
 	"github.com/sirupsen/logrus"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+
 	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
 	"github.com/siyouyun-open/siyouyun_sdk/internal/rdb"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
@@ -16,8 +19,6 @@ import (
 	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 const (

@@ -5,9 +5,10 @@ import (
 	"os"
 	"time"
 
+	"gorm.io/gorm"
+
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
-	"gorm.io/gorm"
 )
 
 type GenericFS interface {
