@@ -171,6 +171,13 @@ func (a *Ability) AI() (*ability.AI, error) {
 	return a.ai, nil
 }
 
+func (a *Ability) FileEventMonitor() (*ability.FileEventMonitor, error) {
+	if a.fem == nil {
+		return nil, abilityNotEnableErr
+	}
+	return a.fem, nil
+}
+
 func (a *Ability) Destroy() {
 	if a.fs != nil {
 		a.fs.Close()

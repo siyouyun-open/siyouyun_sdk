@@ -54,6 +54,20 @@ func (m *FileEventMonitor) Close() {
 	}
 }
 
+// FileExistsByEvent checks if the file exists by event
+func (m *FileEventMonitor) FileExistsByEvent(ugn *utils.UserGroupNamespace, ufi string) bool {
+	api := utils.GetOSServiceURL() + "/app/event/file/exist"
+	resp := restclient.GetRequest[bool](ugn, api,
+		map[string]string{
+			"ufi":     ufi,
+			"appCode": *m.appCode,
+		})
+	if resp.Code != sdkconst.Success {
+		return false
+	}
+	return *resp.Data
+}
+
 // Listen start listening file event
 func (m *FileEventMonitor) listen() {
 	if len(m.preferOptions) == 0 {
