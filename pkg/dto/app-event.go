@@ -32,3 +32,10 @@ type PreferOptions struct {
 func (p *PreferOptions) ParseToEventCode(appCode string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%v%v%v", appCode, p.FileEventType, p.MediaType))))
 }
+
+// UserAppEventConfig user app event config
+type UserAppEventConfig struct {
+	AppCode        string   `json:"appCode"`        // app code
+	FollowDirs     []string `json:"followDirs"`     // app default follow dirs
+	UserFollowDirs []string `json:"userFollowDirs"` // app user follow dirs
+}

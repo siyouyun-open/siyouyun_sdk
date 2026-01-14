@@ -145,6 +145,15 @@ func (fs *SyyFS) FileExists(ufi string) bool {
 	return *resp.Data
 }
 
+func (fs *SyyFS) FileList(options *sdkdto.FileListOptionsV2) *sdkdto.FileListRes {
+	api := utils.GetCoreServiceURL() + "/v2/app/fs/object/list"
+	resp := restclient.PostRequest[sdkdto.FileListRes](&options.UGN, api, nil, options)
+	if resp.Code != sdkconst.Success {
+		return nil
+	}
+	return resp.Data
+}
+
 func (fs *SyyFS) Exec(f func(*gorm.DB) error) error {
 	if fs.ugn == nil {
 		return errors.New("ugn is empty")

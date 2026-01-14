@@ -36,6 +36,8 @@ type GenericFS interface {
 	Chtimes(ufi string, atime time.Time, mtime time.Time) error
 	// FileExists checks if the file exists by ufi
 	FileExists(ufi string) bool
+	// FileList get file list
+	FileList(options *sdkdto.FileListOptionsV2) *sdkdto.FileListRes
 	// Exec execs sql operation
 	Exec(f func(*gorm.DB) error) error
 	// AppOpenFile opens app file

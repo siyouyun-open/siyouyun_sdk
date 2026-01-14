@@ -68,6 +68,19 @@ func (m *FileEventMonitor) FileExistsByEvent(ugn *utils.UserGroupNamespace, ufi 
 	return *resp.Data
 }
 
+// GetUserAppEventConfig gets user app event config
+func (m *FileEventMonitor) GetUserAppEventConfig(ugn *utils.UserGroupNamespace) *sdkdto.UserAppEventConfig {
+	api := utils.GetOSServiceURL() + "/app/event/config"
+	resp := restclient.GetRequest[sdkdto.UserAppEventConfig](ugn, api,
+		map[string]string{
+			"appCode": *m.appCode,
+		})
+	if resp.Code != sdkconst.Success {
+		return nil
+	}
+	return resp.Data
+}
+
 // Listen start listening file event
 func (m *FileEventMonitor) listen() {
 	if len(m.preferOptions) == 0 {

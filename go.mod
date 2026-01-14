@@ -8,7 +8,7 @@ require (
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/nats-io/nats.go v1.48.0
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93
+	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
 	golang.org/x/sync v0.19.0
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
