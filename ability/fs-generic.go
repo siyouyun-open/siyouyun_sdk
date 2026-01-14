@@ -122,6 +122,17 @@ func (fs *SyyFS) Rename(oldUFI string, newUFI string) error {
 	return nil
 }
 
+func (fs *SyyFS) MoveTrash(ufi string) error {
+	api := utils.GetCoreServiceURL() + "/v2/app/fs/trash/move"
+	resp := restclient.PostRequest[any](fs.ugn, api, nil, map[string]interface{}{
+		"ufis": []string{ufi},
+	})
+	if resp.Code != sdkconst.Success {
+		return errors.New(resp.Msg)
+	}
+	return nil
+}
+
 func (fs *SyyFS) Chtimes(ufi string, atime time.Time, mtime time.Time) error {
 	api := utils.GetCoreServiceURL() + "/v2/app/fs/chtimes"
 	resp := restclient.PostRequest[any](fs.ugn, api,

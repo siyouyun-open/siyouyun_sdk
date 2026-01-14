@@ -32,6 +32,8 @@ type GenericFS interface {
 	RemoveAll(ufi string) error
 	// Rename renames file
 	Rename(oldUFI string, newUFI string) error
+	// MoveTrash moves file to trash by ufi
+	MoveTrash(ufi string) error
 	// Chtimes changes the access and modification times by ufi
 	Chtimes(ufi string, atime time.Time, mtime time.Time) error
 	// FileExists checks if the file exists by ufi
