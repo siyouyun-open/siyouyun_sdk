@@ -68,8 +68,8 @@ func NewApp() *AppStruct {
 	// init postgres db
 	if App.appInfo.AppDSN != "" {
 		db, err := gorm.Open(postgres.New(postgres.Config{
-			DSN: App.appInfo.AppDSN,
-			//PreferSimpleProtocol: true,
+			DSN:                  App.appInfo.AppDSN,
+			PreferSimpleProtocol: true, // Disable prepared statement caching and be compatible with PgBouncer
 		}), &gorm.Config{Logger: rdb.NewLogger()})
 		if err != nil {
 			panic(err)
