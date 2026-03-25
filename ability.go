@@ -25,14 +25,15 @@ type AbilityInterface interface {
 
 // Ability app ability set
 type Ability struct {
-	fs       *ability.FS                 // fs file handler
-	kv       *ability.KV                 // kv store
-	ffmpeg   *ability.FFmpeg             // ffmpeg info
-	schedule *ability.Schedule           // schedule remind
-	message  *ability.Message            // message bot
-	ai       *ability.AI                 // ai inference
-	fem      *ability.FileEventMonitor   // fs event monitor
-	sem      *ability.SystemEventMonitor // system event monitor
+	fs         *ability.FS                 // fs file handler
+	kv         *ability.KV                 // kv store
+	ffmpeg     *ability.FFmpeg             // ffmpeg info
+	schedule   *ability.Schedule           // schedule remind
+	message    *ability.Message            // message bot
+	ai         *ability.AI                 // ai inference
+	fem        *ability.FileEventMonitor   // fs event monitor
+	sem        *ability.SystemEventMonitor // system event monitor
+	taskCenter *ability.TaskCenter         // task center
 }
 
 // InitAbility init ability
@@ -124,6 +125,12 @@ func (a *AppStruct) WithSystemEventMonitor(opts ...ability.SystemEventOption) {
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.sem.Name())
 }
 
+// WithTaskCenter add task center support
+func (a *AppStruct) WithTaskCenter() {
+	a.Ability.taskCenter = ability.NewTaskCenter(a.nc)
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.taskCenter.Name())
+}
+
 func (a *Ability) FS() *ability.FS {
 	return a.fs
 }
@@ -178,6 +185,13 @@ func (a *Ability) FileEventMonitor() (*ability.FileEventMonitor, error) {
 	return a.fem, nil
 }
 
+func (a *Ability) TaskCenter() (*ability.TaskCenter, error) {
+	if a.taskCenter == nil {
+		return nil, abilityNotEnableErr
+	}
+	return a.taskCenter, nil
+}
+
 func (a *Ability) Destroy() {
 	if a.fs != nil {
 		a.fs.Close()
@@ -202,5 +216,8 @@ func (a *Ability) Destroy() {
 	}
 	if a.sem != nil {
 		a.sem.Close()
+	}
+	if a.taskCenter != nil {
+		a.taskCenter.Close()
 	}
 }
