@@ -81,6 +81,20 @@ func (m *FileEventMonitor) GetUserAppEventConfig(ugn *utils.UserGroupNamespace) 
 	return resp.Data
 }
 
+// SetUserAppEventConfig sets user app event config
+func (m *FileEventMonitor) SetUserAppEventConfig(ugn *utils.UserGroupNamespace, followUFIs []string) error {
+	api := utils.GetOSServiceURL() + "/app/event/config"
+	params := sdkdto.UserAppEventConfig{
+		AppCode:    *m.appCode,
+		FollowDirs: followUFIs,
+	}
+	resp := restclient.PostRequest[any](ugn, api, nil, params)
+	if resp.Code != sdkconst.Success {
+		return errors.New(resp.Msg)
+	}
+	return nil
+}
+
 // Listen start listening file event
 func (m *FileEventMonitor) listen() {
 	if len(m.preferOptions) == 0 {
