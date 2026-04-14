@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"os"
-	"strconv"
 )
 
 func GetCoreServiceURL() string {
@@ -23,15 +22,15 @@ func GetNatsServiceURL() string {
 }
 
 func getIPByEnv() string {
-	// default not in docker
-	inDocker := false
-	value := os.Getenv("IN_DOCKER")
-	if value != "" {
-		inDocker, _ = strconv.ParseBool(value)
+	appRuntime := os.Getenv("APP_RUNTIME")
+	var ip string
+	switch appRuntime {
+	case "DOCKER":
+		ip = "10.4.0.1"
+	case "RUNC":
+		ip = "172.19.0.1"
+	default:
+		ip = "127.0.0.1"
 	}
-	if inDocker {
-		return "10.62.0.1"
-	} else {
-		return "127.0.0.1"
-	}
+	return ip
 }

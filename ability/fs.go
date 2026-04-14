@@ -6,6 +6,9 @@ import (
 	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
 	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )
 
@@ -46,4 +49,42 @@ func (f *FS) NewFSFromUserGroupNamespace(ugn *utils.UserGroupNamespace) GenericF
 		appPrefix: filepath.Join(AppPrefix, *f.appCode),
 		db:        f.db,
 	}
+}
+
+// GetUGNList gets ugn list
+func (f *FS) GetUGNList(ctx iris.Context) []utils.UGNExt {
+	api := utils.GetOSServiceURL() + "/fs/group/space/list"
+	currentUGN := utils.NewUserNamespaceFromIris(ctx)
+	response := restclient.GetRequest[[]sdkdto.GroupStorageSpaceInfo](currentUGN, api, nil)
+	list := []utils.UGNExt{
+		{
+			UserGroupNamespace: utils.UserGroupNamespace{
+				Username:  currentUGN.Username,
+				GroupName: currentUGN.Username,
+				Namespace: sdkconst.MainNamespace,
+			},
+		},
+		{
+			UserGroupNamespace: utils.UserGroupNamespace{
+				Username:  currentUGN.Username,
+				GroupName: currentUGN.Username,
+				Namespace: sdkconst.PrivateNamespace,
+			},
+		},
+	}
+	if response.Code == sdkconst.Success && response.Data != nil {
+		for _, item := range *response.Data {
+			list = append(list, utils.UGNExt{
+				UserGroupNamespace: utils.UserGroupNamespace{
+					Username:  currentUGN.Username,
+					GroupName: sdkconst.CommonNamespace,
+					Namespace: item.Namespace,
+				},
+				NamespaceAlias: item.NamespaceAlias,
+				PoolName:       item.PoolName,
+				Quota:          item.Quota,
+			})
+		}
+	}
+	return list
 }

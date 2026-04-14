@@ -11,9 +11,9 @@ import (
 )
 
 type UserGroupNamespace struct {
-	Username  string `json:"username"`  // 用户名
-	GroupName string `json:"groupname"` // 组名
-	Namespace string `json:"namespace"` // 命名空间
+	Username  string `json:"username"`
+	GroupName string `json:"groupname"`
+	Namespace string `json:"namespace"`
 }
 
 func NewUserNamespaceFromIris(ctx iris.Context) *UserGroupNamespace {
@@ -60,4 +60,12 @@ func (ugn *UserGroupNamespace) HashInt() int64 {
 	h := fnv.New64a()
 	h.Write([]byte(ugn.String()))
 	return int64(h.Sum64() % (1 << 62))
+}
+
+// UGNExt ugn extension
+type UGNExt struct {
+	UserGroupNamespace
+	NamespaceAlias string `json:"namespaceAlias"` // namespace alias
+	PoolName       string `json:"poolName"`       // group space is only in the specific storage pool
+	Quota          uint64 `json:"quota"`          // space quota
 }

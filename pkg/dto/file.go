@@ -57,3 +57,11 @@ type FileListRes struct {
 	NextMarker string           `json:"nextMarker"`
 	Data       []*SiyouFileInfo `json:"data"`
 }
+
+// GroupStorageSpaceInfo group space info
+type GroupStorageSpaceInfo struct {
+	Namespace      string `json:"namespace"`
+	NamespaceAlias string `json:"namespaceAlias"`
+	PoolName       string `json:"poolName"`
+	Quota          uint64 `json:"quota"`
+}

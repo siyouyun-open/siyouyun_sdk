@@ -95,6 +95,19 @@ func (m *FileEventMonitor) SetUserAppEventConfig(ugn *utils.UserGroupNamespace, 
 	return nil
 }
 
+// RegisterAppEvent registers app events
+func (m *FileEventMonitor) RegisterAppEvent(preferOps ...sdkdto.PreferOptions) error {
+	m.preferOptions = make(map[string]sdkdto.PreferOptions)
+	for i := range preferOps {
+		if preferOps[i].Priority == 0 {
+			preferOps[i].Priority = sdkconst.LowLevel
+		}
+		m.preferOptions[preferOps[i].ParseToEventCode(*m.appCode)] = preferOps[i]
+	}
+	// re-register
+	return registerAppEvent(*m.appCode, preferOps)
+}
+
 // Listen start listening file event
 func (m *FileEventMonitor) listen() {
 	if len(m.preferOptions) == 0 {
