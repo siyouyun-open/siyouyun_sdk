@@ -4,85 +4,154 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"reflect"
-	"runtime/debug"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/nats-io/nats.go"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	rj "github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
+	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
 )
 
-type clientStruct struct {
-	nc             *nats.Conn
-	taskCenterImpl TaskCenterInterface
-	taskConsumers  *sync.Map
-	taskTypeMap    *sync.Map
-	taskHandlers   *sync.Map
+const (
+	// TopicPrefixTask is the task center topic prefix. All task-related topics use this prefix.
+	TopicPrefixTask = "siyou_task."
+
+	// TopicOSSaveTask Gateway → OS: save task (Request-Response)
+	TopicOSSaveTask = TopicPrefixTask + "os.save_task"
+	// TopicOSUpdateTask Gateway → OS: update task (Request-Response)
+	TopicOSUpdateTask = TopicPrefixTask + "os.update_task"
+	// TopicOSDeleteTask Gateway → OS: delete task (Request-Response)
+	TopicOSDeleteTask = TopicPrefixTask + "os.delete_task"
+	// TopicOSExtractTasks Gateway → OS: extract waiting tasks of a specified type (Request-Response)
+	TopicOSExtractTasks = TopicPrefixTask + "os.extract_tasks"
+	// TopicOSGetTask Gateway → OS: get a single task (Request-Response)
+	TopicOSGetTask = TopicPrefixTask + "os.get_task"
+	// TopicOSProgress Gateway → OS: push progress notification (Publish async)
+	TopicOSProgress = TopicPrefixTask + "os.progress"
+	// TopicOSStatusChange Gateway → OS: push task status change notification (Publish async)
+	TopicOSStatusChange = TopicPrefixTask + "os.status_change"
+	// TopicOSSaveTaskType Gateway → OS: persist task type definition (Request-Response)
+	TopicOSSaveTaskType = TopicPrefixTask + "os.save_task_type"
+	// TopicOperationFormat OS → Gateway: operation command topic format, "siyou_task.{owner}.operation.{op}"
+	TopicOperationFormat = TopicPrefixTask + "%s.operation.%s"
+	// TopicConsumerEvent is the task consumption trigger event,
+	// broadcast to all nodes to check and consume tasks of a specified type.
+	TopicConsumerEvent = TopicPrefixTask + "consumer"
+	// TopicTaskEventFormat is the task runtime event topic format, "siyou_task.event.{taskUUID}".
+	// Used by consumeTask to subscribe to cancel/pause operation commands.
+	TopicTaskEventFormat = TopicPrefixTask + "event.%s"
+)
+
+// NotifyScope defines the notification scope, determining the target audience for progress push.
+type NotifyScope int
+
+const (
+	// ScopeUser notifies user
+	ScopeUser NotifyScope = iota + 1
+	// ScopeUGN notifies namespace
+	ScopeUGN
+	// ScopeAll notifies all
+	ScopeAll
+)
+
+// ProgressPublisher is the strategy interface for task persistence and progress publishing.
+// OS mode is implemented by osTaskCenterImpl (directly delegates to TaskCenterInterface),
+// Gateway mode is implemented by TaskCenterGateway (remotely requests the OS via broker).
+// baseClient uses this interface to decouple the two roles, avoiding if-gateway conditionals.
+type ProgressPublisher interface {
+	PublishProgress(ugn *utils.UserGroupNamespace, notifyScope NotifyScope, p *Progress)
+	PublishTaskStatusChange(task *TaskDO, notifyScope NotifyScope) error
+	SaveTask(task *TaskDO) error
+	UpdateTask(task *TaskDO, persistent bool) error
+	GetTask(uuid string) (*TaskDO, error)
+	DeleteTask(uuid string, soft bool) error
+	SaveTaskType(taskType *TaskTypeDO) error
+	ExtractTasksByType(taskType string, status TaskStatus, limit int) []TaskDO
 }
 
-var Client *clientStruct
-
-func safeGo(task func()) {
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("[PANIC] Recovered from panic: %v\nStack trace:\n%s", r, debug.Stack())
-			}
-		}()
-		task()
-	}()
+// baseClient is the shared base client for both OS and Gateway modes,
+// distinguishing the two roles through the ProgressPublisher strategy interface.
+type baseClient struct {
+	// broker is the abstract message broker interface for cross-node communication.
+	broker MessageBroker
+	// taskConsumers holds running task consumption goroutines.
+	// sync.Map ensures only one consumer goroutine runs per task type at a time.
+	taskConsumers *sync.Map
+	// taskTypeMap is the task type registry, keyed by TaskType, valued by *TaskTypeDO (with AbilityFlag).
+	taskTypeMap *sync.Map
+	// taskHandlers is the task processor registry, keyed by TaskType, valued by Processor implementation.
+	taskHandlers *sync.Map
+	// owner is the identifier of the current task center.
+	// "os" for the OS, and the service name for the Gateway.
+	owner string
+	// publisher is the strategy interface that distinguishes persistence and notification
+	// behavior between OS and Gateway modes.
+	publisher ProgressPublisher
 }
 
-func Init(nc *nats.Conn, taskHandler TaskCenterInterface) {
-	Client = &clientStruct{
-		nc:             nc,
-		taskCenterImpl: taskHandler,
-		taskConsumers:  &sync.Map{},
-		taskTypeMap:    &sync.Map{},
-		taskHandlers:   &sync.Map{},
-	}
-	taskHandler.HandleInterruptTask()
-	Client.subscribeTaskConsumer()
+var (
+	// Client is the global client instance, available after Init or InitGateway.
+	Client      *baseClient
+	initOnce    sync.Once
+	gatewayOnce sync.Once
+)
+
+// IsOS returns whether the current client is in OS (main task center) mode.
+func (c *baseClient) IsOS() bool {
+	return c.owner == OwnerOS
 }
 
-func (c *clientStruct) GetTaskCenter() TaskCenterInterface {
-	return c.taskCenterImpl
-}
-
-func (c *clientStruct) RegisterTaskType(processor Processor) {
+// RegisterTaskType registers a task type processor.
+// It validates the processor configuration, computes the ability flags,
+// and persists the task type definition (in OS mode).
+// After registration, it automatically triggers the consumption flow for that task type.
+func (c *baseClient) RegisterTaskType(processor Processor) error {
 	taskTypeDO := processor.Config()
-	if taskTypeDO == nil || taskTypeDO.valid() != nil {
-		return
+	if taskTypeDO == nil {
+		return errors.New("processor config is nil")
 	}
+	if err := taskTypeDO.valid(); err != nil {
+		return err
+	}
+	taskTypeDO.Owner = c.owner
+
+	if _, ok := processor.(RunProcessor); !ok {
+		return errors.New("processor must implement RunProcessor")
+	}
+	if _, ok := processor.(CancelProcessor); !ok {
+		return errors.New("processor must implement CancelProcessor")
+	}
+
 	var flag AbilityFlag
-	if _, ok := processor.(RunProcessor); ok {
-		flag |= HandlerProcessing
-	}
+	flag |= HandlerProcessing
+	flag |= HandlerCancel
 	if _, ok := processor.(ResumeProcessor); ok {
 		flag |= HandlerResume
 	}
 	if _, ok := processor.(PauseProcessor); ok {
 		flag |= HandlerPause
 	}
-	if _, ok := processor.(CancelProcessor); ok {
-		flag |= HandlerCancel
-	}
 	if _, ok := processor.(ForceRemoveProcessor); ok {
 		flag |= HandlerForceRemove
 	}
-	if flag == 0 {
-		return
-	}
+
 	taskTypeDO.AbilityFlag = int(flag)
 	c.taskTypeMap.Store(taskTypeDO.TaskType, taskTypeDO)
 	c.taskHandlers.Store(taskTypeDO.TaskType, processor)
-	safeGo(func() { _ = c.taskCenterImpl.SaveTaskType(taskTypeDO) })
+
+	saveCopy := *taskTypeDO
+	utils.SafeGo(func() {
+		_ = c.publisher.SaveTaskType(&saveCopy)
+	})
+
 	c.triggerTaskConsumer(taskTypeDO.TaskType)
+	return nil
 }
 
-func (c *clientStruct) GetTaskType(taskType string) (*TaskTypeDO, error) {
+// GetTaskType retrieves the task type definition from the local cache.
+func (c *baseClient) GetTaskType(taskType string) (*TaskTypeDO, error) {
 	taskTypeDO, ok := c.taskTypeMap.Load(taskType)
 	if !ok {
 		return nil, errors.New("task type not exist")
@@ -90,7 +159,8 @@ func (c *clientStruct) GetTaskType(taskType string) (*TaskTypeDO, error) {
 	return taskTypeDO.(*TaskTypeDO), nil
 }
 
-func (c *clientStruct) GetTaskProcessor(taskType string) (Processor, error) {
+// GetTaskProcessor retrieves the task processor from the local cache.
+func (c *baseClient) GetTaskProcessor(taskType string) (Processor, error) {
 	processor, ok := c.taskHandlers.Load(taskType)
 	if !ok {
 		return nil, errors.New("task type not exist")
@@ -98,7 +168,9 @@ func (c *clientStruct) GetTaskProcessor(taskType string) (Processor, error) {
 	return processor.(Processor), nil
 }
 
-func (c *clientStruct) RequestTask(task *TaskDO) error {
+// RequestTask submits a new task. It validates the task fields, generates a UUID,
+// persists the task, and triggers consumption.
+func (c *baseClient) RequestTask(task *TaskDO) error {
 	if task == nil {
 		return errors.New("task is null")
 	}
@@ -112,21 +184,28 @@ func (c *clientStruct) RequestTask(task *TaskDO) error {
 	task.Status = TaskStatusWaiting
 	task.StartAt = 0
 	task.EndAt = 0
-	task.handler = c.taskCenterImpl
+	task.Owner = c.owner
 
-	if err := c.taskCenterImpl.SaveTask(task); err != nil {
+	if err := c.publisher.SaveTask(task); err != nil {
 		return err
 	}
 	c.triggerTaskConsumer(task.TaskType)
 	return nil
 }
 
-func (c *clientStruct) TriggerTaskConsumer(taskType string) {
-	_ = c.nc.Publish(EvtPrefix+"consumer", []byte(taskType))
+// TriggerTaskConsumer broadcasts a task consumption trigger event via the broker,
+// notifying all nodes to check and consume tasks of the specified type.
+func (c *baseClient) TriggerTaskConsumer(taskType string) {
+	_ = c.broker.Publish(TopicConsumerEvent, []byte(taskType))
 }
 
-func (c *clientStruct) subscribeTaskConsumer() {
-	_, _ = c.nc.Subscribe(EvtPrefix+"consumer", func(msg *nats.Msg) {
+// subscribeTaskConsumer subscribes to task consumer events.
+// Both OS and Gateway need to call this method:
+// When any node triggers consumption via TriggerTaskConsumer,
+// all nodes that have registered the task type will be notified,
+// and each node decides whether to start the consumption flow based on whether it has the Processor locally.
+func (c *baseClient) subscribeTaskConsumer() {
+	_, _ = c.broker.Subscribe(TopicConsumerEvent, func(msg *Msg) {
 		taskType := string(msg.Data)
 		if taskType == "" {
 			return
@@ -138,12 +217,15 @@ func (c *clientStruct) subscribeTaskConsumer() {
 	})
 }
 
-func (c *clientStruct) triggerTaskConsumer(taskType string) {
-	safeGo(func() {
-		if _, ok := c.taskConsumers.Load(taskType); ok {
+// triggerTaskConsumer starts the task consumption flow.
+// It uses LoadOrStore to ensure only one consumer goroutine runs per task type at a time.
+// It distributes tokens based on the concurrency limit (Limit),
+// loops to extract waiting tasks, and hands them over to the Processor for execution.
+func (c *baseClient) triggerTaskConsumer(taskType string) {
+	utils.SafeGo(func() {
+		if _, loaded := c.taskConsumers.LoadOrStore(taskType, struct{}{}); loaded {
 			return
 		}
-		c.taskConsumers.Store(taskType, struct{}{})
 		defer c.taskConsumers.Delete(taskType)
 
 		v, ok := c.taskTypeMap.Load(taskType)
@@ -161,12 +243,11 @@ func (c *clientStruct) triggerTaskConsumer(taskType string) {
 		}
 		for {
 			<-tokenCh
-			tasks := c.taskCenterImpl.ExtractTasksByType(taskTypeDO.TaskType, TaskStatusWaiting, 1)
+			tasks := c.extractTasks(taskTypeDO.TaskType, TaskStatusWaiting, 1)
 			if len(tasks) == 0 {
 				return
 			}
 			task := tasks[0]
-
 			var processor Processor
 			if taskTypeDO.NewInstance {
 				th, ok := c.taskHandlers.Load(taskTypeDO.TaskType)
@@ -188,72 +269,99 @@ func (c *clientStruct) triggerTaskConsumer(taskType string) {
 				}
 				processor = v.(Processor)
 			}
-
-			task.handler = c.taskCenterImpl
+			task.handler = c.publisher
 			task.taskTypeDO = taskTypeDO
 			c.consumeTask(&task, processor, tokenCh)
 		}
 	})
 }
 
-func (c *clientStruct) consumeTask(task *TaskDO, processor Processor, tokenCh chan struct{}) {
+// extractTasks extracts tasks of the specified type and status.
+// In OS mode, it queries directly from the database.
+// In Gateway mode, it remotely requests the OS via the broker.
+func (c *baseClient) extractTasks(taskType string, status TaskStatus, limit int) []TaskDO {
+	return c.publisher.ExtractTasksByType(taskType, status, limit)
+}
+
+type taskControl struct {
+	operation TaskOp
+}
+
+// consumeTask consumes a single task: sets the status to processing, subscribes to operation commands,
+// and starts the execution goroutine.
+// After the execution goroutine completes, it updates the task status to success/failed.
+// The operation command goroutine handles cancel/pause.
+func (c *baseClient) consumeTask(task *TaskDO, processor Processor, tokenCh chan struct{}) {
+	task.mu.Lock()
 	var isResume bool
 	if task.CurrentContent == nil {
 		task.StartAt = time.Now().UnixMilli()
 	} else {
 		isResume = true
 	}
-
 	task.Status = TaskStatusProcessing
+	task.currentCtx, task.currentCancel = context.WithCancel(context.Background())
+	task.controlCh = make(chan taskControl, 1)
+	task.mu.Unlock()
+
 	_ = task.updateTask()
 
-	doneChan := make(chan struct{})
-	task.currentCtx, task.currentCancel = context.WithCancel(context.Background())
-	task.sub, _ = c.nc.Subscribe(task.EventUUID(), func(msg *nats.Msg) {
+	sub, _ := c.broker.Subscribe(task.EventUUID(), func(msg *Msg) {
 		switch TaskStatus(msg.Data) {
 		case TaskStatusPaused:
 			pauseProcessor, ok := processor.(PauseProcessor)
 			if !ok {
 				return
 			}
+			task.mu.Lock()
 			if task.Progress != nil && task.Progress.notifyTicker != nil {
 				task.Progress.notifyTicker.Stop()
 			}
 			if task.currentCancel != nil {
 				task.currentCancel()
 			}
-			<-doneChan
-			err := pauseProcessor.Pause(task)
-			if err == nil {
-				task.Status = TaskStatusPaused
-				_ = task.updateTask()
-			}
+			task.mu.Unlock()
+
+			_ = pauseProcessor.Pause(task)
+
+			task.mu.Lock()
+			task.Status = TaskStatusPaused
+			task.mu.Unlock()
+			_ = task.updateTask()
+
 		case TaskStatusCancel:
 			cancelProcessor, ok := processor.(CancelProcessor)
 			if !ok {
 				return
 			}
+			task.mu.Lock()
 			if task.Progress != nil && task.Progress.notifyTicker != nil {
 				task.Progress.notifyTicker.Stop()
 			}
 			if task.currentCancel != nil {
 				task.currentCancel()
 			}
-			err := cancelProcessor.Cancel(task)
-			if err == nil {
-				task.EndAt = time.Now().UnixMilli()
-				task.Status = TaskStatusCancel
-				task.CurrentContent = nil
-				_ = task.updateTask()
-			}
+			task.mu.Unlock()
+
+			_ = cancelProcessor.Cancel(task)
+
+			task.mu.Lock()
+			task.EndAt = time.Now().UnixMilli()
+			task.Status = TaskStatusCancel
+			task.CurrentContent = nil
+			task.mu.Unlock()
+			_ = task.updateTask()
 		}
 	})
 
-	safeGo(func() {
+	task.mu.Lock()
+	task.sub = sub
+	task.mu.Unlock()
+
+	utils.SafeGo(func() {
 		defer func() {
 			tokenCh <- struct{}{}
 		}()
-
 		var err error
 		if isResume {
 			resumeProcessor, ok := processor.(ResumeProcessor)
@@ -268,43 +376,95 @@ func (c *clientStruct) consumeTask(task *TaskDO, processor Processor, tokenCh ch
 			err = runProcessor.Run(task)
 		}
 
-		close(doneChan)
+		task.mu.Lock()
+		var subToUnsub Subscription
 		if task.sub != nil {
-			_ = task.sub.Unsubscribe()
+			subToUnsub = task.sub
 			task.sub = nil
 		}
+		task.mu.Unlock()
+
+		if subToUnsub != nil {
+			_ = subToUnsub.Unsubscribe()
+		}
+
+		task.mu.Lock()
+		ctxDone := false
 		select {
 		case <-task.currentCtx.Done():
-			return
+			ctxDone = true
 		default:
-			if task.Progress != nil && task.Progress.notifyTicker != nil {
-				task.Progress.notifyTicker.Stop()
-			}
-			if err != nil {
-				task.Status = TaskStatusFailed
-				task.ErrMsg = err.Error()
-			} else {
-				task.Status = TaskStatusSuccess
-			}
-			task.EndAt = time.Now().UnixMilli()
-			_ = task.updateTask()
 		}
+		if task.currentCancel != nil {
+			task.currentCancel()
+		}
+		if ctxDone {
+			task.mu.Unlock()
+			return
+		}
+		if task.Progress != nil && task.Progress.notifyTicker != nil {
+			task.Progress.notifyTicker.Stop()
+		}
+		if err != nil {
+			task.Status = TaskStatusFailed
+			task.ErrMsg = err.Error()
+		} else {
+			task.Status = TaskStatusSuccess
+		}
+		task.EndAt = time.Now().UnixMilli()
+		task.mu.Unlock()
+		_ = task.updateTask()
 	})
 }
 
-type NotifyType int
-
-const (
-	ToUser NotifyType = iota + 1
-	ToUGN
-	ToAll
-)
-
-func (c *clientStruct) publish(now int64, p *Progress) {
+// publish refreshes the progress and publishes the notification, called periodically by the ticker.
+func (c *baseClient) publish(now int64, p *Progress) {
 	if p == nil || p.Total == 0 {
 		return
 	}
-
 	p.flush(now)
-	c.taskCenterImpl.PublishProgress(p.ugn, p.taskTypeDO.NotifyType, p)
+	if p.taskTypeDO != nil {
+		c.publisher.PublishProgress(p.ugn, p.taskTypeDO.NotifyScope, p)
+	} else {
+		c.publisher.PublishProgress(p.ugn, ScopeUGN, p)
+	}
+}
+
+func brokerSuccessResponse(data any) []byte {
+	resp := rj.SuccessResJsonWithData(&data)
+	b, _ := json.Marshal(resp)
+	return b
+}
+
+func brokerErrorResponse(errMsg string) []byte {
+	resp := rj.ErrorResJsonWithMsg(errMsg)
+	b, _ := json.Marshal(resp)
+	return b
+}
+
+func brokerResponseFromError(err error) []byte {
+	if err == nil {
+		return brokerSuccessResponse(nil)
+	}
+	return brokerErrorResponse(err.Error())
+}
+
+func parseBrokerResponse(data []byte) (*rj.Response[any], error) {
+	var resp rj.Response[any]
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func isBrokerSuccess(resp *rj.Response[any]) bool {
+	return resp.Code == sdkconst.Success
+}
+
+func brokerRespondError(msg *Msg, errMsg string) {
+	_ = msg.Respond(brokerErrorResponse(errMsg))
+}
+
+func brokerRespondSuccess(msg *Msg, data any) {
+	_ = msg.Respond(brokerSuccessResponse(data))
 }

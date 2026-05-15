@@ -25,15 +25,15 @@ type AbilityInterface interface {
 
 // Ability app ability set
 type Ability struct {
-	fs         *ability.FS                 // fs file handler
-	kv         *ability.KV                 // kv store
-	ffmpeg     *ability.FFmpeg             // ffmpeg info
-	schedule   *ability.Schedule           // schedule remind
-	message    *ability.Message            // message bot
-	ai         *ability.AI                 // ai inference
-	fem        *ability.FileEventMonitor   // fs event monitor
-	sem        *ability.SystemEventMonitor // system event monitor
-	taskCenter *ability.TaskCenter         // task center
+	fs       *ability.FS                 // fs file handler
+	kv       *ability.KV                 // kv store
+	ffmpeg   *ability.FFmpeg             // ffmpeg info
+	schedule *ability.Schedule           // schedule remind
+	message  *ability.Message            // message bot
+	ai       *ability.AI                 // ai inference
+	fem      *ability.FileEventMonitor   // fs event monitor
+	sem      *ability.SystemEventMonitor // system event monitor
+	task     *ability.TaskCenter         // task center
 }
 
 // InitAbility init ability
@@ -127,8 +127,8 @@ func (a *AppStruct) WithSystemEventMonitor(opts ...ability.SystemEventOption) {
 
 // WithTaskCenter add task center support
 func (a *AppStruct) WithTaskCenter() {
-	a.Ability.taskCenter = ability.NewTaskCenter(a.nc)
-	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.taskCenter.Name())
+	a.Ability.task = ability.NewTaskCenter(&a.AppCode, a.nc)
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.task.Name())
 }
 
 func (a *Ability) FS() *ability.FS {
@@ -186,10 +186,10 @@ func (a *Ability) FileEventMonitor() (*ability.FileEventMonitor, error) {
 }
 
 func (a *Ability) TaskCenter() (*ability.TaskCenter, error) {
-	if a.taskCenter == nil {
+	if a.task == nil {
 		return nil, abilityNotEnableErr
 	}
-	return a.taskCenter, nil
+	return a.task, nil
 }
 
 func (a *Ability) Destroy() {
@@ -217,7 +217,7 @@ func (a *Ability) Destroy() {
 	if a.sem != nil {
 		a.sem.Close()
 	}
-	if a.taskCenter != nil {
-		a.taskCenter.Close()
+	if a.task != nil {
+		a.task.Close()
 	}
 }
