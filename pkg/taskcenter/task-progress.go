@@ -125,21 +125,28 @@ func (t *TaskDO) IncrementProgress(increment int64) {
 		return
 	}
 	now := time.Now().UnixMilli()
+	t.Progress.calculate(increment)
+
 	var doPublish bool
-	if t.taskTypeDO != nil && t.taskTypeDO.NotifyIncrement {
-		t.Progress.calculate(increment)
+	// Terminal states (success/failed/cancel) must be published immediately, not waiting for ticker or throttling.
+	if _, ok := statusForcePublish[t.Progress.Status]; ok {
 		doPublish = true
-	} else {
-		t.Progress.calculate(increment)
-		if t.Progress.notifyTicker != nil {
-			if _, ok := statusForcePublish[t.Progress.Status]; ok {
+	} else if t.Progress.notifyTicker == nil && t.taskTypeDO != nil {
+		// When notifyTicker != nil, the timer goroutine publishes periodically; here only update data without publishing.
+		if t.taskTypeDO.NotifyIncrement {
+			// Incremental mode: throttle by NotifyTimeInterval; if not set, publish every time.
+			if t.taskTypeDO.NotifyTimeInterval > 0 {
+				doPublish = now-t.Progress.lastPublishTime >= t.taskTypeDO.NotifyTimeInterval
+			} else {
 				doPublish = true
 			}
-		} else if t.Progress.taskTypeDO != nil && t.Progress.Total > 0 {
+		} else if t.Progress.Total > 0 {
+			// Percentage mode: publish when progress change exceeds NotifyPercentInterval.
 			diffOffset := t.Progress.Current - t.Progress.lastPublishOffset
-			doPublish = float64(diffOffset)/float64(t.Progress.Total) > t.Progress.taskTypeDO.NotifyPercentInterval
+			doPublish = float64(diffOffset)/float64(t.Progress.Total) > t.taskTypeDO.NotifyPercentInterval
 		}
 	}
+
 	if doPublish && Client != nil {
 		Client.publish(now, t.Progress)
 	}
@@ -168,28 +175,28 @@ func (t *TaskDO) StartSubProgress(total int64, current ...int64) (string, error)
 	return t.newProgress(total, 0, true), nil
 }
 
-// IncrementSubProgress 增加子进度
+// IncrementSubProgress increments the sub-progress.
 //func (t *TaskDO) IncrementSubProgress(subProgressUUID string, increment int64) {
 //	if t.Progress.SubProgress == nil {
-//		// 降级只推送主进度
+//		// Fallback to main progress only.
 //		t.IncrementProgress(increment)
 //		return
 //	}
 //	if _, ok := t.Progress.SubProgress[subProgressUUID]; !ok {
-//		// 降级只推送主进度
+//		// Fallback to main progress only.
 //		t.IncrementProgress(increment)
 //		return
 //	}
 //	if t.Progress.SubProgress[subProgressUUID].Total == 0 {
-//		// 降级只推送主进度
+//		// Fallback to main progress only.
 //		t.IncrementProgress(increment)
 //		return
 //	}
-//	// 计算当前时间戳,避免notify延迟
+//	// Calculate current timestamp to avoid notify delay.
 //	now := time.Now().UnixMilli()
-//	// 初始化子进度
+//	// Initialize sub-progress.
 //	t.Progress.SubProgress[subProgressUUID].calculate(increment)
-//	// 同步更新主进度
+//	// Sync update main progress.
 //	t.Progress.calculate(increment)
 //	var doPublish bool
 //	if t.Progress.notifyTicker != nil {
@@ -213,8 +220,7 @@ func (t *TaskDO) newProgress(total, current int64, isSub bool) string {
 	} else {
 		percent = fmt.Sprintf("%.4f", float64(current)/float64(total))
 	}
-	// The parent progress ID uses the taskDO's UUID to match the corresponding task;
-	// the sub-progress ID is randomly generated.
+	// The parent progress ID uses the taskDO's UUID to match the corresponding task; the sub-progress ID is randomly generated.
 	var progressId string
 	if isSub {
 		progressId = uuid.NewString()
@@ -234,19 +240,19 @@ func (t *TaskDO) newProgress(total, current int64, isSub bool) string {
 		Remain:    0,
 		Rate:      "",
 		Extra:     nil,
-		Seq:       0, // Seq starts from 0 and increments
+		Seq:       0, // Seq starts from 0 and increments.
 		//SubProgress: nil,
 
 		mu:                &sync.Mutex{},
 		ugn:               t.UGN,
 		taskTypeDO:        t.taskTypeDO,
-		lastPublishTime:   now,
+		lastPublishTime:   0,
 		lastPublishOffset: current,
 	}
 
 	if !isSub {
 		t.Progress = p
-		if total != 0 && t.taskTypeDO != nil && t.taskTypeDO.NotifyTimeInterval > 0 {
+		if total != 0 && t.taskTypeDO != nil && t.taskTypeDO.NotifyTimeInterval > 0 && !t.taskTypeDO.NotifyIncrement {
 			if t.Progress.notifyTicker == nil {
 				t.Progress.notifyTicker = time.NewTicker(time.Duration(t.taskTypeDO.NotifyTimeInterval) * time.Millisecond)
 				if t.currentCtx == nil {
@@ -319,6 +325,8 @@ func (p *Progress) flush(now int64) {
 		if p.taskTypeDO.NotifyIncrementTotalTmpl != "" {
 			p.ProcessDesc = fmt.Sprintf(p.taskTypeDO.NotifyIncrementTotalTmpl, p.Current)
 		}
+		p.lastPublishTime = now
+		p.lastPublishOffset = p.Current
 		return
 	}
 	if p.Status == TaskStatusSuccess || (p.Total > 0 && p.Current >= p.Total) {
@@ -330,7 +338,7 @@ func (p *Progress) flush(now int64) {
 		p.lastPublishOffset = p.Current
 		return
 	}
-	if p.taskTypeDO != nil && p.taskTypeDO.NotifyRate {
+	if p.taskTypeDO != nil && p.taskTypeDO.NotifyRate && p.lastPublishTime > 0 {
 		diffTime := (float64(now) - float64(p.lastPublishTime)) / 1000
 		diffOffset := p.Current - p.lastPublishOffset
 		instRate := float64(0)

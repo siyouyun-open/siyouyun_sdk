@@ -32,6 +32,8 @@ const (
 	TopicOSProgress = TopicPrefixTask + "os.progress"
 	// TopicOSStatusChange Gateway → OS: push task status change notification (Publish async)
 	TopicOSStatusChange = TopicPrefixTask + "os.status_change"
+	// TopicOSHeartbeat Gateway → OS: online probe, Gateway uses Request to check if OS is online
+	TopicOSHeartbeat = TopicPrefixTask + "os.heartbeat"
 	// TopicOSSaveTaskType Gateway → OS: persist task type definition (Request-Response)
 	TopicOSSaveTaskType = TopicPrefixTask + "os.save_task_type"
 	// TopicOperationFormat OS → Gateway: operation command topic format, "siyou_task.{owner}.operation.{op}"
@@ -85,9 +87,7 @@ type baseClient struct {
 	taskHandlers *sync.Map
 	// owner is the identifier of the current task center.
 	// "os" for the OS, and the service name for the Gateway.
-	owner string
-	// publisher is the strategy interface that distinguishes persistence and notification
-	// behavior between OS and Gateway modes.
+	owner     string
 	publisher ProgressPublisher
 }
 
@@ -101,6 +101,16 @@ var (
 // IsOS returns whether the current client is in OS (main task center) mode.
 func (c *baseClient) IsOS() bool {
 	return c.owner == OwnerOS
+}
+
+// IsOSOnline checks whether the OS (main task center) is online.
+// OS mode always returns true; Gateway mode sends a Request probe to the OS, and returns true if it responds.
+func (c *baseClient) IsOSOnline() bool {
+	if c.IsOS() {
+		return true
+	}
+	_, err := c.broker.Request(TopicOSHeartbeat, nil, time.Second)
+	return err == nil
 }
 
 // RegisterTaskType registers a task type processor.
@@ -419,7 +429,10 @@ func (c *baseClient) consumeTask(task *TaskDO, processor Processor, tokenCh chan
 
 // publish refreshes the progress and publishes the notification, called periodically by the ticker.
 func (c *baseClient) publish(now int64, p *Progress) {
-	if p == nil || p.Total == 0 {
+	if p == nil {
+		return
+	}
+	if p.Total == 0 && (p.taskTypeDO == nil || !p.taskTypeDO.NotifyIncrement) {
 		return
 	}
 	p.flush(now)

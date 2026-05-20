@@ -352,9 +352,14 @@ func (b *TaskTypeDOBuilder) NotifyPercentInterval(notifyPercentInterval float64)
 	return b
 }
 
-func (b *TaskTypeDOBuilder) NotifyIncrement(notifyIncrement bool, notifyIncrementTotalTmpl string) *TaskTypeDOBuilder {
-	b.taskTypeDO.NotifyIncrement = notifyIncrement
+func (b *TaskTypeDOBuilder) NotifyIncrement(notifyIncrementTotalTmpl string, notifyTimeInterval ...int64) *TaskTypeDOBuilder {
+	b.taskTypeDO.NotifyIncrement = true
 	b.taskTypeDO.NotifyIncrementTotalTmpl = notifyIncrementTotalTmpl
+	if len(notifyTimeInterval) > 0 && notifyTimeInterval[0] > 0 {
+		b.taskTypeDO.NotifyTimeInterval = notifyTimeInterval[0]
+	} else {
+		b.taskTypeDO.NotifyTimeInterval = 1000
+	}
 	return b
 }
 
