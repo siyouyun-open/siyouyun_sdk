@@ -27,6 +27,8 @@ const (
 	TaskStatusFailed TaskStatus = "failed"
 	// TaskStatusCancel indicates the task has been canceled by the user.
 	TaskStatusCancel TaskStatus = "cancel"
+	// TaskStatusDeleted indicates the task has been deleted by the user.
+	TaskStatusDeleted TaskStatus = "deleted"
 )
 
 // AbilityFlag represents the processor capability flags, indicating which operations a Processor supports.

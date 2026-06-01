@@ -12,9 +12,9 @@ import (
 //
 // For running tasks (processing): it publishes an event via the broker to notify the consumer,
 // which is responsible for:
-//   1. Canceling the context / stopping the ticker
-//   2. Calling the Processor's Cancel/Pause hook for cleanup
-//   3. Updating the task status and persisting it
+//  1. Canceling the context / stopping the ticker
+//  2. Calling the Processor's Cancel/Pause hook for cleanup
+//  3. Updating the task status and persisting it
 //
 // For non-running tasks: the framework manages the status change directly.
 // The Processor's Cancel/Pause hooks are called only as cleanup hooks
@@ -75,6 +75,7 @@ func (c *baseClient) applyOperation(op TaskOp, task *TaskDO, processor Processor
 		if task.Status == TaskStatusProcessing {
 			_ = c.broker.Publish(task.EventUUID(), []byte(TaskStatusCancel))
 		}
+		task.Status = TaskStatusDeleted
 		c.notifyTaskStatusChange(task, taskTypeDO)
 		if taskTypeDO.CanExecute(OpForceRemove) {
 			return c.publisher.DeleteTask(task.UUID, true)
@@ -92,6 +93,7 @@ func (c *baseClient) applyOperation(op TaskOp, task *TaskDO, processor Processor
 				return err
 			}
 		}
+		task.Status = TaskStatusDeleted
 		c.notifyTaskStatusChange(task, taskTypeDO)
 		return c.publisher.DeleteTask(task.UUID, false)
 	}
@@ -113,17 +115,23 @@ func (c *baseClient) updateTaskWithNotify(task *TaskDO, taskTypeDO *TaskTypeDO) 
 // to display messages (e.g., task success/failure/cancellation).
 func (c *baseClient) notifyTaskStatusChange(task *TaskDO, taskTypeDO *TaskTypeDO) {
 	notifyScope := getNotifyScope(taskTypeDO)
-	p := &Progress{
-		Id:        task.UUID,
-		TaskType:  task.TaskType,
-		TaskTitle: task.TaskTitle,
-		Status:    task.Status,
-		Total:     0,
-		Current:   0,
-		Percent:   "0",
-		Start:     task.StartAt,
-		Cost:      0,
-		Seq:       0,
+	var p *Progress
+	if task.Progress != nil {
+		task.Progress.Status = task.Status
+		p = task.Progress
+	} else {
+		p = &Progress{
+			Id:        task.UUID,
+			TaskType:  task.TaskType,
+			TaskTitle: task.TaskTitle,
+			Status:    task.Status,
+			Total:     0,
+			Current:   0,
+			Percent:   "0",
+			Start:     task.StartAt,
+			Cost:      0,
+			Seq:       0,
+		}
 	}
 	if task.EndAt > 0 && task.StartAt > 0 {
 		p.Cost = task.EndAt - task.StartAt
