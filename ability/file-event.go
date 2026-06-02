@@ -3,6 +3,7 @@ package ability
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"runtime/debug"
 	"strconv"
 
@@ -106,6 +107,90 @@ func (m *FileEventMonitor) RegisterAppEvent(preferOps ...sdkdto.PreferOptions) e
 	}
 	// re-register
 	return registerAppEvent(*m.appCode, preferOps)
+}
+
+// TriggerAppEvents fires the given app eventType for every file under the
+// directory identified by ufi. The server enumerates the files in that
+// scope and emits one FileEvent per file, so callers receive N downstream
+// events for a single TriggerAppEvents call (N >= 0, depending on how many
+// files match). The same payload, if provided, is delivered verbatim to
+// every fired event; consumers can recover the original type with
+// FileEvent.BindPayload(&myStruct).
+//
+// payload may be:
+//   - nil                          -> no payload is sent
+//   - any struct / map[string]any  -> JSON-marshaled once and forwarded
+//   - json.RawMessage              -> inlined as raw JSON, not re-encoded
+//   - []byte                       -> treated as raw JSON bytes (validated)
+func (m *FileEventMonitor) TriggerAppEvents(
+	ugn *utils.UserGroupNamespace,
+	ufi string,
+	eventType int,
+	payload any,
+) error {
+	raw, err := encodePayload(payload)
+	if err != nil {
+		return err
+	}
+	return m.doTriggerAppEvents(ugn, ufi, eventType, raw)
+}
+
+func (m *FileEventMonitor) doTriggerAppEvents(
+	ugn *utils.UserGroupNamespace,
+	ufi string,
+	eventType int,
+	payload json.RawMessage,
+) error {
+	api := utils.GetOSServiceURL() + "/storage/restore/meta"
+	body := map[string]any{
+		"ufi":       ufi,
+		"onlyEvent": true,
+		"appCode":   *m.appCode,
+		"eventType": eventType,
+	}
+	if len(payload) > 0 {
+		body["payload"] = payload
+	}
+	resp := restclient.PostRequest[any](ugn, api, nil, body)
+	if resp.Code != sdkconst.Success {
+		return errors.New(resp.Msg)
+	}
+	return nil
+}
+
+// encodePayload normalizes the user-supplied payload into a json.RawMessage
+// that will be embedded as-is into the outer request body (and later into
+// FileEvent.Payload on the receiving end).
+func encodePayload(payload any) (json.RawMessage, error) {
+	if payload == nil {
+		return nil, nil
+	}
+	switch v := payload.(type) {
+	case json.RawMessage:
+		if len(v) == 0 {
+			return nil, nil
+		}
+		if !json.Valid(v) {
+			return nil, fmt.Errorf("TriggerAppEvents: payload is json.RawMessage but not valid JSON")
+		}
+		return v, nil
+	case []byte:
+		if len(v) == 0 {
+			return nil, nil
+		}
+		if !json.Valid(v) {
+			return nil, fmt.Errorf("TriggerAppEvents: payload is []byte but not valid JSON")
+		}
+		return json.RawMessage(v), nil
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("TriggerAppEvents: marshal payload: %w", err)
+	}
+	if len(data) == 0 || string(data) == "null" {
+		return nil, nil
+	}
+	return json.RawMessage(data), nil
 }
 
 // Listen start listening file event
