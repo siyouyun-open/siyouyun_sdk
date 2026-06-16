@@ -34,6 +34,7 @@ type Ability struct {
 	fem      *ability.FileEventMonitor   // fs event monitor
 	sem      *ability.SystemEventMonitor // system event monitor
 	task     *ability.TaskCenter         // task center
+	device   *ability.Device             // device info
 }
 
 // InitAbility init ability
@@ -125,6 +126,12 @@ func (a *AppStruct) WithSystemEventMonitor(opts ...ability.SystemEventOption) {
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.sem.Name())
 }
 
+// WithDevice add device support
+func (a *AppStruct) WithDevice() {
+	a.Ability.device = ability.NewDevice()
+	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.device.Name())
+}
+
 // WithTaskCenter add task center support
 func (a *AppStruct) WithTaskCenter() {
 	a.Ability.task = ability.NewTaskCenter(&a.AppCode, a.nc)
@@ -185,6 +192,13 @@ func (a *Ability) FileEventMonitor() (*ability.FileEventMonitor, error) {
 	return a.fem, nil
 }
 
+func (a *Ability) Device() (*ability.Device, error) {
+	if a.device == nil {
+		return nil, abilityNotEnableErr
+	}
+	return a.device, nil
+}
+
 func (a *Ability) TaskCenter() (*ability.TaskCenter, error) {
 	if a.task == nil {
 		return nil, abilityNotEnableErr
@@ -219,5 +233,8 @@ func (a *Ability) Destroy() {
 	}
 	if a.task != nil {
 		a.task.Close()
+	}
+	if a.device != nil {
+		a.device.Close()
 	}
 }
