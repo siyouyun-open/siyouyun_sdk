@@ -88,6 +88,13 @@ func NewApp() *AppStruct {
 	return App
 }
 
+func (a *AppStruct) ConfigureIris(configurators ...iris.Configurator) {
+	if a == nil || a.server == nil {
+		return
+	}
+	a.server.Configure(configurators...)
+}
+
 func (a *AppStruct) StartWebServer() {
 	idleConnsClosed := make(chan struct{})
 	iris.RegisterOnInterrupt(func() {
