@@ -3,10 +3,10 @@ package ability
 import (
 	"errors"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 type FFmpeg struct {
@@ -48,7 +48,7 @@ func (ff *FFmpeg) GetDetailInfo(ugn *utils.UserGroupNamespace, ufi string) (*sdk
 
 func (ff *FFmpeg) getInfo(ugn *utils.UserGroupNamespace, ufi string) (*sdkdto.FFProbeInfo, error) {
 	api := ff.gatewayAddr + "/ffmpeg/info"
-	response := restclient.GetRequest[sdkdto.FFProbeInfo](
+	response := apiclient.GetRequest[sdkdto.FFProbeInfo](
 		ugn,
 		api,
 		map[string]string{

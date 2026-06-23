@@ -5,9 +5,9 @@ import (
 
 	"github.com/kataras/iris/v12"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/sdkerr"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/sdkerr"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 type Response[T any] struct {

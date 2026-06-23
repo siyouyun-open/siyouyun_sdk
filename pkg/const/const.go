@@ -22,6 +22,7 @@ const (
 	SiyouFSMysqlDBPrefix = "siyou"
 	SiyouSysPool         = "syspool"
 	UserHomeDir          = "/home"
+	RuncMountBase        = "/mnt/userfs"
 )
 
 type MediaType string

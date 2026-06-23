@@ -3,10 +3,10 @@ package ability
 import (
 	"errors"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 // Device device ability
@@ -35,7 +35,7 @@ func (d *Device) Close() {
 // GetServiceEndpoints query service endpoints for mini-program
 func (d *Device) GetServiceEndpoints() (*sdkdto.ServiceEndpointsConfig, error) {
 	api := d.gatewayAddr + "/service-endpoints"
-	response := restclient.GetRequest[sdkdto.ServiceEndpointsConfig](
+	response := apiclient.GetRequest[sdkdto.ServiceEndpointsConfig](
 		nil,
 		api,
 		nil,

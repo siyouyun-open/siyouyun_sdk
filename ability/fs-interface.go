@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 type GenericFS interface {

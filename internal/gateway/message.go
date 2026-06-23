@@ -3,14 +3,14 @@ package gateway
 import (
 	"errors"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 func SendMessage(ugn *utils.UserGroupNamespace, appCode, content, replyUUID string) error {
 	api := utils.GetCoreServiceURL() + "/v2/app/msg/session/send"
-	response := restclient.PostRequest[any](
+	response := apiclient.PostRequest[any](
 		ugn,
 		api,
 		map[string]string{

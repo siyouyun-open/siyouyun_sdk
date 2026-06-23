@@ -5,9 +5,9 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 
-	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
-	sdkprotos "github.com/siyouyun-open/siyouyun_sdk/pkg/protos"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/log"
+	sdkprotos "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/protos"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 type AI struct {

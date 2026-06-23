@@ -6,11 +6,11 @@ import (
 	"io"
 	"strconv"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	rj "github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	rj "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/restjson"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 var (
@@ -31,7 +31,7 @@ type HTTPFile struct {
 
 func (H *HTTPFile) Close() error {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -52,7 +52,7 @@ func (H *HTTPFile) Close() error {
 
 func (H *HTTPFile) Read(p []byte) (int, error) {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -78,7 +78,7 @@ func (H *HTTPFile) Read(p []byte) (int, error) {
 
 func (H *HTTPFile) ReadAt(p []byte, off int64) (int, error) {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -105,7 +105,7 @@ func (H *HTTPFile) ReadAt(p []byte, off int64) (int, error) {
 
 func (H *HTTPFile) Seek(offset int64, whence int) (int64, error) {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -131,7 +131,7 @@ func (H *HTTPFile) Write(p []byte) (int, error) {
 		return 0, nil
 	}
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -156,7 +156,7 @@ func (H *HTTPFile) WriteAt(p []byte, off int64) (int, error) {
 		return 0, nil
 	}
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -179,7 +179,7 @@ func (H *HTTPFile) WriteAt(p []byte, off int64) (int, error) {
 
 func (H *HTTPFile) Name() string {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -200,7 +200,7 @@ func (H *HTTPFile) Name() string {
 
 func (H *HTTPFile) Readdir(n int) ([]*sdkdto.SiyouFileInfo, error) {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -227,7 +227,7 @@ func (H *HTTPFile) Readdir(n int) ([]*sdkdto.SiyouFileInfo, error) {
 
 func (H *HTTPFile) Readdirnames(n int) ([]string, error) {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -254,7 +254,7 @@ func (H *HTTPFile) Readdirnames(n int) ([]string, error) {
 
 func (H *HTTPFile) Stat() (*sdkdto.SiyouFileInfo, error) {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -280,7 +280,7 @@ func (H *HTTPFile) Stat() (*sdkdto.SiyouFileInfo, error) {
 
 func (H *HTTPFile) Sync() error {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -301,7 +301,7 @@ func (H *HTTPFile) Sync() error {
 
 func (H *HTTPFile) Truncate(size int64) error {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,
@@ -323,7 +323,7 @@ func (H *HTTPFile) Truncate(size int64) error {
 
 func (H *HTTPFile) WriteString(s string) (int, error) {
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  H.ugn.Username,

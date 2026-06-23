@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 // TaskStatus represents the task status type.

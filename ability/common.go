@@ -3,16 +3,16 @@ package ability
 import (
 	"net/http"
 
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 func isCoreServiceReady() bool {
 	statusURL := utils.GetCoreServiceURL() + "/status/ready"
-	if restclient.Client == nil {
+	if apiclient.HTTPClient == nil {
 		return false
 	}
-	resp, err := restclient.Client.R().Head(statusURL)
+	resp, err := apiclient.HTTPClient.R().Head(statusURL)
 	if err != nil {
 		return false
 	}
@@ -21,10 +21,10 @@ func isCoreServiceReady() bool {
 
 func isOSServiceReady() bool {
 	statusURL := utils.GetOSServiceURL() + "/status/ready"
-	if restclient.Client == nil {
+	if apiclient.HTTPClient == nil {
 		return false
 	}
-	resp, err := restclient.Client.R().Head(statusURL)
+	resp, err := apiclient.HTTPClient.R().Head(statusURL)
 	if err != nil {
 		return false
 	}

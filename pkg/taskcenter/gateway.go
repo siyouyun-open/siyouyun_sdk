@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 // TaskCenterGateway is the gateway implementation of the sub-task center,

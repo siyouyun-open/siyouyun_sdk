@@ -3,16 +3,16 @@ package gateway
 import (
 	"errors"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/log"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 func GetAppInfo(code string) (*sdkdto.AppRegisterInfo, error) {
 	api := utils.GetOSServiceURL() + "/app/info"
-	response := restclient.GetRequest[sdkdto.AppRegisterInfo](nil, api, map[string]string{"appCode": code})
+	response := apiclient.GetRequest[sdkdto.AppRegisterInfo](nil, api, map[string]string{"appCode": code})
 	if response.Code != sdkconst.Success {
 		sdklog.Logger.Errorf("GetAppInfo err: %v", response.Msg)
 		return nil, errors.New(response.Msg)
@@ -25,7 +25,7 @@ func GetAppInfo(code string) (*sdkdto.AppRegisterInfo, error) {
 
 func RegisterAppMessageRobot(appCode, robotDesc string) error {
 	api := utils.GetOSServiceURL() + "/app/robot/register"
-	response := restclient.PostRequest[any](
+	response := apiclient.PostRequest[any](
 		nil,
 		api,
 		map[string]string{

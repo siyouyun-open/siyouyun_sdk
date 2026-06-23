@@ -12,13 +12,14 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
-	"github.com/siyouyun-open/siyouyun_sdk/internal/rdb"
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/localize"
-	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/internal/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/internal/rdb"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/internal/transport"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/localize"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/log"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 const (
@@ -30,46 +31,78 @@ type AppStruct struct {
 	Ability      *Ability                // app ability
 	server       *iris.Application       // app iris web server
 	appInfo      *sdkdto.AppRegisterInfo // app register info
-	nc           *nats.Conn              // nats conn
-	db           *gorm.DB                // gorm db instance
+	nc           *nats.Conn              // nats conn (host mode only)
+	db           *gorm.DB                // gorm db instance (host mode only)
 	dataVersion  int                     // app data version
 	shutdownHook func()                  // shutdown hook func
+	isRUNC       bool                    // true when APP_RUNTIME=RUNC
 }
 
 var App *AppStruct
 
-// NewApp new standard app
+// NewApp creates a new standard app.
+// In host mode (default): connects NATS + PostgreSQL via OS/Core services.
+// In RUNC mode (APP_RUNTIME=RUNC): uses bus WebSocket only, NATS and PG are disabled.
 func NewApp() *AppStruct {
-	var err error
 	App = &AppStruct{
 		server: iris.New(),
 	}
 
-	// init log
 	sdklog.InitLogger(logrus.InfoLevel)
-
-	// init http client
-	restclient.InitHttpClient()
+	apiclient.Init()
 
 	App.AppCode = os.Getenv(AppCodeEnvKey)
+	App.isRUNC = os.Getenv("APP_RUNTIME") == "RUNC"
 
-	// get app info
-	App.appInfo, err = gateway.GetAppInfo(App.AppCode)
+	if App.isRUNC {
+		App.initRUNC()
+	} else {
+		App.initHost()
+	}
+
+	App.InitAbility()
+	return App
+}
+
+// initRUNC initializes in RUNC mode: bus WebSocket only, no NATS/PG.
+func (a *AppStruct) initRUNC() {
+	sdklog.Logger.Infof("[App] Running in RUNC mode, using bus transport only")
+
+	if err := transport.InitBus(a.AppCode); err != nil {
+		panic("RUNC bus transport init failed: " + err.Error())
+	}
+
+	bus := transport.GetBus()
+	info, err := bus.GetAppInfo()
+	if err != nil {
+		panic("RUNC get app info via bus failed: " + err.Error())
+	}
+	a.appInfo = info
+
+	a.nc = nil
+	a.db = nil
+
+	sdklog.Logger.Infof("[App] RUNC init done: appCode=%s addr=%s", a.AppCode, a.appInfo.AppAddr)
+}
+
+// initHost initializes in host mode: standard NATS + PG setup.
+func (a *AppStruct) initHost() {
+	var err error
+
+	a.appInfo, err = gateway.GetAppInfo(a.AppCode)
 	if err != nil {
 		panic(err)
 	}
 
-	// init nc
-	App.nc, err = nats.Connect(utils.GetNatsServiceURL())
+	a.nc, err = nats.Connect(utils.GetNatsServiceURL())
 	if err != nil {
 		panic(err)
 	}
 
-	// init postgres db
-	if App.appInfo.AppDSN != "" {
+	if a.appInfo.AppDSN != "" {
 		db, err := gorm.Open(postgres.New(postgres.Config{
-			DSN:                  App.appInfo.AppDSN,
-			PreferSimpleProtocol: true, // Disable prepared statement caching and be compatible with PgBouncer
+			DSN:                  a.appInfo.AppDSN,
+			PreferSimpleProtocol: true,
 		}), &gorm.Config{Logger: rdb.NewLogger()})
 		if err != nil {
 			panic(err)
@@ -79,13 +112,8 @@ func NewApp() *AppStruct {
 		sqlDB.SetConnMaxIdleTime(time.Minute * 3)
 		sqlDB.SetMaxOpenConns(10)
 		sqlDB.SetMaxIdleConns(2)
-		App.db = db
+		a.db = db
 	}
-
-	// init ability
-	App.InitAbility()
-
-	return App
 }
 
 func (a *AppStruct) ConfigureIris(configurators ...iris.Configurator) {
@@ -105,11 +133,9 @@ func (a *AppStruct) StartWebServer() {
 		a.server.Shutdown(ctx)
 		close(idleConnsClosed)
 	})
-	// config iris i18n
 	if localize.Instance != nil {
 		localize.Instance.ConfigIris(a.server)
 	}
-	// add default router
 	a.server.Head("/health", func(ctx iris.Context) { ctx.StatusCode(http.StatusOK) })
 	a.server.Get("/icon", a.GetIcon)
 	a.server.Get("/data/status", a.CheckAppDataStatus)
@@ -118,14 +144,11 @@ func (a *AppStruct) StartWebServer() {
 	<-idleConnsClosed
 }
 
-// OnShutdown set shutdown hook
 func (a *AppStruct) OnShutdown(hook func()) {
 	a.shutdownHook = hook
 }
 
-// WithDataVersion set data version (need enable kv ability)
 func (a *AppStruct) WithDataVersion(version int) error {
-	// check if kv ability is enabled
 	_, err := a.Ability.KV()
 	if err != nil {
 		return err
@@ -147,9 +170,11 @@ func (a *AppStruct) destroy() {
 			_ = sqlDB.Close()
 		}
 	}
+	if a.isRUNC {
+		transport.CloseBus()
+	}
 }
 
-// GetUGNList get all ugn list
 func (a *AppStruct) GetUGNList() []utils.UserGroupNamespace {
 	if a.appInfo == nil {
 		return nil

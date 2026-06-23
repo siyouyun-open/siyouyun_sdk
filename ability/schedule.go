@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 type Schedule struct {
@@ -58,7 +58,7 @@ func (s *Schedule) AddOnceScheduleEvent(ugn *utils.UserGroupNamespace, name stri
 		return errors.New("remind time error"), nil
 	}
 	api := s.gatewayAddr + "/once/create"
-	response := restclient.PostRequest[int64](
+	response := apiclient.PostRequest[int64](
 		ugn,
 		api,
 		nil,
@@ -81,7 +81,7 @@ func (s *Schedule) UpdateOnceScheduleEvent(ugn *utils.UserGroupNamespace, eventI
 		return errors.New("remind time error")
 	}
 	api := s.gatewayAddr + "/once/update"
-	response := restclient.PostRequest[any](
+	response := apiclient.PostRequest[any](
 		ugn,
 		api,
 		map[string]string{
@@ -98,7 +98,7 @@ func (s *Schedule) UpdateOnceScheduleEvent(ugn *utils.UserGroupNamespace, eventI
 
 func (s *Schedule) AddCronScheduleEvent(ugn *utils.UserGroupNamespace, name string, payload []byte, cron string) (err error, eventId *int64) {
 	api := s.gatewayAddr + "/cron/create"
-	var response = restclient.PostRequest[int64](
+	var response = apiclient.PostRequest[int64](
 		ugn,
 		api,
 		nil,
@@ -118,7 +118,7 @@ func (s *Schedule) AddCronScheduleEvent(ugn *utils.UserGroupNamespace, name stri
 
 func (s *Schedule) UpdateCronScheduleEvent(ugn *utils.UserGroupNamespace, eventId int64, cron string) (err error) {
 	api := s.gatewayAddr + "/cron/update"
-	var response = restclient.PostRequest[int](
+	var response = apiclient.PostRequest[int](
 		ugn,
 		api,
 		map[string]string{

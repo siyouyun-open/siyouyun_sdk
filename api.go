@@ -10,11 +10,11 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/core/router"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	rj "github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	rj "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/restjson"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 // GetAPIBuilder get web server api builder
@@ -61,12 +61,12 @@ func (a *AppStruct) CheckAppDataStatus(ctx iris.Context) {
 // RefreshAppData refresh app data
 func (a *AppStruct) RefreshAppData(ctx iris.Context) {
 	url := utils.GetOSServiceURL() + "/app/data/refresh"
-	if restclient.Client == nil {
+	if apiclient.HTTPClient == nil {
 		ctx.JSON(rj.ErrorResJsonWithMsg("not ready"))
 		return
 	}
 	ugn := utils.NewUserNamespaceFromIris(ctx)
-	resp := restclient.PostRequest[any](ugn, url, map[string]string{"appCode": a.AppCode}, nil)
+	resp := apiclient.PostRequest[any](ugn, url, map[string]string{"appCode": a.AppCode}, nil)
 	if resp.Code != sdkconst.Success {
 		ctx.JSON(rj.ErrorResJsonWithMsg(resp.Msg))
 		return

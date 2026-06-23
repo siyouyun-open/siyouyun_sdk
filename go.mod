@@ -1,16 +1,18 @@
-module github.com/siyouyun-open/siyouyun_sdk
+module github.com/siyouyun-open/siyouyun_sdk/v2
 
 go 1.25.0
+
+replace github.com/siyouyun-open/siyouyun_sdk/v2 => ./
 
 require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-gormigrate/gormigrate/v2 v2.1.5
 	github.com/go-resty/resty/v2 v2.17.2
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/nats-io/nats.go v1.50.0
 	github.com/sirupsen/logrus v1.9.4
-	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 	golang.org/x/sync v0.20.0
 	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
@@ -62,6 +64,7 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yosssi/ace v0.0.5 // indirect
 	golang.org/x/crypto v0.49.0 // indirect
+	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.35.0 // indirect

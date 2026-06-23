@@ -3,7 +3,7 @@ package utils
 import (
 	"runtime/debug"
 
-	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/log"
 	"golang.org/x/sync/errgroup"
 )
 

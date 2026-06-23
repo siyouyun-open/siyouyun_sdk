@@ -1,8 +1,8 @@
 package sdkdto
 
 import (
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 // SiyouFileInfo siyouyun file info

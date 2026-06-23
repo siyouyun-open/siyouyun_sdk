@@ -6,10 +6,10 @@ import (
 	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 const (
@@ -55,7 +55,7 @@ func (f *FS) NewFSFromUserGroupNamespace(ugn *utils.UserGroupNamespace) GenericF
 func (f *FS) GetUGNList(ctx iris.Context) []utils.UGNExt {
 	api := utils.GetOSServiceURL() + "/fs/group/space/list"
 	currentUGN := utils.NewUserNamespaceFromIris(ctx)
-	response := restclient.GetRequest[[]sdkdto.GroupStorageSpaceInfo](currentUGN, api, nil)
+	response := apiclient.GetRequest[[]sdkdto.GroupStorageSpaceInfo](currentUGN, api, nil)
 	list := []utils.UGNExt{
 		{
 			UserGroupNamespace: utils.UserGroupNamespace{

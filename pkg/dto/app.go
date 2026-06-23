@@ -1,7 +1,7 @@
 package sdkdto
 
 import (
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 // AppRegisterInfo app registry Info

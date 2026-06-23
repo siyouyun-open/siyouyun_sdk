@@ -7,8 +7,8 @@ import (
 	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/gorm"
 
-	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/log"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 // ModelMigrator migrate schema according to the model

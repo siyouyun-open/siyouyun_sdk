@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	rj "github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	rj "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/restjson"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 const (

@@ -3,10 +3,10 @@ package ability
 import (
 	"errors"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 const (
@@ -48,7 +48,7 @@ func (kv *KV) PutKV(ugn *utils.UserGroupNamespace, kvType, key, value string) er
 		Key:     key,
 		Value:   value,
 	}
-	response := restclient.PostRequest[any](
+	response := apiclient.PostRequest[any](
 		ugn,
 		api,
 		nil,
@@ -63,7 +63,7 @@ func (kv *KV) PutKV(ugn *utils.UserGroupNamespace, kvType, key, value string) er
 // DeleteKV delete ugn kv
 func (kv *KV) DeleteKV(ugn *utils.UserGroupNamespace, kvType, key string) error {
 	api := kv.gatewayAddr + "/delete"
-	response := restclient.PostRequest[any](
+	response := apiclient.PostRequest[any](
 		ugn,
 		api,
 		map[string]string{
@@ -82,7 +82,7 @@ func (kv *KV) DeleteKV(ugn *utils.UserGroupNamespace, kvType, key string) error 
 // GetKV get ugn kv
 func (kv *KV) GetKV(ugn *utils.UserGroupNamespace, kvType, key string) (*sdkdto.KV, bool) {
 	api := kv.gatewayAddr + "/value"
-	response := restclient.GetRequest[sdkdto.KV](
+	response := apiclient.GetRequest[sdkdto.KV](
 		ugn,
 		api,
 		map[string]string{
@@ -100,7 +100,7 @@ func (kv *KV) GetKV(ugn *utils.UserGroupNamespace, kvType, key string) (*sdkdto.
 // GetKVList get ugn kv list
 func (kv *KV) GetKVList(ugn *utils.UserGroupNamespace, kvType string) []sdkdto.KV {
 	api := kv.gatewayAddr + "/values"
-	response := restclient.GetRequest[[]sdkdto.KV](
+	response := apiclient.GetRequest[[]sdkdto.KV](
 		ugn,
 		api,
 		map[string]string{
@@ -123,7 +123,7 @@ func (kv *KV) PutSysKV(kvType, key, value string) error {
 		Key:     key,
 		Value:   value,
 	}
-	response := restclient.PostRequest[any](
+	response := apiclient.PostRequest[any](
 		nil,
 		api,
 		nil,
@@ -138,7 +138,7 @@ func (kv *KV) PutSysKV(kvType, key, value string) error {
 // DeleteSysKV delete sys kv
 func (kv *KV) DeleteSysKV(kvType, key string) error {
 	api := kv.gatewayAddr + "/sys/delete"
-	response := restclient.PostRequest[any](
+	response := apiclient.PostRequest[any](
 		nil,
 		api,
 		map[string]string{
@@ -157,7 +157,7 @@ func (kv *KV) DeleteSysKV(kvType, key string) error {
 // GetSysKV get sys kv
 func (kv *KV) GetSysKV(kvType, key string) (*sdkdto.KV, bool) {
 	api := kv.gatewayAddr + "/sys/value"
-	response := restclient.GetRequest[sdkdto.KV](
+	response := apiclient.GetRequest[sdkdto.KV](
 		nil,
 		api,
 		map[string]string{
@@ -175,7 +175,7 @@ func (kv *KV) GetSysKV(kvType, key string) (*sdkdto.KV, bool) {
 // GetSysKVList get sys kv list
 func (kv *KV) GetSysKVList(kvType string) []sdkdto.KV {
 	api := kv.gatewayAddr + "/sys/values"
-	response := restclient.GetRequest[[]sdkdto.KV](
+	response := apiclient.GetRequest[[]sdkdto.KV](
 		nil,
 		api,
 		map[string]string{

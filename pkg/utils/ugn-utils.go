@@ -2,12 +2,13 @@ package utils
 
 import (
 	"hash/fnv"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/kataras/iris/v12"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
 )
 
 type UserGroupNamespace struct {
@@ -38,6 +39,11 @@ func (ugn *UserGroupNamespace) GetRealPrefix(poolName string) string {
 	}
 	if poolName == "" {
 		poolName = sdkconst.SiyouSysPool
+	}
+	// RUNC 模式下，用户数据通过 bind mount pool 挂载到 /mnt/userfs，
+	// 池内导出名为 {namespace}_{poolName}，而非宿主机 /home/... 路径。
+	if os.Getenv("APP_RUNTIME") == "RUNC" {
+		return filepath.Join(sdkconst.RuncMountBase, ugn.Namespace+"_"+poolName)
 	}
 	return filepath.Join(sdkconst.UserHomeDir, ugn.GroupName, ugn.Namespace, poolName)
 }

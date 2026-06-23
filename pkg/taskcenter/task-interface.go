@@ -1,6 +1,6 @@
 package taskcenter
 
-import "github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+import "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 
 const (
 	OwnerOS = "os"

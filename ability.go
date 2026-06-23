@@ -3,71 +3,89 @@ package siyouyunsdk
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/siyouyun-open/siyouyun_sdk/ability"
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/ability"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/internal/transport"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/log"
 )
 
 var abilityNotEnableErr = errors.New("this ability not enabled yet")
 
-// AbilityInterface ability interface
+// AbilityInterface defines the interface for an ability.
 type AbilityInterface interface {
-	// Name of ability
 	Name() string
-	// IsReady if ability is ready
 	IsReady() bool
-	// Close resources
 	Close()
 }
 
-// Ability app ability set
+// Ability holds all optional app abilities.
 type Ability struct {
-	fs       *ability.FS                 // fs file handler
-	kv       *ability.KV                 // kv store
-	ffmpeg   *ability.FFmpeg             // ffmpeg info
-	schedule *ability.Schedule           // schedule remind
-	message  *ability.Message            // message bot
-	ai       *ability.AI                 // ai inference
-	fem      *ability.FileEventMonitor   // fs event monitor
-	sem      *ability.SystemEventMonitor // system event monitor
-	task     *ability.TaskCenter         // task center
-	device   *ability.Device             // device info
+	fs       *ability.FS
+	kv       *ability.KV
+	ffmpeg   *ability.FFmpeg
+	schedule *ability.Schedule
+	message  *ability.Message
+	ai       *ability.AI
+	fem      *ability.FileEventMonitor
+	sem      *ability.SystemEventMonitor
+	task     *ability.TaskCenter
+	device   *ability.Device
 }
 
-// InitAbility init ability
+// InitAbility initializes default abilities (FS is always enabled).
 func (a *AppStruct) InitAbility() {
 	a.Ability = &Ability{
-		// default add fs support
 		fs: ability.NewFS(&a.AppCode, a.db),
 	}
 }
 
-// WithFS add fs support
+// WithFS enables file system ability.
 func (a *AppStruct) WithFS() {
 	a.Ability.fs = ability.NewFS(&a.AppCode, a.db)
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.fs.Name())
 }
 
-// WithKV add kv support
+// WithKV enables key-value store ability.
 func (a *AppStruct) WithKV() {
 	a.Ability.kv = ability.NewKV(&a.AppCode)
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.kv.Name())
 }
 
-// WithFFmpeg add ffmpeg support
+// WithFFmpeg enables FFmpeg media processing ability.
 func (a *AppStruct) WithFFmpeg() {
 	a.Ability.ffmpeg = ability.NewFFmpeg()
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.ffmpeg.Name())
 }
 
-// WithSchedule add schedule support
+// WithSchedule enables schedule/reminder ability.
+// In RUNC mode, schedule triggers are received via bus pub/sub.
 func (a *AppStruct) WithSchedule() {
 	a.Ability.schedule = ability.NewSchedule(&a.AppCode)
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.schedule.Name())
-	//启动监听event
+
+	if a.isRUNC {
+		topic := fmt.Sprintf("system.schedule.%s", a.AppCode)
+		bus := transport.GetBus()
+		if bus != nil {
+			bus.SubscribeTopic(topic)
+			bus.OnTopicEvent(topic, func(topic string, event json.RawMessage) {
+				var se ability.ScheduleEvent
+				if err := json.Unmarshal(event, &se); err != nil {
+					return
+				}
+				if h, ok := a.Ability.schedule.Handler[se.Name]; ok {
+					h.Handler(&se)
+				}
+			})
+		}
+		return
+	}
+
+	// host mode: NATS listener
 	if a.nc == nil {
 		return
 	}
@@ -88,7 +106,6 @@ func (a *AppStruct) WithSchedule() {
 			} else {
 				h.Handler(&se)
 			}
-			return
 		})
 		if err != nil {
 			sdklog.Logger.Errorf("WithSchedule subscribe err: %v", err)
@@ -96,19 +113,29 @@ func (a *AppStruct) WithSchedule() {
 	}()
 }
 
-// WithMessage add message support
+// WithMessage enables message bot ability.
 func (a *AppStruct) WithMessage() {
+	if a.isRUNC {
+		a.Ability.message = ability.NewMessageBus(&a.AppCode)
+		sdklog.Logger.Infof("[%v] ability is supported (bus mode)", a.Ability.message.Name())
+		return
+	}
 	a.Ability.message = ability.NewMessage(&a.AppCode, a.nc)
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.message.Name())
 }
 
-// WithAI add AI support
+// WithAI enables AI inference ability (gRPC, host mode only).
+// In RUNC mode this is skipped; a bus-based replacement is planned.
 func (a *AppStruct) WithAI() {
+	if a.isRUNC {
+		sdklog.Logger.Infof("[AI] skipped in RUNC mode (will be replaced by bus-based AI)")
+		return
+	}
 	a.Ability.ai = ability.NewAI()
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.ai.Name())
 }
 
-// WithFileEventMonitor add file event monitor support
+// WithFileEventMonitor enables file event monitoring.
 func (a *AppStruct) WithFileEventMonitor(preferOps ...sdkdto.PreferOptions) {
 	if len(preferOps) == 0 {
 		return
@@ -117,7 +144,8 @@ func (a *AppStruct) WithFileEventMonitor(preferOps ...sdkdto.PreferOptions) {
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.fem.Name())
 }
 
-// WithSystemEventMonitor add system event monitor support
+// WithSystemEventMonitor enables system event monitoring.
+// In RUNC mode, uses bus pub/sub instead of NATS JetStream.
 func (a *AppStruct) WithSystemEventMonitor(opts ...ability.SystemEventOption) {
 	if len(opts) == 0 {
 		return
@@ -126,13 +154,14 @@ func (a *AppStruct) WithSystemEventMonitor(opts ...ability.SystemEventOption) {
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.sem.Name())
 }
 
-// WithDevice add device support
+// WithDevice enables device info ability.
 func (a *AppStruct) WithDevice() {
 	a.Ability.device = ability.NewDevice()
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.device.Name())
 }
 
-// WithTaskCenter add task center support
+// WithTaskCenter enables task center ability.
+// In RUNC mode, uses BusBroker instead of NATS.
 func (a *AppStruct) WithTaskCenter() {
 	a.Ability.task = ability.NewTaskCenter(&a.AppCode, a.nc)
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.task.Name())
@@ -174,10 +203,8 @@ func (a *Ability) AI() (*ability.AI, error) {
 	if a.ai == nil {
 		return nil, abilityNotEnableErr
 	}
-	// conn not ready, retry
 	if a.ai.AIServiceClient == nil {
 		a.ai = ability.NewAI()
-		// check again
 		if a.ai.AIServiceClient == nil {
 			return nil, errors.New("ai service conn err")
 		}

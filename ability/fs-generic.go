@@ -10,11 +10,11 @@ import (
 
 	"gorm.io/gorm"
 
-	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
-	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
-	rj "github.com/siyouyun-open/siyouyun_sdk/pkg/restjson"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/utils"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/const"
+	sdkdto "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/dto"
+	rj "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/restjson"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/utils"
 )
 
 // SyyFS syy fs operations
@@ -50,7 +50,7 @@ func (fs *SyyFS) openFile(ufi string, flag int, perm os.FileMode, avatar bool) (
 	file := new(HTTPFile)
 	file.ugn = fs.ugn
 	res := rj.Response[bfsApiRet]{}
-	_, err := restclient.Client.R().
+	_, err := apiclient.HTTPClient.R().
 		SetResult(&res).
 		SetHeaders(map[string]string{
 			sdkconst.UsernameHeader:  file.ugn.Username,
@@ -75,7 +75,7 @@ func (fs *SyyFS) openFile(ufi string, flag int, perm os.FileMode, avatar bool) (
 
 func (fs *SyyFS) Stat(ufi string) (*sdkdto.SiyouFileInfo, error) {
 	api := utils.GetCoreServiceURL() + "/v2/app/fs/object/detail"
-	resp := restclient.GetRequest[sdkdto.SiyouFileInfo](fs.ugn, api, map[string]string{"ufi": ufi})
+	resp := apiclient.GetRequest[sdkdto.SiyouFileInfo](fs.ugn, api, map[string]string{"ufi": ufi})
 	if resp.Code != sdkconst.Success {
 		return nil, errors.New(resp.Msg)
 	}
@@ -84,7 +84,7 @@ func (fs *SyyFS) Stat(ufi string) (*sdkdto.SiyouFileInfo, error) {
 
 func (fs *SyyFS) MkdirAll(ufi string) error {
 	api := utils.GetCoreServiceURL() + "/v2/app/fs/mkdir/all"
-	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi}, nil)
+	resp := apiclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
 	}
@@ -93,7 +93,7 @@ func (fs *SyyFS) MkdirAll(ufi string) error {
 
 func (fs *SyyFS) Remove(ufi string) error {
 	api := utils.GetCoreServiceURL() + "/v2/app/fs/remove"
-	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi}, nil)
+	resp := apiclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
 	}
@@ -102,7 +102,7 @@ func (fs *SyyFS) Remove(ufi string) error {
 
 func (fs *SyyFS) RemoveAll(ufi string) error {
 	api := utils.GetCoreServiceURL() + "/v2/app/fs/remove/all"
-	resp := restclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi}, nil)
+	resp := apiclient.PostRequest[any](fs.ugn, api, map[string]string{"ufi": ufi}, nil)
 	if resp.Code != sdkconst.Success {
 		return errors.New(resp.Msg)
 	}
@@ -111,7 +111,7 @@ func (fs *SyyFS) RemoveAll(ufi string) error {
 
 func (fs *SyyFS) Rename(oldUFI string, newUFI string) error {
 	api := utils.GetCoreServiceURL() + "/v2/app/fs/rename"
-	resp := restclient.PostRequest[any](fs.ugn, api,
+	resp := apiclient.PostRequest[any](fs.ugn, api,
 		map[string]string{
 			"ufi1": oldUFI,
 			"ufi2": newUFI,
@@ -124,7 +124,7 @@ func (fs *SyyFS) Rename(oldUFI string, newUFI string) error {
 
 func (fs *SyyFS) MoveTrash(ufi string) error {
 	api := utils.GetCoreServiceURL() + "/v2/app/fs/trash/move"
-	resp := restclient.PostRequest[any](fs.ugn, api, nil, map[string]interface{}{
+	resp := apiclient.PostRequest[any](fs.ugn, api, nil, map[string]interface{}{
 		"ufis": []string{ufi},
 	})
 	if resp.Code != sdkconst.Success {
@@ -135,7 +135,7 @@ func (fs *SyyFS) MoveTrash(ufi string) error {
 
 func (fs *SyyFS) Chtimes(ufi string, atime time.Time, mtime time.Time) error {
 	api := utils.GetCoreServiceURL() + "/v2/app/fs/chtimes"
-	resp := restclient.PostRequest[any](fs.ugn, api,
+	resp := apiclient.PostRequest[any](fs.ugn, api,
 		map[string]string{
 			"ufi":   ufi,
 			"atime": strconv.FormatInt(atime.UnixMilli(), 10),
@@ -149,7 +149,7 @@ func (fs *SyyFS) Chtimes(ufi string, atime time.Time, mtime time.Time) error {
 
 func (fs *SyyFS) FileExists(ufi string) bool {
 	api := utils.GetCoreServiceURL() + "/v2/app/fs/exists"
-	resp := restclient.GetRequest[bool](fs.ugn, api, map[string]string{"ufi": ufi})
+	resp := apiclient.GetRequest[bool](fs.ugn, api, map[string]string{"ufi": ufi})
 	if resp.Code != sdkconst.Success {
 		return false
 	}
@@ -158,7 +158,7 @@ func (fs *SyyFS) FileExists(ufi string) bool {
 
 func (fs *SyyFS) FileList(options *sdkdto.FileListOptionsV2) *sdkdto.FileListRes {
 	api := utils.GetCoreServiceURL() + "/v2/app/fs/object/list"
-	resp := restclient.PostRequest[sdkdto.FileListRes](&options.UGN, api, nil, options)
+	resp := apiclient.PostRequest[sdkdto.FileListRes](&options.UGN, api, nil, options)
 	if resp.Code != sdkconst.Success {
 		return nil
 	}

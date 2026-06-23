@@ -8,9 +8,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"github.com/siyouyun-open/siyouyun_sdk/internal/gateway"
-	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
-	"github.com/siyouyun-open/siyouyun_sdk/pkg/restclient"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/internal/gateway"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/pkg/apiclient"
+	sdklog "github.com/siyouyun-open/siyouyun_sdk/v2/pkg/log"
 )
 
 // AppBuilder app builder
@@ -27,7 +27,7 @@ func NewAppBuilder(appCode string) *AppBuilder {
 	sdklog.InitLogger(logrus.InfoLevel)
 
 	// init http client
-	restclient.InitHttpClient()
+	apiclient.Init()
 
 	// get app info
 	if appCode == "" {
