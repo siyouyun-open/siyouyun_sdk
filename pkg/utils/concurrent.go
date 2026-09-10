@@ -7,7 +7,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// SafeGo 在 goroutine 中执行任务并自动 recover
+// SafeGo runs the task in a goroutine and recovers from panics automatically.
 func SafeGo(task func()) {
 	go func() {
 		defer func() {
@@ -19,7 +19,7 @@ func SafeGo(task func()) {
 	}()
 }
 
-// SafeGoWithErrGroup 在 errgroup 中执行任务并自动 recover
+// SafeGoWithErrGroup runs the task in an errgroup and recovers from panics automatically.
 func SafeGoWithErrGroup(eg *errgroup.Group, task func() error) {
 	eg.Go(func() error {
 		defer func() {

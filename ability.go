@@ -67,7 +67,7 @@ func (a *AppStruct) WithFFmpeg() {
 func (a *AppStruct) WithSchedule() {
 	a.Ability.schedule = ability.NewSchedule(&a.AppCode)
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.schedule.Name())
-	//启动监听event
+	// start listening for events
 	if a.nc == nil {
 		return
 	}

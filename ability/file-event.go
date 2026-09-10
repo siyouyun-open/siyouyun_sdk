@@ -204,7 +204,17 @@ func (m *FileEventMonitor) listen() {
 	}
 	err = registerAppEvent(*m.appCode, maps.Values(m.preferOptions))
 	if err != nil {
-		panic(err)
+		// Under minictl's private runtime the app may not be registered with the
+		// legacy OS (a brand new app), so event registration on the legacy side
+		// cannot succeed: log a warning and continue. The subscription is still
+		// created and any event that does arrive is handled as usual.
+		if utils.RuntimeManaged() {
+			sdklog.Logger.Warnf("registering file events with the legacy OS failed (%v); "+
+				"continuing under the minictl runtime, this app will not receive "+
+				"file events dispatched by the legacy OS", err)
+		} else {
+			panic(err)
+		}
 	}
 	m.sub, err = m.nc.Subscribe(*m.appCode+"_event", func(msg *nats.Msg) {
 		var fe sdkdto.FileEvent

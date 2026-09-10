@@ -2,7 +2,7 @@ package utils
 
 import "sync"
 
-// ReadBufPool 读取缓冲池
+// ReadBufPool is the pool used for read buffers.
 var ReadBufPool = sync.Pool{
 	New: func() interface{} {
 		b := make([]byte, 1024)

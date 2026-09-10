@@ -45,37 +45,37 @@ func (m *Message) IsReady() bool {
 func (m *Message) Close() {
 }
 
-// SendMsg 发送消息给用户,只有权限发送给拥有此app的用户
-// ugn		:	用户与空间
-// content 	:	消息正文
+// SendMsg sends a message to users. Only users that own this app receive it.
+// ugn     : user and namespace
+// content : message body
 func (m *Message) SendMsg(ugn *utils.UserGroupNamespace, content, replyUUID string) error {
 	return gateway.SendMessage(ugn, *m.appCode, content, replyUUID)
 }
 
-// AddHandler 添加消息机器人处理器
+// AddHandler registers a message robot handler.
 // desc:
 //
-//	消息机器人的功能描述
+//	description of the message robot
 //
 // triggerPhrasePerl:
 //
-//	触发处理器的短语模式正则
+//	phrase pattern (regular expression) that triggers the handler
 //
 // handler func(content string) (reply bool, replyContent string, replyToUUID bool):
 //
-//	入参:
-//		- content 用户发送到机器人的消息正文
-//	返回值:
-//		- reply 		:	是否需要回复
-//		- replyContent	:	回复的正文
-//		- replyToUUID	:	回复时是否引用用户消息
+//	Parameters:
+//		- content: message body the user sent to the robot
+//	Returns:
+//		- reply        : whether a reply is needed
+//		- replyContent : body of the reply
+//		- replyToUUID  : whether to quote the user message when replying
 func (m *Message) AddHandler(desc string, triggerPhrasePerl string, handler func(ugn *utils.UserGroupNamespace, content, uuid string) (reply bool, replyContent string, replyToUUID bool)) {
 	if desc == "" {
-		// 处理器命名不能为空
+		// the handler name must not be empty
 		return
 	}
 	//if triggerPhrasePerl == "" {
-	// 触发条件不能为空
+	// the trigger condition must not be empty
 	//return
 	//}
 	m.mu.Lock()
@@ -83,13 +83,13 @@ func (m *Message) AddHandler(desc string, triggerPhrasePerl string, handler func
 	if _, ok := m.handlers[desc]; ok {
 		return
 	} else {
-		sdklog.Logger.Infof("添加消息机器人处理器:[%v]", desc)
+		sdklog.Logger.Infof("registering message robot handler: [%v]", desc)
 		m.handlers[desc] = handler
 		//m.triggerPhrasePerls[desc] = triggerPhrasePerl
 	}
 }
 
-// MessageEvent 消息在事件中传递的结构
+// MessageEvent is the structure a message takes when passed through an event.
 type MessageEvent struct {
 	UGN       utils.UserGroupNamespace `json:"ugn"`
 	UUID      string                   `json:"uuid"`
@@ -99,7 +99,7 @@ type MessageEvent struct {
 	SendByAdmin bool `json:"sendByAdmin"`
 }
 
-// 开启监听器
+// start the listener
 func (m *Message) enableListener() {
 	robotCode := *m.appCode + "_msg"
 	go func() {
