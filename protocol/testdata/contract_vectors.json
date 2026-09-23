@@ -1,0 +1,535 @@
+{
+  "contract_version": 1,
+  "scope_spaces": [
+    "app",
+    "all",
+    "space"
+  ],
+  "scope_keys": [
+    {
+      "key": "backup",
+      "dir": "/Backup"
+    },
+    {
+      "key": "desktop",
+      "dir": "/Desktop"
+    },
+    {
+      "key": "documents",
+      "dir": "/Documents"
+    },
+    {
+      "key": "downloads",
+      "dir": "/Downloads"
+    },
+    {
+      "key": "movies",
+      "dir": "/Movies"
+    },
+    {
+      "key": "music",
+      "dir": "/Music"
+    },
+    {
+      "key": "photos",
+      "dir": "/Photos"
+    }
+  ],
+  "scope_parse": [
+    {
+      "raw": "space",
+      "space": "space",
+      "key": "",
+      "sub": "",
+      "whole": true,
+      "string": "space"
+    },
+    {
+      "raw": "space.all",
+      "space": "space",
+      "key": "",
+      "sub": "",
+      "whole": true,
+      "string": "space"
+    },
+    {
+      "raw": "space.music",
+      "space": "space",
+      "key": "music",
+      "sub": "",
+      "whole": false,
+      "string": "space.music"
+    },
+    {
+      "raw": "space.music/2024",
+      "space": "space",
+      "key": "music",
+      "sub": "/2024",
+      "whole": false,
+      "string": "space.music/2024"
+    },
+    {
+      "raw": "space.MUSIC/2024/raw",
+      "space": "space",
+      "key": "music",
+      "sub": "/2024/raw",
+      "whole": false,
+      "string": "space.music/2024/raw"
+    },
+    {
+      "raw": "space.music/",
+      "space": "space",
+      "key": "music",
+      "sub": "",
+      "whole": false,
+      "string": "space.music"
+    },
+    {
+      "raw": "app",
+      "space": "app",
+      "key": "",
+      "sub": "",
+      "whole": true,
+      "string": "app"
+    },
+    {
+      "raw": "all.photos",
+      "space": "all",
+      "key": "photos",
+      "sub": "",
+      "whole": false,
+      "string": "all.photos"
+    },
+    {
+      "raw": "  all.movies/2024  ",
+      "space": "all",
+      "key": "movies",
+      "sub": "/2024",
+      "whole": false,
+      "string": "all.movies/2024"
+    }
+  ],
+  "scope_parse_invalid": [
+    "",
+    "   ",
+    "device",
+    "user",
+    "space.unknownkey",
+    "space.music//2024",
+    "space.music/../etc",
+    "app.photos",
+    "all.music/a//b"
+  ],
+  "scope_contains": [
+    {
+      "outer": "space",
+      "inner": "space",
+      "want": true
+    },
+    {
+      "outer": "space",
+      "inner": "space.music",
+      "want": true
+    },
+    {
+      "outer": "space",
+      "inner": "space.music/2024",
+      "want": true
+    },
+    {
+      "outer": "space.music",
+      "inner": "space.music/2024",
+      "want": true
+    },
+    {
+      "outer": "space.music",
+      "inner": "space.music",
+      "want": true
+    },
+    {
+      "outer": "space.music/2024",
+      "inner": "space.music",
+      "want": false
+    },
+    {
+      "outer": "space.music",
+      "inner": "space.movies",
+      "want": false
+    },
+    {
+      "outer": "space.music/2024",
+      "inner": "space.music/2024/08",
+      "want": true
+    },
+    {
+      "outer": "space.music/2024",
+      "inner": "space.music/20240",
+      "want": false
+    },
+    {
+      "outer": "all",
+      "inner": "space",
+      "want": true
+    },
+    {
+      "outer": "all.music",
+      "inner": "space.music",
+      "want": true
+    },
+    {
+      "outer": "app",
+      "inner": "app",
+      "want": true
+    },
+    {
+      "outer": "app",
+      "inner": "space",
+      "want": false
+    }
+  ],
+  "ufi_pool_rel": [
+    {
+      "ufi": "/ufi/pool-raw/syspool/Music/a.mp3",
+      "rel": "/Music/a.mp3"
+    },
+    {
+      "ufi": "/ufi/pool-raw/syspool/.siyouyun/appdata/movie/x.jpg",
+      "rel": "/.siyouyun/appdata/movie/x.jpg"
+    },
+    {
+      "ufi": "/ufi/other/syspool/Music/a.mp3",
+      "rel": ""
+    },
+    {
+      "ufi": "",
+      "rel": ""
+    }
+  ],
+  "path_within": [
+    {
+      "base": "/a/b",
+      "target": "/a/b/c",
+      "want": true
+    },
+    {
+      "base": "/a/b",
+      "target": "/a/b",
+      "want": true
+    },
+    {
+      "base": "/a/b",
+      "target": "/a/bc",
+      "want": false
+    },
+    {
+      "base": "/a/b",
+      "target": "/a",
+      "want": false
+    },
+    {
+      "base": "/a/b/",
+      "target": "/a/b/c",
+      "want": true
+    }
+  ],
+  "templates": [
+    {
+      "template": "system.kv.get",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.kv.put",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.kv.list",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.kv.delete",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.kv.sys.get",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.kv.sys.put",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.kv.sys.list",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.kv.sys.delete",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.daemon.health",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.storage.spaces",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.storage.check-port",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.compose.deploy",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.compose.deploy.status",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.compose.deploy.cancel",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.compose.list",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.compose.remove",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.container.list",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.container.start",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.container.stop",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.image.convert",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": true
+    },
+    {
+      "template": "system.image.thumbnail",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": true
+    },
+    {
+      "template": "infra.qdrant.health",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "infra.qdrant.collections.list",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "infra.qdrant.collection.info",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "infra.qdrant.collection.create",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "infra.qdrant.collection.delete",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "infra.qdrant.points.upsert",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "infra.qdrant.points.set_payload",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "infra.qdrant.points.delete",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "infra.qdrant.points.query",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "infra.qdrant.points.scroll",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "system.media.ffmpeg.info",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.device.service-endpoints",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.storage.user-spaces",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.fs.trash",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.message.send",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.schedule.once.create",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.schedule.once.update",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.schedule.cron.create",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.schedule.cron.update",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.event.scope.get",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "system.event.scope.set",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "system.file.event",
+      "mode": "subscribe",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "system.event.schedule",
+      "mode": "subscribe",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "system.event.notification",
+      "mode": "subscribe",
+      "daemon_provided": false,
+      "accept_file": false
+    }
+  ],
+  "mount_table": {
+    "file_name": "mounts.json",
+    "version": 1,
+    "container_dir": "/etc/miniruntime/resources",
+    "env_key": "MINI_APP_MOUNT_TABLE",
+    "ufi_prefix": "/ufi/pool-raw/",
+    "json_keys": [
+      "version"
+    ]
+  },
+  "wire": {
+    "message_types": [
+      "call",
+      "ping",
+      "subscribe",
+      "unsubscribe"
+    ],
+    "frame_types": [
+      "event",
+      "pong",
+      "response"
+    ],
+    "code_success": "A00200",
+    "code_error": "A00400"
+  },
+  "runtime": {
+    "container_runtime_kind": "runc"
+  }
+}
