@@ -50,9 +50,11 @@ type Request struct {
 	ID string `json:"id"`
 	// Template is the capability template (see templates.go).
 	Template string `json:"template,omitempty"`
-	// Signature is the signature of custom-domain (custom.*) capabilities.
-	// Built-in templates are resolved by the daemon itself and do not need it; a missing
-	// custom.* signature is rejected directly by the protocol layer.
+	// Signature is the signature of an App-provided capability: any template the daemon
+	// does not have in its built-in registry, which includes custom.* and the reserved
+	// official/system domain infra.*. Built-in templates are resolved by the daemon itself
+	// and do not need it; a missing signature for an App-provided template is rejected by
+	// the protocol layer on **every** transport (UDS and WebSocket alike).
 	Signature string `json:"signature,omitempty"`
 	// ProviderAppID pins the call to a specific provider App (optional).
 	ProviderAppID string `json:"provider_app_id,omitempty"`

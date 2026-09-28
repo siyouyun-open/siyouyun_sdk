@@ -1,5 +1,5 @@
 {
-  "contract_version": 1,
+  "contract_version": 2,
   "scope_spaces": [
     "app",
     "all",
@@ -358,66 +358,6 @@
       "mode": "call",
       "daemon_provided": false,
       "accept_file": true
-    },
-    {
-      "template": "infra.qdrant.health",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "infra.qdrant.collections.list",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "infra.qdrant.collection.info",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "infra.qdrant.collection.create",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "infra.qdrant.collection.delete",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "infra.qdrant.points.upsert",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "infra.qdrant.points.set_payload",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "infra.qdrant.points.delete",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "infra.qdrant.points.query",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "infra.qdrant.points.scroll",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
     },
     {
       "template": "system.media.ffmpeg.info",

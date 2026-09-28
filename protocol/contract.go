@@ -22,4 +22,8 @@ package protocol
 // repository), and the host should not depend on the application-side SDK just for one
 // contract. Keeping a copy on each side and using the three gates above to prevent
 // divergence is a better deal than introducing a cross-repository module dependency.
-const ContractVersion = 1
+// Version 2 (2026-09): the `infra.qdrant.*` templates left the built-in catalog. They are
+// now ordinary App-provided capabilities (declared by the Qdrant App's manifest and called
+// with a signature), so a runtime that still hardcodes them and one that does not would
+// disagree on signatures and on the call surface.
+const ContractVersion = 2

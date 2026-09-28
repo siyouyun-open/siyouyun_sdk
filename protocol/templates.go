@@ -40,18 +40,6 @@ const (
 	TemplateImageConvert   = "system.image.convert"
 	TemplateImageThumbnail = "system.image.thumbnail"
 
-	// ── Qdrant vector database (implemented by the Qdrant container) ──
-	TemplateQdrantHealth           = "infra.qdrant.health"
-	TemplateQdrantCollectionsList  = "infra.qdrant.collections.list"
-	TemplateQdrantCollectionInfo   = "infra.qdrant.collection.info"
-	TemplateQdrantCollectionCreate = "infra.qdrant.collection.create"
-	TemplateQdrantCollectionDelete = "infra.qdrant.collection.delete"
-	TemplateQdrantPointsUpsert     = "infra.qdrant.points.upsert"
-	TemplateQdrantPointsSetPayload = "infra.qdrant.points.set_payload"
-	TemplateQdrantPointsDelete     = "infra.qdrant.points.delete"
-	TemplateQdrantPointsQuery      = "infra.qdrant.points.query"
-	TemplateQdrantPointsScroll     = "infra.qdrant.points.scroll"
-
 	// ── File event watch scope (provider = AppStore) ──
 	// Applications read and write their own watch directories through the SDK's
 	// app.Events(); the value syntax is the same grammar ParseScopeValue implements.
@@ -168,17 +156,6 @@ func Catalog() []Capability {
 
 		{Template: TemplateImageConvert, Mode: ModeCall, AcceptFile: true, Summary: "Convert an image format (requires a provider)"},
 		{Template: TemplateImageThumbnail, Mode: ModeCall, AcceptFile: true, Summary: "Generate an image thumbnail (requires a provider)"},
-
-		{Template: TemplateQdrantHealth, Mode: ModeCall, Summary: "Qdrant health check (requires a provider)"},
-		{Template: TemplateQdrantCollectionsList, Mode: ModeCall, Summary: "List collections"},
-		{Template: TemplateQdrantCollectionInfo, Mode: ModeCall, Summary: "Read collection info"},
-		{Template: TemplateQdrantCollectionCreate, Mode: ModeCall, Summary: "Create a collection"},
-		{Template: TemplateQdrantCollectionDelete, Mode: ModeCall, Summary: "Delete a collection"},
-		{Template: TemplateQdrantPointsUpsert, Mode: ModeCall, Summary: "Upsert points"},
-		{Template: TemplateQdrantPointsSetPayload, Mode: ModeCall, Summary: "Set the points payload"},
-		{Template: TemplateQdrantPointsDelete, Mode: ModeCall, Summary: "Delete points"},
-		{Template: TemplateQdrantPointsQuery, Mode: ModeCall, Summary: "Query vectors"},
-		{Template: TemplateQdrantPointsScroll, Mode: ModeCall, Summary: "Scroll points"},
 
 		// Core / OS proxy: the daemon injects identity and forwards; applications do not
 		// connect to platform services directly.
