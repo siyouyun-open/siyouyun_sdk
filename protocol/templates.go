@@ -85,6 +85,18 @@ const (
 	TemplateScheduleOnceUpdate = "system.schedule.once.update"
 	TemplateScheduleCronCreate = "system.schedule.cron.create"
 	TemplateScheduleCronUpdate = "system.schedule.cron.update"
+
+	// ── Assets (models / runtimes) ──
+	//
+	// The daemon authenticates with the host enrollment (the app has no platform
+	// identity) and hands the app short-lived presigned URLs; the app downloads,
+	// resumes and verifies by itself so it owns its own progress.
+	//
+	// Note this deliberately hands a presigned URL to the caller — see
+	// docs/specs/asset-api.md §6 for why that is allowed here (single-object,
+	// read-only, short TTL) while the binding secret never leaves the daemon.
+	TemplateAssetCatalog = "system.asset.catalog"
+	TemplateAssetResolve = "system.asset.resolve"
 )
 
 // Event topic constants.
@@ -168,6 +180,12 @@ func Catalog() []Capability {
 		{Template: TemplateScheduleOnceUpdate, Mode: ModeCall, DaemonProvided: true, Summary: "Update a one-shot schedule"},
 		{Template: TemplateScheduleCronCreate, Mode: ModeCall, DaemonProvided: true, Summary: "Create a recurring schedule"},
 		{Template: TemplateScheduleCronUpdate, Mode: ModeCall, DaemonProvided: true, Summary: "Update a recurring schedule"},
+
+		// Assets (models / runtimes): the daemon authenticates with the host enrollment,
+		// enforces the per-device allow list, and returns short-lived presigned URLs the
+		// app downloads with itself. Bytes never travel over the bus.
+		{Template: TemplateAssetCatalog, Mode: ModeCall, DaemonProvided: true, Summary: "List model/runtime assets available to this device"},
+		{Template: TemplateAssetResolve, Mode: ModeCall, DaemonProvided: true, Summary: "Resolve an asset to short-lived presigned download URLs"},
 
 		// File event watch scope (design doc v4 §4.1): **not** daemon-provided; the provider is
 		// AppStore (it holds the persistent configuration; the daemon only filters by scope).
