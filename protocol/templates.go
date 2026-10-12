@@ -45,6 +45,25 @@ const (
 	// app.Events(); the value syntax is the same grammar ParseScopeValue implements.
 	TemplateEventScopeGet = "system.event.scope.get"
 	TemplateEventScopeSet = "system.event.scope.set"
+
+	// ── Third-party route grants (gt-), provider = AppStore ──
+	//
+	// The provider is AppStore because it is the only party that knows which web route
+	// belongs to which installed app: on an AppStore web route (/syy/faas/appstore/web/<hash>)
+	// Core's self-binding makes appCode always "appstore", so Core cannot tell one caller
+	// app from another. The grant's routePath is therefore derived by the provider from the
+	// caller identity, and the caller must hand over the **user's own** platform token —
+	// AppStore never signs with its own credentials (that would mint grants owned by the
+	// wrong user). See docs/specs/route-grant-capability.md.
+	//
+	// Deliberately **not** exposed: update-expire. Core keeps /syy/oauth/thirdparty/update-expire;
+	// no current caller needs it. To add it later, register a new template rather than
+	// widening create.
+	TemplateRouteGrantCreate = "system.route.grant.create"
+	TemplateRouteGrantList   = "system.route.grant.list"
+	TemplateRouteGrantToken  = "system.route.grant.token"
+	TemplateRouteGrantRevoke = "system.route.grant.revoke"
+	TemplateRouteGrantDelete = "system.route.grant.delete"
 )
 
 // Core / OS service proxy capabilities.
@@ -193,6 +212,15 @@ func Catalog() []Capability {
 		// names must be in the SDK's compile-time contract.
 		{Template: TemplateEventScopeGet, Mode: ModeCall, Summary: "Read the app's file-event watch scope (requires the AppStore provider)"},
 		{Template: TemplateEventScopeSet, Mode: ModeCall, Summary: "Change the app's file-event watch scope (requires the AppStore provider)"},
+
+		// Third-party route grants: provider is AppStore (it owns the app→web-route mapping).
+		// The caller supplies the user's platform token; the provider derives appCode/routePath
+		// from the caller identity and refuses anything outside the caller's own routes.
+		{Template: TemplateRouteGrantCreate, Mode: ModeCall, Summary: "Create a route grant (gt-) for the caller's own route prefix (requires the AppStore provider)"},
+		{Template: TemplateRouteGrantList, Mode: ModeCall, Summary: "List route grants on the caller's own route prefixes (requires the AppStore provider)"},
+		{Template: TemplateRouteGrantToken, Mode: ModeCall, Summary: "Reveal the plaintext token of one of the caller's own route grants (requires the AppStore provider)"},
+		{Template: TemplateRouteGrantRevoke, Mode: ModeCall, Summary: "Revoke one of the caller's own route grants (keeps the record) (requires the AppStore provider)"},
+		{Template: TemplateRouteGrantDelete, Mode: ModeCall, Summary: "Delete one of the caller's own route grants (record disappears) (requires the AppStore provider)"},
 
 		{Template: TopicFileEvent, Mode: ModeSubscribe, Summary: "File changes under the app data directory"},
 		{Template: TopicScheduleEvent, Mode: ModeSubscribe, Summary: "Schedule events"},

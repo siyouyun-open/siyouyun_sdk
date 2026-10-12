@@ -454,6 +454,36 @@
       "mode": "call",
       "daemon_provided": true,
       "accept_file": false
+    },
+    {
+      "template": "system.route.grant.create",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "system.route.grant.list",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "system.route.grant.token",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "system.route.grant.revoke",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
+      "template": "system.route.grant.delete",
+      "mode": "call",
+      "daemon_provided": false,
+      "accept_file": false
     }
   ],
   "mount_table": {
