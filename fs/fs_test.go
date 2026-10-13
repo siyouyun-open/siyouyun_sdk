@@ -500,3 +500,73 @@ func TestTableScopeEnforcement(t *testing.T) {
 		t.Fatalf("must not narrow when there is no valid declaration: %v", err)
 	}
 }
+
+// 授权空间列表（protocol.MountTable.Spaces）必须并入 Spaces()。
+//
+// 背景：应用侧空间闸门是 `App.Space(space) → Table.HasSpace(space) → Table.Spaces()`，
+// 而 AppData 只有一个指针。共享 native 实例的数据空间是 default、又要服务 admin-main
+// 用户时，用户空间只能靠 WebNamespaces 表达 —— 没有这个字段时它进不了授权集合，
+// 每次调用都被应用拒成
+//
+//	space not authorized: "admin-main" (instance authorized spaces: default)
+//
+// 有 storage.user.file 池的应用靠 Pools[].Space 捎带才有该空间；没有池的应用直接不可用。
+func TestTableSpacesIncludesExplicitAuthorizationList(t *testing.T) {
+	base := t.TempDir()
+	appData := filepath.Join(base, "appdata")
+	if err := os.MkdirAll(appData, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := writeTable(t, base, protocol.MountTable{
+		Version: protocol.MountTableVersion,
+		AppData: &protocol.MountEntry{Space: "default", LocalPath: appData, Writable: true, Kind: protocol.MountKindAppData},
+		// 没有池：这正是 telebook 的形态，授权空间只能来自 Spaces。
+		Spaces: []string{"admin-main", "default", ""},
+	})
+
+	table, err := LoadFile(path)
+	if err != nil {
+		t.Fatalf("LoadFile: %v", err)
+	}
+	got := table.Spaces()
+	want := []string{"admin-main", "default"}
+	if len(got) != len(want) {
+		t.Fatalf("Spaces = %#v, want %#v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("Spaces = %#v, want %#v", got, want)
+		}
+	}
+	// 它就是空间闸门的判据。
+	if !table.HasSpace("admin-main") {
+		t.Fatal("HasSpace(admin-main) 必须为真，否则应用会 403")
+	}
+	if table.HasSpace("bob-main") {
+		t.Fatal("未授权的空间不能放行")
+	}
+	// 授权列表不产生挂载点：没有池就没有 Pool。
+	if _, err := table.Pool("syspool"); err == nil {
+		t.Fatal("Spaces 只是授权列表，不该造出存储池")
+	}
+}
+
+// 老运行时（不写 spaces 字段）行为必须完全不变。
+func TestTableSpacesUnchangedWithoutExplicitList(t *testing.T) {
+	base := t.TempDir()
+	poolRoot := filepath.Join(base, "pool")
+	if err := os.MkdirAll(poolRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := writeTable(t, base, protocol.MountTable{
+		Version: protocol.MountTableVersion,
+		Pools:   []protocol.MountEntry{{Name: "syspool", Space: "alice-main", LocalPath: poolRoot, Writable: true}},
+	})
+	table, err := LoadFile(path)
+	if err != nil {
+		t.Fatalf("LoadFile: %v", err)
+	}
+	if got := table.Spaces(); len(got) != 1 || got[0] != "alice-main" {
+		t.Fatalf("Spaces = %#v, want [alice-main]", got)
+	}
+}

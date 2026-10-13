@@ -44,6 +44,10 @@ type Table struct {
 	source  string
 	appData *Mount
 	pools   []*Mount
+	// spaces is the authorization list injected by the daemon: user spaces this instance
+	// may serve, beyond appData.space and the pool spaces. It adds no mount point; it only
+	// widens Spaces() (see the Spaces doc comment).
+	spaces []string
 	// scopes is the data access scope injected by the daemon (used to narrow native); empty means none was declared.
 	scopes []protocol.ScopeValue
 }
@@ -95,6 +99,9 @@ func LoadFile(path string) (*Table, error) {
 			table.pools = append(table.pools, mount)
 		}
 	}
+	// Explicit authorization list: it carries no path (there is nothing to open), so it is
+	// carried over as-is and only widens Spaces(). Blank entries add nothing.
+	table.spaces = append(table.spaces, raw.Spaces...)
 	// Scope declarations: invalid values are skipped (the daemon-side declaration has
 	// already been validated; this is only defensive). When none remain, no narrowing is
 	// applied — turning "failed to parse the declaration" into "reject everything" would
@@ -157,7 +164,18 @@ func (t *Table) Pools() []*Mount {
 	return append([]*Mount(nil), t.pools...)
 }
 
-// Spaces returns the user spaces that appear in the mount table (deduplicated and sorted).
+// Spaces returns the user spaces the instance is authorized to serve (deduplicated and sorted).
+//
+// It is the union of three sources:
+//
+//   - AppData.Space — the application's private space;
+//   - Pools[].Space — the spaces the storage pools belong to;
+//   - MountTable.Spaces — the runtime's explicit authorization list.
+//
+// The third source exists because AppData is a single pointer: a shared native instance
+// whose data space is `default` cannot express the user spaces it serves through
+// AppData/Pools alone (it may have no pool at all), and every call would then be
+// rejected here.
 func (t *Table) Spaces() []string {
 	if t == nil {
 		return nil
@@ -177,6 +195,9 @@ func (t *Table) Spaces() []string {
 	add(t.appDataSpace())
 	for _, pool := range t.pools {
 		add(pool.space)
+	}
+	for _, space := range t.spaces {
+		add(strings.TrimSpace(space))
 	}
 	sort.Strings(spaces)
 	return spaces
