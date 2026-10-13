@@ -41,24 +41,22 @@ type MountTable struct {
 	// Spaces are the user deployment spaces this instance is **authorized to serve**,
 	// beyond the one carried by AppData / Pools[].Space (e.g. "alice-main", "group-team").
 	//
-	// Why it exists: the application-side space gate (decision 4) is
+	// Why it exists: the application-side space gate is
 	//
 	//	appsdk.App.Space(space) → fs.Table.HasSpace(space) → fs.Table.Spaces()
 	//
-	// and Spaces() used to be `AppData.Space ∪ Pools[].Space`. AppData is a single
-	// pointer, so a shared native instance whose data space is `default` could not
-	// express the user spaces it serves — those live in the runtime's WebNamespaces.
-	// The result was every call being rejected with
+	// and Spaces() is `AppData.Space ∪ Pools[].Space ∪ MountTable.Spaces`. AppData is a
+	// single pointer, so a shared native instance whose data space is `default` could not
+	// express the user spaces it serves (those live in the instance's WebNamespaces):
+	// every call was rejected with
 	//
 	//	space not authorized: "admin-main" (instance authorized spaces: default)
 	//
-	// Applications that happen to declare a storage.user.file pool were covered
-	// through Pools[].Space; those without one were unusable. This field states the
-	// authorization set explicitly instead of relying on a pool being present.
+	// Applications that happen to declare a storage.user.file pool were covered through
+	// Pools[].Space; those without one were unusable. Keep in sync with the SDK's
+	// protocol.MountTable.Spaces (siyouyun_sdk/v2, since v2.2.0).
 	//
-	// It is an **authorization** list, not a directory list: entries add no mount
-	// point. Unknown/empty values add nothing, so a runtime that never sets it (or an
-	// older daemon writing an older table) behaves exactly as before.
+	// It is an **authorization** list, not a directory list: entries add no mount point.
 	Spaces []string `json:"spaces,omitempty"`
 	// Scopes are the **data access scope values** declared by the application
 	// (`space.music`, `space.music/2024`, `app`).
