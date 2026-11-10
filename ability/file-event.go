@@ -47,6 +47,7 @@ type interestListener struct {
 	stream   string
 	ttl      time.Duration
 	handler  func(fe *sdkdto.FileEvent) (sdkconst.ConsumeStatus, string)
+	workers  int
 	cons     jetstream.Consumer
 	ctx      context.Context
 	cancel   context.CancelFunc
@@ -64,6 +65,10 @@ type FileEventListenerOptions struct {
 	QoS         sdkconst.TaskLevel
 	TTL         time.Duration
 	Description string
+	// Workers bounds concurrent handler execution for this listener. Default 1
+	// preserves strict serial delivery; values >1 add bounded concurrency while
+	// ACK is still sent per message after its handler completes.
+	Workers int
 }
 
 // FileEventListener is the handle returned by StartFileEventListener.
@@ -102,6 +107,7 @@ type interestListenerSpec struct {
 	excludeExts []string
 	qos         string
 	ttl         time.Duration
+	workers     int
 }
 
 func NewFileEventMonitor(appCode *string, nc *nats.Conn, preferOps ...sdkdto.PreferOptions) *FileEventMonitor {
@@ -384,6 +390,7 @@ func (m *FileEventMonitor) StartFileEventListener(opts FileEventListenerOptions,
 	spec := interestListenerSpec{
 		dirs: dirs, mediaTypes: mediaTypes, actions: actions,
 		excludeExts: opts.ExcludeExts, qos: qosForPriority(opts.QoS), ttl: ttl,
+		workers: opts.Workers,
 	}
 	return m.startInterestListener(spec, handler)
 }
@@ -421,7 +428,7 @@ func (m *FileEventMonitor) startInterestListener(spec interestListenerSpec, hand
 	l := &interestListener{
 		id: lr.ListenerID, appCode: *m.appCode,
 		consumer: lr.JetStream.Consumer, stream: lr.JetStream.Stream,
-		ttl: spec.ttl, handler: handler,
+		ttl: spec.ttl, handler: handler, workers: normalizeWorkers(spec.workers),
 	}
 	l.ctx, l.cancel = context.WithCancel(m.ctx)
 	stream, err := m.js.Stream(l.ctx, l.stream)
@@ -536,9 +543,22 @@ func (m *FileEventMonitor) consumeLoop(l *interestListener) {
 			time.Sleep(50 * time.Millisecond)
 			continue
 		}
-		for msg := range batch.Messages() {
-			m.handle(l, msg)
+		workers := l.workers
+		if workers < 1 {
+			workers = 1
 		}
+		sem := make(chan struct{}, workers)
+		var wg sync.WaitGroup
+		for msg := range batch.Messages() {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(msg jetstream.Msg) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				m.handle(l, msg)
+			}(msg)
+		}
+		wg.Wait()
 	}
 }
 
@@ -665,6 +685,16 @@ func contains(items []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func normalizeWorkers(n int) int {
+	if n <= 1 {
+		return 1
+	}
+	if n > 64 {
+		return 64
+	}
+	return n
 }
 
 func actionCode(action string) int {
