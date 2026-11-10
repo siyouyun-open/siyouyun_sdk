@@ -9,6 +9,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -41,16 +42,17 @@ type FileEventMonitor struct {
 }
 
 type interestListener struct {
-	id       string
-	appCode  string
-	consumer string
-	stream   string
-	ttl      time.Duration
-	handler  func(fe *sdkdto.FileEvent) (sdkconst.ConsumeStatus, string)
-	workers  int
-	cons     jetstream.Consumer
-	ctx      context.Context
-	cancel   context.CancelFunc
+	id          string
+	appCode     string
+	consumer    string
+	stream      string
+	ttl         time.Duration
+	handler     func(fe *sdkdto.FileEvent) (sdkconst.ConsumeStatus, string)
+	workerLimit atomic.Int64
+	controlSub  *nats.Subscription
+	cons        jetstream.Consumer
+	ctx         context.Context
+	cancel      context.CancelFunc
 }
 
 // FileEventListenerOptions defines the filters for StartFileEventListener.
@@ -93,6 +95,9 @@ func (e *FileEventListener) Close() {
 	}
 	if e.cancel != nil {
 		e.cancel()
+	}
+	if l := e.monitor.listeners[e.id]; l != nil && l.controlSub != nil {
+		_ = l.controlSub.Unsubscribe()
 	}
 	_ = e.monitor.deleteListener(e.id)
 	e.monitor.mu.Lock()
@@ -269,13 +274,15 @@ func encodePayload(payload any) (json.RawMessage, error) {
 }
 
 type interestListenResp struct {
-	ListenerID string `json:"listenerId"`
-	ChannelID  string `json:"channelId"`
-	AppCode    string `json:"appCode"`
-	Group      string `json:"group"`
-	QoS        string `json:"qos"`
-	MaxAck     int    `json:"maxAckPending"`
-	JetStream  struct {
+	ListenerID     string `json:"listenerId"`
+	ChannelID      string `json:"channelId"`
+	AppCode        string `json:"appCode"`
+	Group          string `json:"group"`
+	QoS            string `json:"qos"`
+	MaxAck         int    `json:"maxAckPending"`
+	Workers        int    `json:"workers"`
+	ControlSubject string `json:"controlSubject"`
+	JetStream      struct {
 		Stream   string `json:"stream"`
 		Subject  string `json:"subject"`
 		Consumer string `json:"consumer"`
@@ -425,11 +432,16 @@ func (m *FileEventMonitor) startInterestListener(spec interestListenerSpec, hand
 	if lr.ListenerID == "" {
 		lr.ListenerID = lr.ChannelID
 	}
+	initialWorkers := lr.Workers
+	if initialWorkers <= 0 {
+		initialWorkers = normalizeWorkers(spec.workers)
+	}
 	l := &interestListener{
 		id: lr.ListenerID, appCode: *m.appCode,
 		consumer: lr.JetStream.Consumer, stream: lr.JetStream.Stream,
-		ttl: spec.ttl, handler: handler, workers: normalizeWorkers(spec.workers),
+		ttl: spec.ttl, handler: handler,
 	}
+	l.workerLimit.Store(int64(normalizeWorkers(initialWorkers)))
 	l.ctx, l.cancel = context.WithCancel(m.ctx)
 	stream, err := m.js.Stream(l.ctx, l.stream)
 	if err != nil {
@@ -442,6 +454,21 @@ func (m *FileEventMonitor) startInterestListener(spec interestListenerSpec, hand
 		return nil, fmt.Errorf("interest listener consumer %s: %w", l.consumer, err)
 	}
 	l.cons = cons
+	if m.nc != nil {
+		subject := lr.ControlSubject
+		if subject == "" {
+			subject = "os.interest.control." + l.id
+		}
+		l.controlSub, _ = m.nc.Subscribe(subject, func(msg *nats.Msg) {
+			var ctl struct {
+				Workers int `json:"workers"`
+			}
+			if json.Unmarshal(msg.Data, &ctl) == nil && ctl.Workers > 0 {
+				l.workerLimit.Store(int64(normalizeWorkers(ctl.Workers)))
+				sdklog.Logger.Infof("[interest] worker limit updated listener=%s workers=%d", l.id, ctl.Workers)
+			}
+		})
+	}
 	m.mu.Lock()
 	m.listeners[l.id] = l
 	m.mu.Unlock()
@@ -543,7 +570,7 @@ func (m *FileEventMonitor) consumeLoop(l *interestListener) {
 			time.Sleep(50 * time.Millisecond)
 			continue
 		}
-		workers := l.workers
+		workers := int(l.workerLimit.Load())
 		if workers < 1 {
 			workers = 1
 		}
