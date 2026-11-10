@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -44,30 +45,34 @@ type FileEventListenerOptions struct {
 	// When FailOnError is true, a handler error is terminal: report failed and ACK,
 	// without NAK/redelivery. Default false preserves at-least-once retry semantics.
 	FailOnError bool
-	// Workers bounds concurrent handler execution. Default 1 preserves strict
-	// serial delivery; ACK remains per message after its handler completes.
+	// Workers is an optional desired concurrency hint. The OS owns the
+	// effective limit and may return/update a lower value via the control
+	// subject. Zero lets the OS allocate the default for the listener QoS.
 	Workers int
 }
 
 type interestListenRequest struct {
-	Dirs        []string `json:"dirs"`
-	MediaTypes  []string `json:"mediaTypes,omitempty"`
-	ExcludeExts []string `json:"excludeExts,omitempty"`
-	Actions     []string `json:"actions,omitempty"`
-	QoS         string   `json:"qos,omitempty"`
-	TTLSeconds  int      `json:"ttlSec,omitempty"`
+	Dirs           []string `json:"dirs"`
+	MediaTypes     []string `json:"mediaTypes,omitempty"`
+	ExcludeExts    []string `json:"excludeExts,omitempty"`
+	Actions        []string `json:"actions,omitempty"`
+	QoS            string   `json:"qos,omitempty"`
+	TTLSeconds     int      `json:"ttlSec,omitempty"`
+	DesiredWorkers int      `json:"desiredWorkers,omitempty"`
 }
 
 type interestListenResponse struct {
-	ListenerID    string `json:"listenerId"`
-	Consumer      string `json:"consumer"`
-	Stream        string `json:"stream"`
-	Subject       string `json:"subject"`
-	NATSURL       string `json:"natsUrl"`
-	AppCode       string `json:"appCode"`
-	Group         string `json:"group"`
-	MaxAckPending int    `json:"maxAckPending"`
-	TTLSeconds    int    `json:"ttlSec"`
+	ListenerID     string `json:"listenerId"`
+	Consumer       string `json:"consumer"`
+	Stream         string `json:"stream"`
+	Subject        string `json:"subject"`
+	NATSURL        string `json:"natsUrl"`
+	AppCode        string `json:"appCode"`
+	Group          string `json:"group"`
+	MaxAckPending  int    `json:"maxAckPending"`
+	TTLSeconds     int    `json:"ttlSec"`
+	Workers        int    `json:"workers"`
+	ControlSubject string `json:"controlSubject"`
 }
 
 type interestEventPayload struct {
@@ -86,19 +91,20 @@ type interestEventPayload struct {
 
 // FileEventListener is a started listener handle.
 type FileEventListener struct {
-	client     *bus.Client
-	listenerID string
-	consumer   string
-	stream     string
-	subject    string
-	natsURL    string
-	ttl        time.Duration
-	nc         *nats.Conn
-	js         jetstream.JetStream
-	appCode    string
-	handler    func(FileEvent) error
-	opts       FileEventListenerOptions
-	workers    int
+	client      *bus.Client
+	listenerID  string
+	consumer    string
+	stream      string
+	subject     string
+	natsURL     string
+	ttl         time.Duration
+	nc          *nats.Conn
+	js          jetstream.JetStream
+	appCode     string
+	handler     func(FileEvent) error
+	opts        FileEventListenerOptions
+	workerLimit atomic.Int64
+	controlSub  *nats.Subscription
 
 	mu          sync.RWMutex
 	fetchCancel context.CancelFunc
@@ -161,7 +167,26 @@ func StartFileEventListener(ctx context.Context, client *bus.Client, opts FileEv
 		client: client, listenerID: resp.ListenerID, consumer: resp.Consumer,
 		stream: resp.Stream, subject: resp.Subject, natsURL: natsURL,
 		ttl: ttl, nc: nc, js: js, appCode: resp.AppCode, handler: handler, opts: opts,
-		workers: normalizeInterestWorkers(opts.Workers),
+	}
+	initialWorkers := resp.Workers
+	if initialWorkers <= 0 {
+		initialWorkers = normalizeInterestWorkers(opts.Workers)
+	}
+	l.workerLimit.Store(int64(normalizeInterestWorkers(initialWorkers)))
+	if nc != nil {
+		control := resp.ControlSubject
+		if control == "" {
+			control = "os.interest.control." + resp.ListenerID
+		}
+		l.controlSub, _ = nc.Subscribe(control, func(msg *nats.Msg) {
+			var ctl struct {
+				Workers int `json:"workers"`
+			}
+			if json.Unmarshal(msg.Data, &ctl) == nil && ctl.Workers > 0 {
+				l.workerLimit.Store(int64(normalizeInterestWorkers(ctl.Workers)))
+				fmt.Printf("[interest] worker limit updated listener=%s workers=%d\n", l.listenerID, ctl.Workers)
+			}
+		})
 	}
 	l.ctx, l.cancel = context.WithCancel(context.Background())
 	fetchCtx, fetchCancel := context.WithCancel(l.ctx)
@@ -178,12 +203,13 @@ func registerInterest(ctx context.Context, client *bus.Client, opts FileEventLis
 		ttl = 30 * time.Minute
 	}
 	reqBody := interestListenRequest{
-		Dirs:        opts.Dirs,
-		MediaTypes:  opts.MediaTypes,
-		ExcludeExts: opts.ExcludeExts,
-		Actions:     opts.Actions,
-		QoS:         opts.QoS,
-		TTLSeconds:  int(ttl.Seconds()),
+		DesiredWorkers: opts.Workers,
+		Dirs:           opts.Dirs,
+		MediaTypes:     opts.MediaTypes,
+		ExcludeExts:    opts.ExcludeExts,
+		Actions:        opts.Actions,
+		QoS:            opts.QoS,
+		TTLSeconds:     int(ttl.Seconds()),
 	}
 	raw, err := json.Marshal(reqBody)
 	if err != nil {
@@ -252,7 +278,7 @@ func (l *FileEventListener) consumeLoop(ctx context.Context, cons jetstream.Cons
 			time.Sleep(50 * time.Millisecond)
 			continue
 		}
-		workers := l.workers
+		workers := int(l.workerLimit.Load())
 		if workers < 1 {
 			workers = 1
 		}
