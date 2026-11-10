@@ -7,6 +7,7 @@ import (
 	"github.com/nats-io/nats.go"
 
 	"github.com/siyouyun-open/siyouyun_sdk/ability"
+	sdkconst "github.com/siyouyun-open/siyouyun_sdk/pkg/const"
 	sdkdto "github.com/siyouyun-open/siyouyun_sdk/pkg/dto"
 	sdklog "github.com/siyouyun-open/siyouyun_sdk/pkg/log"
 )
@@ -115,6 +116,19 @@ func (a *AppStruct) WithFileEventMonitor(preferOps ...sdkdto.PreferOptions) {
 	}
 	a.Ability.fem = ability.NewFileEventMonitor(&a.AppCode, a.nc, preferOps...)
 	sdklog.Logger.Infof("[%v] ability is supported", a.Ability.fem.Name())
+}
+
+// StartFileEventListener starts a file-event listener (new event mode).
+//
+// Unlike PreferOptions used by WithFileEventMonitor, one set of Dirs/MediaTypes/
+// Actions/ExcludeExts defines one listener. The SDK converts it into the OS interest
+// dirs/mediaTypes/expr filter.
+func (a *AppStruct) StartFileEventListener(opts ability.FileEventListenerOptions, handler func(fe *sdkdto.FileEvent) (sdkconst.ConsumeStatus, string)) (*ability.FileEventListener, error) {
+	if a.Ability.fem == nil {
+		a.Ability.fem = ability.NewFileEventMonitor(&a.AppCode, a.nc)
+		sdklog.Logger.Infof("[%v] ability is supported", a.Ability.fem.Name())
+	}
+	return a.Ability.fem.StartFileEventListener(opts, handler)
 }
 
 // WithSystemEventMonitor add system event monitor support

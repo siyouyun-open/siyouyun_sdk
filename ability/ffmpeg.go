@@ -31,7 +31,7 @@ func (ff *FFmpeg) Close() {
 }
 
 func (ff *FFmpeg) GetBasicInfo(ugn *utils.UserGroupNamespace, ufi string) (*sdkdto.FFmpegBasicInfo, error) {
-	info, err := ff.getInfo(ugn, ufi)
+	info, err := ff.getInfo(ugn, ufi, true)
 	if err != nil {
 		return nil, err
 	}
@@ -43,17 +43,19 @@ func (ff *FFmpeg) GetBasicInfo(ugn *utils.UserGroupNamespace, ufi string) (*sdkd
 }
 
 func (ff *FFmpeg) GetDetailInfo(ugn *utils.UserGroupNamespace, ufi string) (*sdkdto.FFProbeInfo, error) {
-	return ff.getInfo(ugn, ufi)
+	return ff.getInfo(ugn, ufi, false)
 }
 
-func (ff *FFmpeg) getInfo(ugn *utils.UserGroupNamespace, ufi string) (*sdkdto.FFProbeInfo, error) {
+func (ff *FFmpeg) getInfo(ugn *utils.UserGroupNamespace, ufi string, basic bool) (*sdkdto.FFProbeInfo, error) {
 	api := ff.gatewayAddr + "/ffmpeg/info"
+	params := map[string]string{"ufi": ufi}
+	if basic {
+		params["basic"] = "1"
+	}
 	response := restclient.GetRequest[sdkdto.FFProbeInfo](
 		ugn,
 		api,
-		map[string]string{
-			"ufi": ufi,
-		},
+		params,
 	)
 	if response.Code != sdkconst.Success {
 		return nil, errors.New(response.Msg)
