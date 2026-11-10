@@ -44,6 +44,9 @@ type FileEventListenerOptions struct {
 	// When FailOnError is true, a handler error is terminal: report failed and ACK,
 	// without NAK/redelivery. Default false preserves at-least-once retry semantics.
 	FailOnError bool
+	// Workers bounds concurrent handler execution. Default 1 preserves strict
+	// serial delivery; ACK remains per message after its handler completes.
+	Workers int
 }
 
 type interestListenRequest struct {
@@ -95,6 +98,7 @@ type FileEventListener struct {
 	appCode    string
 	handler    func(FileEvent) error
 	opts       FileEventListenerOptions
+	workers    int
 
 	mu          sync.RWMutex
 	fetchCancel context.CancelFunc
@@ -157,6 +161,7 @@ func StartFileEventListener(ctx context.Context, client *bus.Client, opts FileEv
 		client: client, listenerID: resp.ListenerID, consumer: resp.Consumer,
 		stream: resp.Stream, subject: resp.Subject, natsURL: natsURL,
 		ttl: ttl, nc: nc, js: js, appCode: resp.AppCode, handler: handler, opts: opts,
+		workers: normalizeInterestWorkers(opts.Workers),
 	}
 	l.ctx, l.cancel = context.WithCancel(context.Background())
 	fetchCtx, fetchCancel := context.WithCancel(l.ctx)
@@ -247,9 +252,22 @@ func (l *FileEventListener) consumeLoop(ctx context.Context, cons jetstream.Cons
 			time.Sleep(50 * time.Millisecond)
 			continue
 		}
-		for msg := range batch.Messages() {
-			l.handle(msg)
+		workers := l.workers
+		if workers < 1 {
+			workers = 1
 		}
+		sem := make(chan struct{}, workers)
+		var wg sync.WaitGroup
+		for msg := range batch.Messages() {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(msg jetstream.Msg) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				l.handle(msg)
+			}(msg)
+		}
+		wg.Wait()
 	}
 }
 
@@ -393,4 +411,14 @@ func containsListenerID(items []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func normalizeInterestWorkers(n int) int {
+	if n <= 1 {
+		return 1
+	}
+	if n > 64 {
+		return 64
+	}
+	return n
 }
