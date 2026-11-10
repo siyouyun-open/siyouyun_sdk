@@ -256,7 +256,7 @@ func TestContractMountTableAndWire(t *testing.T) {
 		}
 	}
 
-	messageTypes := []string{string(TypeCall), string(TypeSubscribe), string(TypeUnsubscribe), string(TypePing)}
+	messageTypes := []string{string(TypeCall), string(TypeSubscribe), string(TypeUnsubscribe), string(TypePing), string(TypeAck)}
 	sort.Strings(messageTypes)
 	if len(messageTypes) != len(vectors.Wire.MessageTypes) {
 		t.Errorf("the number of message types changed: vectors %v, implementation %v", vectors.Wire.MessageTypes, messageTypes)

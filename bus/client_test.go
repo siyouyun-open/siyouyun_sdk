@@ -27,6 +27,9 @@ type fakeBus struct {
 	conns    []net.Conn
 	requests []protocol.Request
 	callFn   func(protocol.Request) protocol.Response
+	// reliableUnsupported makes the fake behave like a daemon that predates the ACK protocol:
+	// it ignores the reliable flag and confirms the subscription without `{"reliable":true}`.
+	reliableUnsupported bool
 
 	done chan struct{}
 }
@@ -75,7 +78,14 @@ func (f *fakeBus) serve(conn net.Conn) {
 		switch req.Type {
 		case protocol.TypePing:
 			f.write(conn, protocol.Response{Type: protocol.FramePong, ID: req.ID})
-		case protocol.TypeSubscribe, protocol.TypeUnsubscribe:
+		case protocol.TypeSubscribe:
+			resp := protocol.Response{Type: protocol.FrameResponse, ID: req.ID, Code: protocol.CodeSuccess}
+			// Mirror the daemon: a reliable subscribe is confirmed with `{"reliable":true}`.
+			if req.Reliable && !f.reliableUnsupported {
+				resp.Data = json.RawMessage(`{"subscribed":true,"reliable":true}`)
+			}
+			f.write(conn, resp)
+		case protocol.TypeUnsubscribe:
 			f.write(conn, protocol.Response{Type: protocol.FrameResponse, ID: req.ID, Code: protocol.CodeSuccess})
 		case protocol.TypeCall:
 			resp := protocol.Response{Type: protocol.FrameResponse, ID: req.ID, Code: protocol.CodeSuccess}

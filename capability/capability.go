@@ -99,7 +99,20 @@ func (c *Client) Subscribe(ctx context.Context, topics ...string) error {
 	return c.client.Subscribe(ctx, topics...)
 }
 
-// SubscribeFileEvents subscribes to file events.
+// SubscribeReliable subscribes to event topics with at-least-once delivery; events are read
+// from Bus().ReliableEvents() and must be acknowledged with Bus().Ack. Most applications
+// should use SubscribeFileEventsReliable instead of assembling this by hand.
+func (c *Client) SubscribeReliable(ctx context.Context, topics ...string) error {
+	return c.client.SubscribeReliable(ctx, topics...)
+}
+
+// SubscribeFileEvents subscribes to file events (fire-and-forget, lossy).
 func (c *Client) SubscribeFileEvents(ctx context.Context, handler func(FileEvent)) (*Subscription, error) {
 	return SubscribeFileEvents(ctx, c.client, handler)
+}
+
+// SubscribeFileEventsReliable subscribes to file events with at-least-once delivery; see the
+// package-level function for the handler contract.
+func (c *Client) SubscribeFileEventsReliable(ctx context.Context, handler func(FileEvent) error) (*Subscription, error) {
+	return SubscribeFileEventsReliable(ctx, c.client, handler)
 }

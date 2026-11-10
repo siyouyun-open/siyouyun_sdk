@@ -25,6 +25,14 @@ const (
 	TypeUnsubscribe MessageType = "unsubscribe"
 	// TypePing is an application-level heartbeat, used for end-to-end liveness checks.
 	TypePing MessageType = "ping"
+	// TypeAck acknowledges one reliable event delivery (see Request.EventID).
+	//
+	// It is a **one-way** frame: the daemon must not reply to it. Sending the ACK and the
+	// daemon committing it are two different things — if the connection dies in between, the
+	// delivery simply stays unacknowledged and the daemon redelivers it (at-least-once).
+	// The client therefore never retries an ACK for an old delivery: a redelivery carries its
+	// own identity, and the retried delivery is acknowledged instead.
+	TypeAck MessageType = "ack"
 )
 
 // FrameType is the message type from daemon to client.
@@ -65,6 +73,27 @@ type Request struct {
 	Headers map[string]string `json:"headers,omitempty"`
 	// Topics is the topic list for subscribe / unsubscribe.
 	Topics []string `json:"topics,omitempty"`
+	// Reliable requests at-least-once delivery for the topics of a subscribe:
+	//
+	//   - every pushed event then carries Response.EventID, and the daemon keeps it
+	//     unacknowledged until TypeAck arrives for that id;
+	//   - a reliable subscribe must be confirmed with Response.Data `{"reliable":true}`
+	//     (an older daemon ignores the field and confirms without it, which the client reports
+	//     as ErrReliableUnsupported instead of silently degrading to at-most-once);
+	//   - resubscribing on a new connection is the same frame again; the daemon hits the
+	//     existing durable consumer instead of creating a new one.
+	//
+	// It is meaningful only on TypeSubscribe and is omitted (false) for the default
+	// fire-and-forget mode.
+	Reliable bool `json:"reliable,omitempty"`
+	// EventID is the delivery identity being acknowledged; it must be echoed verbatim from
+	// the event frame's Response.EventID and is meaningful only on TypeAck.
+	//
+	// The daemon chooses the format; the SDK treats it as an opaque string. The contract
+	// requires it to be **stable across redeliveries of the same event** so that a late ACK
+	// for an older attempt still matches (the daemon ignores an ACK for an id it no longer
+	// tracks).
+	EventID string `json:"event_id,omitempty"`
 }
 
 // Response is the bus's reply to a Request; it is also used for event pushes.
@@ -82,6 +111,15 @@ type Response struct {
 	// Topic / Event are used only for event pushes.
 	Topic string          `json:"topic,omitempty"`
 	Event json.RawMessage `json:"event,omitempty"`
+	// EventID identifies one delivery of a reliable subscription; the client echoes it back in
+	// a TypeAck frame (Request.EventID). It is empty for the default fire-and-forget
+	// subscriptions, so the presence of this field **is** the wire marker of
+	// "this delivery must be acknowledged".
+	//
+	// It is deliberately a separate field from ID: ID is the request/response correlation id
+	// (and only a tracing timestamp on the old event push), while EventID is the durable
+	// delivery identity the daemon can map back to the underlying JetStream message.
+	EventID string `json:"event_id,omitempty"`
 	// Error is the failure reason; present when Code is A00400.
 	Error string `json:"error,omitempty"`
 }
@@ -90,4 +128,7 @@ type Response struct {
 type Event struct {
 	Topic string
 	Data  json.RawMessage
+	// ID is the delivery identity of a reliable delivery (Response.EventID); it is empty for
+	// the default at-most-once subscriptions and is the value to pass to bus.Client.Ack.
+	ID string
 }

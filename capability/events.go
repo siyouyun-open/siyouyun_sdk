@@ -170,6 +170,9 @@ func Subscribe(ctx context.Context, client *bus.Client, topics []string, handler
 //
 // The event body is decoded according to the actual shape produced by the producer (the AppStore
 // file event relay), with UGN / SrcUFI included; see the FileEvent comment for details.
+//
+// This is the fire-and-forget subscription: events can be lost when the buffer is full or the
+// connection drops. For "must not lose a file change" use SubscribeFileEventsReliable.
 func SubscribeFileEvents(ctx context.Context, client *bus.Client, handler func(FileEvent)) (*Subscription, error) {
 	return Subscribe(ctx, client, []string{protocol.TopicFileEvent}, func(_ context.Context, _ string, data json.RawMessage) error {
 		var event FileEvent
@@ -182,4 +185,84 @@ func SubscribeFileEvents(ctx context.Context, client *bus.Client, handler func(F
 		}
 		return nil
 	})
+}
+
+// SubscribeFileEventsReliable subscribes to file events with at-least-once delivery.
+//
+// It is the acknowledged counterpart of SubscribeFileEvents: the daemon (through the bus ACK
+// protocol, backed by a JetStream durable consumer on the OS side) keeps every delivery until
+// this client acknowledges it. The handler's return value is the acknowledgement decision:
+//
+//   - nil: the event was processed (and, if the handler persists, committed); the SDK sends the
+//     ACK for this delivery and the daemon drops it.
+//   - non-nil: the event was not processed; the SDK does **not** acknowledge it, so the daemon
+//     redelivers it (AckWait, 30s on the v2 daemon) until the handler succeeds or the delivery
+//     expires (the durable consumer keeps events for at most 1h). The handler must therefore be
+//     idempotent: redeliveries, reconnects and a crash between the commit and the ACK all
+//     produce duplicates.
+//
+// Delivery rules the caller can rely on:
+//
+//   - disconnects do not lose events: the subscription is replayed on reconnect and the daemon
+//     redelivers everything that was not acknowledged;
+//   - the bounded fire-and-forget event channel (Options.EventBuffer) does not apply here; the
+//     reliable path has its own queue, and when it overflows the delivery is dropped without
+//     being acknowledged, i.e. it is redelivered later (Client.Stats().ReliableDropped);
+//   - an undecodable event is acknowledged and skipped instead of being redelivered forever
+//     (a poison message would otherwise rotate for the whole retention window);
+//   - ordering is not guaranteed across redeliveries;
+//   - Subscription.Close also cancels the daemon-side reliable subscription (best effort), so
+//     a stopped consumer does not keep receiving redeliveries it can never acknowledge.
+//
+// The daemon must support the reliable mode; on an older daemon this returns
+// bus.ErrReliableUnsupported instead of silently degrading to the lossy subscription.
+func SubscribeFileEventsReliable(ctx context.Context, client *bus.Client, handler func(FileEvent) error) (*Subscription, error) {
+	if err := client.SubscribeReliable(ctx, protocol.TopicFileEvent); err != nil {
+		return nil, err
+	}
+
+	subCtx, cancel := context.WithCancel(ctx)
+	sub := &Subscription{cancel: cancel, done: make(chan struct{})}
+
+	go func() {
+		defer close(sub.done)
+		events := client.ReliableEvents()
+		for {
+			select {
+			case <-subCtx.Done():
+				// Stop the daemon-side subscription as well: otherwise the durable consumer
+				// keeps redelivering to a consumer that no longer exists, and every delivery
+				// is dropped unacknowledged forever. Best effort and off the Close path.
+				go func() {
+					unsubCtx, unsubCancel := context.WithTimeout(context.Background(), 3*time.Second)
+					defer unsubCancel()
+					_ = client.Unsubscribe(unsubCtx, protocol.TopicFileEvent)
+				}()
+				return
+			case event, ok := <-events:
+				if !ok {
+					return
+				}
+				var fileEvent FileEvent
+				if err := json.Unmarshal(event.Data, &fileEvent); err != nil {
+					// Poison message: ack and skip. Not acking would make the daemon redeliver
+					// this undecodable body until retention expires, blocking nothing but
+					// wasting the whole retention window on an event nobody can process.
+					_ = client.Ack(event.ID)
+					continue
+				}
+				fileEvent.normalize(time.Now())
+				if handler != nil {
+					if err := handler(fileEvent); err != nil {
+						// No ACK: the daemon redelivers after AckWait. The handler is expected
+						// to be idempotent and to surface/log its own failures.
+						continue
+					}
+				}
+				_ = client.Ack(event.ID)
+			}
+		}
+	}()
+
+	return sub, nil
 }

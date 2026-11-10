@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/siyouyun-open/siyouyun_sdk/v2/protocol"
@@ -32,6 +34,10 @@ type session struct {
 	transport frameTransport
 	opts      Options
 	events    chan protocol.Event
+	// onReliable receives event pushes that carry a delivery id (reliable subscriptions).
+	// It must not block: the reader must never stall in-flight calls, so the client buffers
+	// these events in its own queue instead of into the bounded "hint" channel.
+	onReliable func(protocol.Event)
 
 	writeMu sync.Mutex
 
@@ -40,17 +46,22 @@ type session struct {
 	nextID  uint64
 	failed  *connError
 
+	// ackSeq numbers the one-way ack frames. It is separate from nextID on purpose: acks have
+	// no pending entry, and reusing the request-id sequence would collide with a real reply.
+	ackSeq atomic.Uint64
+
 	done      chan struct{}
 	closeOnce sync.Once
 }
 
-func newSession(transport frameTransport, opts Options, events chan protocol.Event) *session {
+func newSession(transport frameTransport, opts Options, events chan protocol.Event, onReliable func(protocol.Event)) *session {
 	s := &session{
-		transport: transport,
-		opts:      opts,
-		events:    events,
-		pending:   make(map[string]chan *protocol.Response),
-		done:      make(chan struct{}),
+		transport:  transport,
+		opts:       opts,
+		events:     events,
+		onReliable: onReliable,
+		pending:    make(map[string]chan *protocol.Response),
+		done:       make(chan struct{}),
 	}
 	go s.readLoop()
 	return s
@@ -76,6 +87,51 @@ func (s *session) call(ctx context.Context, req *Request) (*protocol.Response, e
 func (s *session) subscribe(ctx context.Context, topics []string) error {
 	_, err := s.roundTrip(ctx, protocol.Request{Type: protocol.TypeSubscribe, Topics: topics}, 0)
 	return err
+}
+
+// subscribeReliable registers at-least-once topic subscriptions.
+//
+// The confirmation is part of the contract: the daemon must echo `{"reliable":true}` in
+// data. Without it the daemon either predates the ACK protocol or refused the reliable mode,
+// and the caller must not be left believing that it will be redelivered (see
+// ErrReliableUnsupported).
+func (s *session) subscribeReliable(ctx context.Context, topics []string) error {
+	resp, err := s.roundTrip(ctx, protocol.Request{Type: protocol.TypeSubscribe, Topics: topics, Reliable: true}, 0)
+	if err != nil {
+		return err
+	}
+	if resp != nil && resp.Code != "" && resp.Code != protocol.CodeSuccess {
+		msg := strings.TrimSpace(resp.Error)
+		if msg == "" {
+			msg = "reliable subscribe rejected"
+		}
+		return fmt.Errorf("bus: reliable subscribe %v rejected (%s): %s", topics, resp.Code, msg)
+	}
+	var confirmation struct {
+		Reliable bool `json:"reliable"`
+	}
+	if resp != nil && len(resp.Data) > 0 {
+		_ = json.Unmarshal(resp.Data, &confirmation)
+	}
+	if !confirmation.Reliable {
+		return fmt.Errorf("%w (topics %v)", ErrReliableUnsupported, topics)
+	}
+	return nil
+}
+
+// ack acknowledges one reliable delivery. It is fire-and-forget by design: when the write
+// fails the daemon simply keeps the delivery unacknowledged and redelivers it, which is
+// exactly the at-least-once behaviour the caller asked for.
+func (s *session) ack(eventID string) error {
+	raw, err := json.Marshal(protocol.Request{
+		Type:    protocol.TypeAck,
+		ID:      fmt.Sprintf("ack-%d", s.ackSeq.Add(1)),
+		EventID: eventID,
+	})
+	if err != nil {
+		return fmt.Errorf("bus: encode ack: %w", err)
+	}
+	return s.write(raw)
 }
 
 // unsubscribe cancels subscriptions and waits for confirmation.
@@ -198,7 +254,16 @@ func (s *session) readLoop() {
 		case protocol.FrameResponse:
 			s.deliver(frame.ID, &frame)
 		case protocol.FrameEvent:
-			s.emit(protocol.Event{Topic: frame.Topic, Data: frame.Event})
+			event := protocol.Event{Topic: frame.Topic, Data: frame.Event, ID: frame.EventID}
+			// A delivery id marks an at-least-once delivery: it goes to the reliable queue
+			// (which is accounted and never mixed with the bounded hint channel) and must be
+			// acknowledged by the subscriber. Without an id the push keeps the old
+			// fire-and-forget semantics.
+			if event.ID != "" && s.onReliable != nil {
+				s.onReliable(event)
+				continue
+			}
+			s.emit(event)
 		case protocol.FramePong:
 			// Heartbeat response, nothing to handle.
 		default:

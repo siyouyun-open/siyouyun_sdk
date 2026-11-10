@@ -26,4 +26,14 @@ package protocol
 // now ordinary App-provided capabilities (declared by the Qdrant App's manifest and called
 // with a signature), so a runtime that still hardcodes them and one that does not would
 // disagree on signatures and on the call surface.
-const ContractVersion = 2
+// Version 3 (2026-10): the runtime added the daemon-provided AI-gateway templates
+// (`system.ai.chat`, `system.ai.models`, `system.vault.lease`); that change is host-side and
+// not carried by this SDK release line, but the version number is shared.
+// Version 4 (2026-11): reliable (at-least-once) event delivery on the bus. Additive on the
+// wire, but the semantics of a subscription changed: a `subscribe` may carry
+// `"reliable":true`, its confirmation must carry `{"reliable":true}` in `data`, event pushes
+// for it carry `event_id`, and the client must return a `{"type":"ack","event_id":...}`
+// frame for every delivery it has processed (see protocol/message.go). A runtime without
+// version 4 keeps the old fire-and-forget behaviour; the SDK reports that as
+// ErrReliableUnsupported instead of silently dropping events.
+const ContractVersion = 4

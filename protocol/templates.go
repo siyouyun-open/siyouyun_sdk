@@ -36,6 +36,11 @@ const (
 	TemplateContainerStart      = "system.container.start"
 	TemplateContainerStop       = "system.container.stop"
 
+	// -- Interest listener (the daemon requests an OS listener; the app connects to NATS itself) --
+	TemplateInterestListen = "system.interest.listen"
+	TemplateInterestStop   = "system.interest.stop"
+	TemplateInterestRenew  = "system.interest.renew"
+
 	// ── Images (the schema is defined by the platform and implemented by a container provider) ──
 	TemplateImageConvert   = "system.image.convert"
 	TemplateImageThumbnail = "system.image.thumbnail"
@@ -222,6 +227,9 @@ func Catalog() []Capability {
 		{Template: TemplateRouteGrantRevoke, Mode: ModeCall, Summary: "Revoke one of the caller's own route grants (keeps the record) (requires the AppStore provider)"},
 		{Template: TemplateRouteGrantDelete, Mode: ModeCall, Summary: "Delete one of the caller's own route grants (record disappears) (requires the AppStore provider)"},
 
+		{Template: TemplateInterestListen, Mode: ModeCall, DaemonProvided: true, Summary: "Create an interest listener and return its shared-stream consumer"},
+		{Template: TemplateInterestStop, Mode: ModeCall, DaemonProvided: true, Summary: "Stop an interest listener and release its consumer"},
+		{Template: TemplateInterestRenew, Mode: ModeCall, DaemonProvided: true, Summary: "Renew an interest listener lease"},
 		{Template: TopicFileEvent, Mode: ModeSubscribe, Summary: "File changes under the app data directory"},
 		{Template: TopicScheduleEvent, Mode: ModeSubscribe, Summary: "Schedule events"},
 		{Template: TopicNotificationEvent, Mode: ModeSubscribe, Summary: "System notification events"},

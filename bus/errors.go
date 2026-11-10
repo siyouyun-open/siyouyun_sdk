@@ -11,6 +11,21 @@ import (
 // Test for it with errors.Is(err, bus.ErrTimeout).
 var ErrTimeout = errors.New("bus: call timed out")
 
+// ErrReliableUnsupported reports that the daemon did not confirm a reliable (at-least-once)
+// subscription.
+//
+// The daemon confirms a reliable subscribe by returning `{"reliable":true}` in the response
+// data; an older daemon ignores the `reliable` field, confirms the subscription as plain
+// fire-and-forget, and never sets event ids. Treating that as success would silently degrade
+// the caller to at-most-once delivery, so SubscribeReliable fails instead and the caller can
+// choose between the old best-effort subscription and refusing to start.
+var ErrReliableUnsupported = errors.New("bus: daemon does not support reliable (acknowledged) subscriptions")
+
+// ErrNotConnected reports that there is no live streaming connection; used by Ack, which
+// deliberately does not dial just to acknowledge a delivery that the daemon will redeliver
+// anyway.
+var ErrNotConnected = errors.New("bus: no active connection")
+
 // CallError indicates that the daemon explicitly returned a failure (capability does not
 // exist, invalid arguments, provider failed, and so on).
 // It differs from a "connection failure": retrying the same call will not help unless the

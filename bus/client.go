@@ -12,6 +12,12 @@
 //     over HTTP/WS it only carries the caller token injected by the daemon.
 //   - Disconnects are recoverable: after a disconnect it reconnects with exponential
 //     backoff and idempotently replays subscriptions.
+//   - Events come in two flavours: the default fire-and-forget subscription (bounded hint
+//     channel, drops when full) and the opt-in reliable subscription (`SubscribeReliable`),
+//     where every delivery carries a daemon-assigned event id, waits in its own queue, and
+//     is only acknowledged (`Ack`) after the subscriber has processed it. Unacknowledged
+//     deliveries are redelivered by the daemon after its AckWait, which is what makes the
+//     reliable path at-least-once across disconnects.
 package bus
 
 import (
@@ -21,6 +27,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/siyouyun-open/siyouyun_sdk/v2/protocol"
@@ -34,6 +41,11 @@ const (
 	DefaultMaxBackoff   = 30 * time.Second
 	defaultPendingLimit = 256
 	defaultEventBuffer  = 256
+	// defaultReliableQueueLimit bounds the local backlog of unprocessed reliable deliveries.
+	// The daemon already bounds in-flight unacknowledged messages (MaxAckPending, 1024 by
+	// default), so this is headroom rather than the normal working set; on overflow the
+	// delivery is **not** acknowledged and the daemon redelivers it, so nothing is lost.
+	defaultReliableQueueLimit = 4096
 )
 
 // Options holds the constructor parameters for Client. The zero value is usable: every
@@ -61,9 +73,16 @@ type Options struct {
 	// PendingLimit caps the number of concurrent in-flight requests to prevent unbounded
 	// pile-up.
 	PendingLimit int
-	// EventBuffer is the event channel buffer; when full, events are dropped and counted
-	// (events are "hints", not a reliable log).
+	// EventBuffer is the event channel buffer of the default (fire-and-forget) subscriptions;
+	// when full, events are dropped and counted (events are "hints", not a reliable log).
+	// It does **not** apply to reliable subscriptions: those have their own queue
+	// (ReliableQueueLimit) and an explicit acknowledge/redeliver contract.
 	EventBuffer int
+	// ReliableQueueLimit bounds the local backlog of reliable deliveries that have been
+	// received but not yet handed to the application. On overflow the delivery is dropped
+	// without being acknowledged, so the daemon redelivers it after AckWait; the drop is
+	// counted in Client.Stats().ReliableDropped and logged.
+	ReliableQueueLimit int
 
 	// OnStateChange is invoked when the connection is established or lost, so the app can
 	// expose its health state.
@@ -103,7 +122,7 @@ type Client struct {
 
 	mu      sync.Mutex
 	sess    *session
-	topics  map[string]struct{}
+	topics  map[string]bool // topic -> reliable (at-least-once); false is fire-and-forget
 	closed  bool
 	lastErr string
 	backoff time.Duration
@@ -111,6 +130,38 @@ type Client struct {
 	httpCall *httpTransport
 	events   chan protocol.Event
 	closedCh chan struct{}
+
+	// Reliable delivery path. Deliveries carrying an event id are appended here by the
+	// session reader and handed to the application by pumpReliable; the reader never blocks
+	// (a stalled reader would stall every in-flight call).
+	reliableMu     sync.Mutex
+	reliableCond   *sync.Cond
+	reliableQueue  []protocol.Event
+	reliableOut    chan protocol.Event
+	reliableClosed bool
+	reliableOnce   sync.Once
+
+	stats clientStats
+}
+
+// clientStats holds the reliable-delivery counters (all accessed atomically).
+type clientStats struct {
+	reliableDropped atomic.Uint64
+	acksSent        atomic.Uint64
+	acksFailed      atomic.Uint64
+}
+
+// Stats is a snapshot of the reliable-delivery counters of a client.
+type Stats struct {
+	// ReliableDropped counts reliable deliveries dropped locally because the queue was full.
+	// They were not acknowledged, so the daemon will redeliver them after its AckWait; a
+	// steadily increasing value means the application is slower than the event rate.
+	ReliableDropped uint64
+	// AcksSent is the number of acknowledgements written to the connection.
+	AcksSent uint64
+	// AcksFailed is the number of acknowledgements that could not be written (for example
+	// during a reconnect). The daemon redelivers those deliveries.
+	AcksFailed uint64
 }
 
 // New creates a client. It does not connect immediately: the connection is established on
@@ -135,17 +186,22 @@ func New(opts Options) *Client {
 	if opts.EventBuffer <= 0 {
 		opts.EventBuffer = defaultEventBuffer
 	}
+	if opts.ReliableQueueLimit <= 0 {
+		opts.ReliableQueueLimit = defaultReliableQueueLimit
+	}
 	if opts.Logger == nil {
 		opts.Logger = func(string, ...any) {}
 	}
 
 	c := &Client{
-		opts:     opts,
-		topics:   make(map[string]struct{}),
-		backoff:  opts.MinBackoff,
-		events:   make(chan protocol.Event, opts.EventBuffer),
-		closedCh: make(chan struct{}),
+		opts:        opts,
+		topics:      make(map[string]bool),
+		backoff:     opts.MinBackoff,
+		events:      make(chan protocol.Event, opts.EventBuffer),
+		closedCh:    make(chan struct{}),
+		reliableOut: make(chan protocol.Event),
 	}
+	c.reliableCond = sync.NewCond(&c.reliableMu)
 	if strings.TrimSpace(opts.HTTPURL) != "" {
 		c.httpCall = newHTTPTransport(opts.HTTPURL, opts.CallerToken, opts.CallTimeout)
 	}
@@ -171,10 +227,77 @@ func (c *Client) stateLocked() State {
 	return State{Transport: name, Connected: connected, LastError: c.lastErr}
 }
 
-// Events returns the event channel. Events are pushed in arrival order and may be
-// duplicated or lost (pushes during a connection interruption are not resent) — the
-// subscriber must process them idempotently.
+// Events returns the event channel of the default (fire-and-forget) subscriptions. Events
+// are pushed in arrival order and may be duplicated or lost (pushes during a connection
+// interruption are not resent) — the subscriber must process them idempotently.
+//
+// Deliveries of reliable subscriptions do not appear here; they are returned by
+// ReliableEvents and must be acknowledged with Ack.
 func (c *Client) Events() <-chan protocol.Event { return c.events }
+
+// ReliableEvents returns the channel of at-least-once deliveries (subscriptions created by
+// SubscribeReliable).
+//
+// Every event read from this channel carries Event.ID and stays unacknowledged on the daemon
+// until Ack is called for it. The channel is unbounded from the reader's point of view: the
+// session reader appends to an internal queue and a pump goroutine hands events over, so a
+// slow handler never blocks calls or the reconnect logic. The queue itself is bounded by
+// Options.ReliableQueueLimit; on overflow the delivery is dropped **without** being
+// acknowledged and the daemon redelivers it (counted in Stats().ReliableDropped), so the
+// only cost is latency, never a lost event.
+//
+// Only one consumer should read this channel; delivery order is the arrival order, which the
+// bus protocol does not otherwise guarantee to be globally ordered.
+//
+// The channel is closed when the client is closed.
+func (c *Client) ReliableEvents() <-chan protocol.Event {
+	c.reliableOnce.Do(func() { go c.pumpReliable() })
+	return c.reliableOut
+}
+
+// Ack acknowledges the reliable delivery identified by eventID (Event.ID). Call it only
+// after the event has been fully processed and persisted: a delivery that is not
+// acknowledged is redelivered by the daemon after its AckWait (30s on the v2 daemon), and a
+// delivery whose acknowledgement is lost to a disconnect is redelivered as well. Delivery is
+// therefore at-least-once and the handler must be idempotent.
+//
+// Ack is fire-and-forget: the daemon does not reply, and the call returns after the frame has
+// been written. It deliberately does not dial a new connection just to acknowledge an old
+// delivery — after a reconnect the daemon redelivers the unacknowledged event (with a fresh
+// Ack on the new connection) instead.
+func (c *Client) Ack(eventID string) error {
+	eventID = strings.TrimSpace(eventID)
+	if eventID == "" {
+		return errors.New("bus: ack requires a non-empty event id")
+	}
+	c.mu.Lock()
+	closed := c.closed
+	sess := c.sess
+	c.mu.Unlock()
+	if closed {
+		return errors.New("bus: client is closed")
+	}
+	if sess == nil {
+		c.stats.acksFailed.Add(1)
+		return fmt.Errorf("%w: ack event_id=%s (the daemon will redeliver it)", ErrNotConnected, eventID)
+	}
+	if err := sess.ack(eventID); err != nil {
+		c.stats.acksFailed.Add(1)
+		c.opts.Logger("bus: ack event_id=%s failed: %v (the daemon will redeliver it)", eventID, err)
+		return err
+	}
+	c.stats.acksSent.Add(1)
+	return nil
+}
+
+// Stats returns a snapshot of the reliable-delivery counters.
+func (c *Client) Stats() Stats {
+	return Stats{
+		ReliableDropped: c.stats.reliableDropped.Load(),
+		AcksSent:        c.stats.acksSent.Load(),
+		AcksFailed:      c.stats.acksFailed.Load(),
+	}
+}
 
 // Call invokes a capability template and returns the raw response.
 func (c *Client) Call(ctx context.Context, req *Request) (*protocol.Response, error) {
@@ -249,10 +372,39 @@ func (c *Client) CallTemplateInto(ctx context.Context, template string, payload,
 // Subscribe subscribes to event topics (idempotent). The daemon expands
 // system.file.event into the caller's own scope, so the client should subscribe to the
 // base topic.
+//
+// This is the default fire-and-forget mode: events arrive on Events, may be dropped when the
+// buffer is full, and are not resent after a disconnect. For file events that must not be
+// lost, use SubscribeReliable.
 func (c *Client) Subscribe(ctx context.Context, topics ...string) error {
+	return c.subscribe(ctx, false, topics)
+}
+
+// SubscribeReliable subscribes to event topics with at-least-once delivery.
+//
+// Each event of these topics is then delivered on ReliableEvents with a daemon-assigned
+// Event.ID and must be acknowledged with Ack once processed. A delivery that is not
+// acknowledged (handler returned an error, process restarted, connection lost) is redelivered
+// by the daemon after its AckWait; the daemon also keeps the delivery across reconnects
+// because the subscription is replayed on the new connection.
+//
+// The daemon must confirm the reliable mode (protocol: response data `{"reliable":true}`);
+// otherwise ErrReliableUnsupported is returned instead of silently downgrading to
+// fire-and-forget. Subscribing to an already-reliable topic is idempotent, and a later plain
+// Subscribe does not downgrade it.
+func (c *Client) SubscribeReliable(ctx context.Context, topics ...string) error {
+	return c.subscribe(ctx, true, topics)
+}
+
+func (c *Client) subscribe(ctx context.Context, reliable bool, topics []string) error {
 	cleaned := cleanTopics(topics)
 	if len(cleaned) == 0 {
 		return errors.New("bus: at least one topic is required")
+	}
+	if reliable {
+		// Start the pump before the subscription exists, so a delivery that races the
+		// subscribe confirmation is queued and dispatched instead of waiting for a reader.
+		c.ReliableEvents()
 	}
 
 	// Ensure the connection exists before registering the topics: doing it the other way
@@ -265,12 +417,32 @@ func (c *Client) Subscribe(ctx context.Context, topics ...string) error {
 	}
 
 	c.mu.Lock()
+	toSend := make([]string, 0, len(cleaned))
 	for _, t := range cleaned {
-		c.topics[t] = struct{}{}
+		current, known := c.topics[t]
+		switch {
+		case !known:
+			c.topics[t] = reliable
+			toSend = append(toSend, t)
+		case reliable && !current:
+			// Upgrade fire-and-forget -> reliable.
+			c.topics[t] = true
+			toSend = append(toSend, t)
+		case reliable:
+			// Already reliable: nothing to send (idempotent).
+		default:
+			// Plain Subscribe on an already-reliable topic must not downgrade it.
+		}
 	}
 	c.mu.Unlock()
 
-	return sess.subscribe(ctx, cleaned)
+	if len(toSend) == 0 {
+		return nil
+	}
+	if reliable {
+		return sess.subscribeReliable(ctx, toSend)
+	}
+	return sess.subscribe(ctx, toSend)
 }
 
 // Unsubscribe cancels subscriptions (and removes them from the reconnect replay set).
@@ -304,6 +476,12 @@ func (c *Client) Close() error {
 	c.mu.Unlock()
 
 	close(c.closedCh)
+	// Wake the reliable pump so it stops and closes ReliableEvents; whatever is still queued
+	// stays unacknowledged and is redelivered by the daemon.
+	c.reliableMu.Lock()
+	c.reliableClosed = true
+	c.reliableCond.Broadcast()
+	c.reliableMu.Unlock()
 	if sess != nil {
 		_ = sess.close()
 	}
@@ -339,9 +517,16 @@ func (c *Client) dial(ctx context.Context) (*session, error) {
 		c.mu.Unlock()
 		return sess, nil
 	}
-	topics := make([]string, 0, len(c.topics))
-	for t := range c.topics {
-		topics = append(topics, t)
+	// Replay both classes of subscription; reliable ones keep their at-least-once contract,
+	// which is also what makes the daemon redeliver everything that was not yet acknowledged
+	// when the connection was lost.
+	var plainTopics, reliableTopics []string
+	for t, reliable := range c.topics {
+		if reliable {
+			reliableTopics = append(reliableTopics, t)
+		} else {
+			plainTopics = append(plainTopics, t)
+		}
 	}
 	c.mu.Unlock()
 
@@ -351,7 +536,7 @@ func (c *Client) dial(ctx context.Context) (*session, error) {
 		return nil, err
 	}
 
-	sess := newSession(transport, c.opts, c.events)
+	sess := newSession(transport, c.opts, c.events, c.enqueueReliable)
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()
@@ -366,9 +551,14 @@ func (c *Client) dial(ctx context.Context) (*session, error) {
 
 	go c.supervise(sess)
 
-	if len(topics) > 0 {
-		if err := sess.subscribe(ctx, topics); err != nil {
+	if len(plainTopics) > 0 {
+		if err := sess.subscribe(ctx, plainTopics); err != nil {
 			c.opts.Logger("bus: replay subscriptions failed: %v", err)
+		}
+	}
+	if len(reliableTopics) > 0 {
+		if err := sess.subscribeReliable(ctx, reliableTopics); err != nil {
+			c.opts.Logger("bus: replay reliable subscriptions failed: %v", err)
 		}
 	}
 	return sess, nil
@@ -485,6 +675,52 @@ func (c *Client) emitState() {
 	state := c.stateLocked()
 	c.mu.Unlock()
 	c.opts.OnStateChange(state)
+}
+
+// enqueueReliable is called by the session reader for every delivery that carries an event
+// id. It must never block: blocking here would stall the reader and with it every in-flight
+// call. On overflow the delivery is dropped without an ack, so the daemon redelivers it.
+func (c *Client) enqueueReliable(event protocol.Event) {
+	c.reliableMu.Lock()
+	if len(c.reliableQueue) >= c.opts.ReliableQueueLimit {
+		c.reliableMu.Unlock()
+		c.stats.reliableDropped.Add(1)
+		c.opts.Logger("bus: reliable queue full (limit %d), dropped delivery event_id=%s without ack; the daemon will redeliver it after AckWait", c.opts.ReliableQueueLimit, event.ID)
+		return
+	}
+	c.reliableQueue = append(c.reliableQueue, event)
+	c.reliableCond.Signal()
+	c.reliableMu.Unlock()
+}
+
+// pumpReliable hands queued reliable deliveries to ReliableEvents, waiting for the consumer
+// when it is slower than the daemon. It exits (and closes the channel) when the client is
+// closed; queued but undelivered events stay unacknowledged and are redelivered by the
+// daemon.
+func (c *Client) pumpReliable() {
+	defer close(c.reliableOut)
+	for {
+		c.reliableMu.Lock()
+		for len(c.reliableQueue) == 0 && !c.reliableClosed {
+			c.reliableCond.Wait()
+		}
+		if len(c.reliableQueue) == 0 {
+			c.reliableMu.Unlock()
+			return
+		}
+		event := c.reliableQueue[0]
+		c.reliableQueue = c.reliableQueue[1:]
+		closed := c.reliableClosed
+		c.reliableMu.Unlock()
+		if closed {
+			return
+		}
+		select {
+		case c.reliableOut <- event:
+		case <-c.closedCh:
+			return
+		}
+	}
 }
 
 func cleanTopics(topics []string) []string {
