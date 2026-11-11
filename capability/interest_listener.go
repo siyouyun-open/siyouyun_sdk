@@ -45,20 +45,15 @@ type FileEventListenerOptions struct {
 	// When FailOnError is true, a handler error is terminal: report failed and ACK,
 	// without NAK/redelivery. Default false preserves at-least-once retry semantics.
 	FailOnError bool
-	// Workers is an optional desired concurrency hint. The OS owns the
-	// effective limit and may return/update a lower value via the control
-	// subject. Zero lets the OS allocate the default for the listener QoS.
-	Workers int
 }
 
 type interestListenRequest struct {
-	Dirs           []string `json:"dirs"`
-	MediaTypes     []string `json:"mediaTypes,omitempty"`
-	ExcludeExts    []string `json:"excludeExts,omitempty"`
-	Actions        []string `json:"actions,omitempty"`
-	QoS            string   `json:"qos,omitempty"`
-	TTLSeconds     int      `json:"ttlSec,omitempty"`
-	DesiredWorkers int      `json:"desiredWorkers,omitempty"`
+	Dirs        []string `json:"dirs"`
+	MediaTypes  []string `json:"mediaTypes,omitempty"`
+	ExcludeExts []string `json:"excludeExts,omitempty"`
+	Actions     []string `json:"actions,omitempty"`
+	QoS         string   `json:"qos,omitempty"`
+	TTLSeconds  int      `json:"ttlSec,omitempty"`
 }
 
 type interestListenResponse struct {
@@ -170,7 +165,7 @@ func StartFileEventListener(ctx context.Context, client *bus.Client, opts FileEv
 	}
 	initialWorkers := resp.Workers
 	if initialWorkers <= 0 {
-		initialWorkers = normalizeInterestWorkers(opts.Workers)
+		initialWorkers = 1
 	}
 	l.workerLimit.Store(int64(normalizeInterestWorkers(initialWorkers)))
 	if nc != nil {
@@ -203,13 +198,12 @@ func registerInterest(ctx context.Context, client *bus.Client, opts FileEventLis
 		ttl = 30 * time.Minute
 	}
 	reqBody := interestListenRequest{
-		DesiredWorkers: opts.Workers,
-		Dirs:           opts.Dirs,
-		MediaTypes:     opts.MediaTypes,
-		ExcludeExts:    opts.ExcludeExts,
-		Actions:        opts.Actions,
-		QoS:            opts.QoS,
-		TTLSeconds:     int(ttl.Seconds()),
+		Dirs:        opts.Dirs,
+		MediaTypes:  opts.MediaTypes,
+		ExcludeExts: opts.ExcludeExts,
+		Actions:     opts.Actions,
+		QoS:         opts.QoS,
+		TTLSeconds:  int(ttl.Seconds()),
 	}
 	raw, err := json.Marshal(reqBody)
 	if err != nil {
