@@ -67,10 +67,6 @@ type FileEventListenerOptions struct {
 	QoS         sdkconst.TaskLevel
 	TTL         time.Duration
 	Description string
-	// Workers bounds concurrent handler execution for this listener. Default 1
-	// preserves strict serial delivery; values >1 add bounded concurrency while
-	// ACK is still sent per message after its handler completes.
-	Workers int
 }
 
 // FileEventListener is the handle returned by StartFileEventListener.
@@ -112,7 +108,6 @@ type interestListenerSpec struct {
 	excludeExts []string
 	qos         string
 	ttl         time.Duration
-	workers     int
 }
 
 func NewFileEventMonitor(appCode *string, nc *nats.Conn, preferOps ...sdkdto.PreferOptions) *FileEventMonitor {
@@ -397,7 +392,6 @@ func (m *FileEventMonitor) StartFileEventListener(opts FileEventListenerOptions,
 	spec := interestListenerSpec{
 		dirs: dirs, mediaTypes: mediaTypes, actions: actions,
 		excludeExts: opts.ExcludeExts, qos: qosForPriority(opts.QoS), ttl: ttl,
-		workers: opts.Workers,
 	}
 	return m.startInterestListener(spec, handler)
 }
@@ -434,7 +428,7 @@ func (m *FileEventMonitor) startInterestListener(spec interestListenerSpec, hand
 	}
 	initialWorkers := lr.Workers
 	if initialWorkers <= 0 {
-		initialWorkers = normalizeWorkers(spec.workers)
+		initialWorkers = 1
 	}
 	l := &interestListener{
 		id: lr.ListenerID, appCode: *m.appCode,
