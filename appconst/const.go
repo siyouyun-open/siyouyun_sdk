@@ -1,5 +1,5 @@
 // Package appconst holds the shared constants a v2 application needs: response codes, identity
-// header names, space names, and file-event actions.
+// header names, space names, and interest event actions.
 //
 // The values are unchanged from the old SDK's `pkg/const` (package name sdkconst): response codes
 // and header names are platform contracts used by clients, Core, and OS, so switching SDKs must not
@@ -36,7 +36,7 @@ const (
 	CommonNamespace  = "common"
 )
 
-// File event actions (matching the action values of the protocol event body).
+// Interest event actions (matching the action values of the OS interest event body).
 const (
 	FileEventAdd    = iota + 1 // add
 	FileEventDelete            // delete

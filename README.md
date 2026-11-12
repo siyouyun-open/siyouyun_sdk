@@ -19,7 +19,6 @@ Optional add-ons are separate modules, so the core stays dependency-free:
 
 ```bash
 go get github.com/siyouyun-open/siyouyun_sdk/contrib/restjson@v0.1.0    # {code,data,msg} envelope for iris handlers
-go get github.com/siyouyun-open/siyouyun_sdk/contrib/watchdirs@v0.1.0   # expose the file-event watch scope to a UI
 ```
 
 ## Layout
@@ -29,13 +28,12 @@ go get github.com/siyouyun-open/siyouyun_sdk/contrib/watchdirs@v0.1.0   # expose
 | `appsdk.go` | runtime environment resolution and client assembly (package root) |
 | `space.go` | space validation and the space view (`App.Space`, identity headers) |
 | `bus/` | bus client: unix socket + websocket transport, session, reconnect, subscriptions |
-| `capability/` | typed wrappers over the capability templates (KV, events, platform, media, storage) |
+| `capability/` | typed wrappers over the capability templates (KV, interest listeners, platform, media, storage) |
 | `fs/` | mount-table parsing and the local POSIX data plane (scopes, path resolution) |
 | `protocol/` | the contract: scope grammar, mount table, bus frames, capability catalog, codes |
 | `appconst/`, `apperr/`, `paging/` | shared constants, i18n errors, minimal pagination |
 | `bustest/` | an in-process bus test server for application tests |
 | `contrib/restjson/` | HTTP response envelope (`{code,data,msg}`), separate module (depends on iris) |
-| `contrib/watchdirs/` | routes that read/write an app's file-event watch scope, separate module |
 
 The SDK depends on exactly one third-party module in its core (`gorilla/websocket`, pure Go,
 no cgo) so that an application can pull it in without dragging a dependency tree along.
@@ -66,8 +64,7 @@ publish a new SDK version.
 
 - This line is v2+: the module path ends in `/v2` and releases are tagged `v2.x.y` on the `v2`
   branch.
-- Add-on modules are versioned independently: tag `contrib/restjson/vX.Y.Z` and
-  `contrib/watchdirs/vX.Y.Z`.
+- Add-on modules are versioned independently: tag `contrib/restjson/vX.Y.Z`.
 - A change that alters the contract (scope grammar, mount-table fields, frame or template
   vocabulary, response codes) is a **breaking** change: bump `ContractVersion` and, in the SDK,
   the major version.

@@ -36,20 +36,27 @@ const (
 	TemplateContainerStart      = "system.container.start"
 	TemplateContainerStop       = "system.container.stop"
 
-	// -- Interest listener (the daemon requests an OS listener; the app connects to NATS itself) --
+	// ── 兴趣点监听/事件（daemon 申请 OS listener）──
+	//
+	// listen 支持两种 transport：
+	//   - nats（默认）：返回 OS 共享流 consumer 与按调用方形态选择的 NATS 地址，
+	//     应用自己连 NATS 做 pull Fetch；
+	//   - bus：纯总线模式，daemon 侧 pump 连宿主机 NATS 拉取，再把原始事件扇出到
+	//     system.interest.event.<app_id> 主题（应用不需要 NATS 地址）。
+	//
+	// list/get/update 只管理调用方自己的 listener：update 走 OS
+	// PUT /os/interest/channel/{id}/filter，保持同一个 listenerId。
 	TemplateInterestListen = "system.interest.listen"
 	TemplateInterestStop   = "system.interest.stop"
 	TemplateInterestRenew  = "system.interest.renew"
+	TemplateInterestList   = "system.interest.list"
+	TemplateInterestGet    = "system.interest.get"
+	TemplateInterestUpdate = "system.interest.update"
+	TemplateInterestAck    = "system.interest.ack"
 
 	// ── Images (the schema is defined by the platform and implemented by a container provider) ──
 	TemplateImageConvert   = "system.image.convert"
 	TemplateImageThumbnail = "system.image.thumbnail"
-
-	// ── File event watch scope (provider = AppStore) ──
-	// Applications read and write their own watch directories through the SDK's
-	// app.Events(); the value syntax is the same grammar ParseScopeValue implements.
-	TemplateEventScopeGet = "system.event.scope.get"
-	TemplateEventScopeSet = "system.event.scope.set"
 
 	// ── Third-party route grants (gt-), provider = AppStore ──
 	//
@@ -83,11 +90,8 @@ const (
 //   - `system.app.info`: returns appAddr/appDSN/UGNList; the first is already injected via
 //     environment variables, and the last is a tenant database credential, unsuitable for
 //     delivery over the bus;
-//   - `system.file.event.config.*` / `.register`: file events on the minictl path are
-//     produced and relayed uniformly by AppStore's global watcher, so applications do not
-//     need to register watched directories one by one;
-//   - `system.file.event.exists`: with a local mount table, applications can just stat the
-//     local path.
+//   - `system.interest.event` in a call shape: file events are produced by the OS interest
+//     listener and delivered as subscription events only (see TopicInterestEvent).
 const (
 	// ── Media ──
 	TemplateMediaFFmpegInfo = "system.media.ffmpeg.info"
@@ -121,14 +125,26 @@ const (
 	// read-only, short TTL) while the binding secret never leaves the daemon.
 	TemplateAssetCatalog = "system.asset.catalog"
 	TemplateAssetResolve = "system.asset.resolve"
+
+	// ── AI gateway (daemon-provided; docs/spec/ai-gateway.md §8) ──
+	//
+	// `chat`/`models` are the daemon's front door for the AI gateway App; the gateway
+	// itself is an ordinary App and the daemon never talks to an upstream provider.
+	// `vault.lease` is the only plaintext-key path: the daemon proxies to vault with the
+	// host internal token and takes app_id from the connection identity, never from the
+	// payload. All three are **daemon-owned**: an app declaring them in its manifest is
+	// rejected fail-closed (see registry-register.go and ValidateExposedFunction).
+	TemplateAIChat     = "system.ai.chat"
+	TemplateAIModels   = "system.ai.models"
+	TemplateVaultLease = "system.vault.lease"
 )
 
 // Event topic constants.
 const (
-	// TopicFileEvent is expanded by the daemon into system.file.event.<app_id> on
-	// subscription; it requires storage.user.file (this authorized space) or
-	// storage.device.file (device level).
-	TopicFileEvent = "system.file.event"
+	// TopicInterestEvent is expanded by the daemon into system.interest.event.<app_id>
+	// on subscription and is published by the daemon's pure-bus pump. It requires the
+	// event.file permission (the daemon already filtered by the OS listener's dirs).
+	TopicInterestEvent = "system.interest.event"
 	// TopicScheduleEvent is the scheduled task event.
 	TopicScheduleEvent = "system.event.schedule"
 	// TopicNotificationEvent is the system notification event.
@@ -211,12 +227,13 @@ func Catalog() []Capability {
 		{Template: TemplateAssetCatalog, Mode: ModeCall, DaemonProvided: true, Summary: "List model/runtime assets available to this device"},
 		{Template: TemplateAssetResolve, Mode: ModeCall, DaemonProvided: true, Summary: "Resolve an asset to short-lived presigned download URLs"},
 
-		// File event watch scope (design doc v4 §4.1): **not** daemon-provided; the provider is
-		// AppStore (it holds the persistent configuration; the daemon only filters by scope).
-		// The SDK's app.Events() is a thin wrapper over these two templates, so the template
-		// names must be in the SDK's compile-time contract.
-		{Template: TemplateEventScopeGet, Mode: ModeCall, Summary: "Read the app's file-event watch scope (requires the AppStore provider)"},
-		{Template: TemplateEventScopeSet, Mode: ModeCall, Summary: "Change the app's file-event watch scope (requires the AppStore provider)"},
+		// AI gateway (docs/spec/ai-gateway.md §8). v1 is non-streaming: a 4k-token answer
+		// fits in one 60 KiB frame, and the bus has no stream/cancel frames.
+		{Template: TemplateAIChat, Mode: ModeCall, DaemonProvided: true, Summary: "Chat completion through the AI gateway (non-streaming)"},
+		{Template: TemplateAIModels, Mode: ModeCall, DaemonProvided: true, Summary: "List the AI gateway model/alias catalog"},
+		// Vault short-lived lease: the daemon proxies to vault with the host internal token;
+		// the app allow list is fail-closed and app_id comes from the connection identity.
+		{Template: TemplateVaultLease, Mode: ModeCall, DaemonProvided: true, Summary: "Lease a short-lived secret plaintext from vault (allow-listed apps only)"},
 
 		// Third-party route grants: provider is AppStore (it owns the app→web-route mapping).
 		// The caller supplies the user's platform token; the provider derives appCode/routePath
@@ -227,10 +244,14 @@ func Catalog() []Capability {
 		{Template: TemplateRouteGrantRevoke, Mode: ModeCall, Summary: "Revoke one of the caller's own route grants (keeps the record) (requires the AppStore provider)"},
 		{Template: TemplateRouteGrantDelete, Mode: ModeCall, Summary: "Delete one of the caller's own route grants (record disappears) (requires the AppStore provider)"},
 
-		{Template: TemplateInterestListen, Mode: ModeCall, DaemonProvided: true, Summary: "Create an interest listener and return its shared-stream consumer"},
+		{Template: TemplateInterestListen, Mode: ModeCall, DaemonProvided: true, Summary: "Create an interest listener (transport=nats returns an OS consumer + NATS URL; transport=bus returns a busTopic consumed by the daemon)"},
 		{Template: TemplateInterestStop, Mode: ModeCall, DaemonProvided: true, Summary: "Stop an interest listener and release its consumer"},
 		{Template: TemplateInterestRenew, Mode: ModeCall, DaemonProvided: true, Summary: "Renew an interest listener lease"},
-		{Template: TopicFileEvent, Mode: ModeSubscribe, Summary: "File changes under the app data directory"},
+		{Template: TemplateInterestList, Mode: ModeCall, DaemonProvided: true, Summary: "List the caller's own interest listeners"},
+		{Template: TemplateInterestGet, Mode: ModeCall, DaemonProvided: true, Summary: "Get one of the caller's own interest listeners"},
+		{Template: TemplateInterestUpdate, Mode: ModeCall, DaemonProvided: true, Summary: "Update dirs/actions/exclude/media of an existing interest listener (same listenerId)"},
+		{Template: TemplateInterestAck, Mode: ModeCall, DaemonProvided: true, Summary: "Acknowledge or retry one pure-bus interest event"},
+		{Template: TopicInterestEvent, Mode: ModeSubscribe, Summary: "Interest-point file events for the caller app (daemon pump, pure bus mode)"},
 		{Template: TopicScheduleEvent, Mode: ModeSubscribe, Summary: "Schedule events"},
 		{Template: TopicNotificationEvent, Mode: ModeSubscribe, Summary: "System notification events"},
 	}

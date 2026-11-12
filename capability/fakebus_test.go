@@ -98,17 +98,6 @@ func (f *fakeBusServer) write(conn net.Conn, resp protocol.Response) {
 	_, _ = conn.Write(append(raw, '\n'))
 }
 
-func (f *fakeBusServer) pushEvent(topic string, payload any) {
-	raw, _ := json.Marshal(payload)
-	resp := protocol.Response{Type: protocol.FrameEvent, ID: "e", Topic: topic, Event: raw}
-	f.mu.Lock()
-	conns := append([]net.Conn(nil), f.conns...)
-	f.mu.Unlock()
-	for _, conn := range conns {
-		f.write(conn, resp)
-	}
-}
-
 func (f *fakeBusServer) Requests() []protocol.Request {
 	f.mu.Lock()
 	defer f.mu.Unlock()

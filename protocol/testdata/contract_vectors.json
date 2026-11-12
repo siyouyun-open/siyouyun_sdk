@@ -1,5 +1,5 @@
 {
-  "contract_version": 4,
+  "contract_version": 3,
   "scope_spaces": [
     "app",
     "all",
@@ -414,24 +414,6 @@
       "accept_file": false
     },
     {
-      "template": "system.event.scope.get",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "system.event.scope.set",
-      "mode": "call",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
-      "template": "system.file.event",
-      "mode": "subscribe",
-      "daemon_provided": false,
-      "accept_file": false
-    },
-    {
       "template": "system.event.schedule",
       "mode": "subscribe",
       "daemon_provided": false,
@@ -444,6 +426,12 @@
       "accept_file": false
     },
     {
+      "template": "system.interest.event",
+      "mode": "subscribe",
+      "daemon_provided": false,
+      "accept_file": false
+    },
+    {
       "template": "system.asset.catalog",
       "mode": "call",
       "daemon_provided": true,
@@ -451,6 +439,24 @@
     },
     {
       "template": "system.asset.resolve",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.ai.chat",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.ai.models",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.vault.lease",
       "mode": "call",
       "daemon_provided": true,
       "accept_file": false
@@ -502,6 +508,31 @@
       "mode": "call",
       "daemon_provided": true,
       "accept_file": false
+    },
+    {
+      "template": "system.interest.list",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.interest.get",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    },
+    {
+      "template": "system.interest.update",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
+    }
+,
+    {
+      "template": "system.interest.ack",
+      "mode": "call",
+      "daemon_provided": true,
+      "accept_file": false
     }
   ],
   "mount_table": {
@@ -516,7 +547,6 @@
   },
   "wire": {
     "message_types": [
-      "ack",
       "call",
       "ping",
       "subscribe",

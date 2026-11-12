@@ -27,9 +27,6 @@ type fakeBus struct {
 	conns    []net.Conn
 	requests []protocol.Request
 	callFn   func(protocol.Request) protocol.Response
-	// reliableUnsupported makes the fake behave like a daemon that predates the ACK protocol:
-	// it ignores the reliable flag and confirms the subscription without `{"reliable":true}`.
-	reliableUnsupported bool
 
 	done chan struct{}
 }
@@ -78,14 +75,7 @@ func (f *fakeBus) serve(conn net.Conn) {
 		switch req.Type {
 		case protocol.TypePing:
 			f.write(conn, protocol.Response{Type: protocol.FramePong, ID: req.ID})
-		case protocol.TypeSubscribe:
-			resp := protocol.Response{Type: protocol.FrameResponse, ID: req.ID, Code: protocol.CodeSuccess}
-			// Mirror the daemon: a reliable subscribe is confirmed with `{"reliable":true}`.
-			if req.Reliable && !f.reliableUnsupported {
-				resp.Data = json.RawMessage(`{"subscribed":true,"reliable":true}`)
-			}
-			f.write(conn, resp)
-		case protocol.TypeUnsubscribe:
+		case protocol.TypeSubscribe, protocol.TypeUnsubscribe:
 			f.write(conn, protocol.Response{Type: protocol.FrameResponse, ID: req.ID, Code: protocol.CodeSuccess})
 		case protocol.TypeCall:
 			resp := protocol.Response{Type: protocol.FrameResponse, ID: req.ID, Code: protocol.CodeSuccess}
@@ -237,15 +227,15 @@ func TestSubscribeReceivesEvents(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := client.Subscribe(ctx, protocol.TopicFileEvent); err != nil {
+	if err := client.Subscribe(ctx, protocol.TopicInterestEvent); err != nil {
 		t.Fatalf("Subscribe: %v", err)
 	}
 
-	fake.PushEvent(protocol.TopicFileEvent+".com.example.app", map[string]any{"action": 1, "ufi": "/ufi/pool-raw/syspool/a.txt"})
+	fake.PushEvent(protocol.TopicInterestEvent+".com.example.app", map[string]any{"action": 1, "ufi": "/ufi/pool-raw/syspool/a.txt"})
 
 	select {
 	case event := <-client.Events():
-		if event.Topic != protocol.TopicFileEvent+".com.example.app" {
+		if event.Topic != protocol.TopicInterestEvent+".com.example.app" {
 			t.Fatalf("unexpected topic %q", event.Topic)
 		}
 		var body struct {
@@ -352,7 +342,7 @@ func TestClientKeepsRetryingAfterFailedReconnect(t *testing.T) {
 	defer client.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := client.Subscribe(ctx, protocol.TopicFileEvent); err != nil {
+	if err := client.Subscribe(ctx, protocol.TopicInterestEvent); err != nil {
 		t.Fatalf("Subscribe: %v", err)
 	}
 
@@ -428,7 +418,7 @@ func TestClientReconnectsAndReplaysSubscriptions(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := client.Subscribe(ctx, protocol.TopicFileEvent); err != nil {
+	if err := client.Subscribe(ctx, protocol.TopicInterestEvent); err != nil {
 		t.Fatalf("Subscribe: %v", err)
 	}
 
@@ -467,12 +457,12 @@ func TestClientReconnectsAndReplaysSubscriptions(t *testing.T) {
 	case topics := <-resubscribed:
 		found := false
 		for _, topic := range topics {
-			if topic == protocol.TopicFileEvent {
+			if topic == protocol.TopicInterestEvent {
 				found = true
 			}
 		}
 		if !found {
-			t.Fatalf("replayed subscriptions after reconnect = %v, want it to contain %s", topics, protocol.TopicFileEvent)
+			t.Fatalf("replayed subscriptions after reconnect = %v, want it to contain %s", topics, protocol.TopicInterestEvent)
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("subscriptions were not replayed after reconnect: events are silently never delivered again after a daemon restart")

@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/siyouyun-open/siyouyun_sdk/v2/bus"
-	"github.com/siyouyun-open/siyouyun_sdk/v2/capability"
 	"github.com/siyouyun-open/siyouyun_sdk/v2/protocol"
 )
 
 // TestSubscribeReceivesPublishedEvent is the "fake daemon"'s own acceptance test:
-// a real bus.Client subscribes → receives an event frame → decodes it into a
-// capability.FileEvent.
+// a real bus.Client subscribes to the pure-bus interest topic → the daemon expansion is applied
+// → the event frame is pushed → the raw OS event body survives the round trip verbatim.
 func TestSubscribeReceivesPublishedEvent(t *testing.T) {
 	srv := New(t, Options{AppID: "album"})
 	client := bus.New(bus.Options{WSURL: srv.URL()})
@@ -21,47 +20,53 @@ func TestSubscribeReceivesPublishedEvent(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	got := make(chan capability.FileEvent, 1)
-	sub, err := capability.SubscribeFileEvents(ctx, client, func(ev capability.FileEvent) {
-		select {
-		case got <- ev:
-		default:
-		}
-	})
-	if err != nil {
-		t.Fatalf("SubscribeFileEvents: %v", err)
+	if err := client.Subscribe(ctx, protocol.TopicInterestEvent); err != nil {
+		t.Fatalf("Subscribe: %v", err)
 	}
-	defer sub.Close()
 
-	srv.WaitForSubscription(t, protocol.TopicFileEvent)
+	srv.WaitForSubscription(t, protocol.TopicInterestEvent)
 
-	// Publish an event in the **producer's real shape**: a platform file event is
-	// {ugn, srcUfi, ufi, inode, action, …}.
+	// Publish an event in the **producer's real shape**: the OS interest event is
+	// {v, eventId, ufi, srcUfi, action, inode, ugn, matched}.
 	payload := map[string]any{
-		"ugn":    map[string]any{"username": "alice", "groupName": "", "namespace": "main"},
-		"srcUfi": "/ufi/pool-raw/syspool/Photos/old.jpg",
-		"ufi":    "/ufi/pool-raw/syspool/Photos/new.jpg",
-		"inode":  42,
-		"action": 3,
+		"v":       2,
+		"eventId": "evt-1",
+		"ugn":     map[string]any{"username": "alice", "groupName": "", "namespace": "main"},
+		"srcUfi":  "/ufi/pool-raw/syspool/Photos/old.jpg",
+		"ufi":     "/ufi/pool-raw/syspool/Photos/new.jpg",
+		"inode":   42,
+		"action":  3,
+		"matched": map[string]any{"apps": []string{"album"}, "listeners": []string{"lst-1"}},
 	}
-	if n := srv.Publish(t, protocol.TopicFileEvent, payload); n != 1 {
+	if n := srv.Publish(t, protocol.TopicInterestEvent, payload); n != 1 {
 		t.Fatalf("delivered connections = %d, want 1", n)
 	}
 
 	select {
-	case ev := <-got:
-		if ev.Action != 3 || ev.ActionName != "rename" {
-			t.Fatalf("action = %d/%q", ev.Action, ev.ActionName)
+	case event := <-client.Events():
+		if event.Topic != protocol.TopicInterestEvent+".album" {
+			t.Fatalf("topic = %q, want the expanded %q", event.Topic, protocol.TopicInterestEvent+".album")
 		}
-		if ev.Space() != "alice-main" {
-			t.Fatalf("Space() = %q, want alice-main (without decoding the UGN the event is routed to the wrong space)", ev.Space())
+		var got struct {
+			EventID string `json:"eventId"`
+			Action  int    `json:"action"`
+			UFI     string `json:"ufi"`
+			Inode   uint64 `json:"inode"`
+			UGN     struct {
+				Username string `json:"username"`
+			} `json:"ugn"`
+			Matched struct {
+				Listeners []string `json:"listeners"`
+			} `json:"matched"`
 		}
-		if ev.SrcUFI != "/ufi/pool-raw/syspool/Photos/old.jpg" {
-			t.Fatalf("SrcUFI = %q", ev.SrcUFI)
+		if err := json.Unmarshal(event.Data, &got); err != nil {
+			t.Fatalf("decode: %v", err)
 		}
-		if ev.Inode != 42 || ev.ReceivedAt == "" {
-			t.Fatalf("inode=%d receivedAt=%q", ev.Inode, ev.ReceivedAt)
+		if got.Action != 3 || got.EventID != "evt-1" || got.Inode != 42 || got.UGN.Username != "alice" {
+			t.Fatalf("unexpected event: %+v", got)
+		}
+		if len(got.Matched.Listeners) != 1 || got.Matched.Listeners[0] != "lst-1" {
+			t.Fatalf("matched listeners = %v", got.Matched.Listeners)
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("no event received")
@@ -72,7 +77,7 @@ func TestSubscribeReceivesPublishedEvent(t *testing.T) {
 // (otherwise problems like "filtering did not take effect" would be invisible in tests too).
 func TestPublishSkipsUnsubscribed(t *testing.T) {
 	srv := New(t, Options{AppID: "album"})
-	if n := srv.Publish(t, protocol.TopicFileEvent, map[string]any{"action": 1}); n != 0 {
+	if n := srv.Publish(t, protocol.TopicInterestEvent, map[string]any{"action": 1}); n != 0 {
 		t.Fatalf("deliveries with no subscriber = %d, want 0", n)
 	}
 }

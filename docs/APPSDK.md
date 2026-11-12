@@ -32,9 +32,8 @@ github.com/siyouyun-open/siyouyun_sdk/v2/   ← SDK 仓库的根目录
 ├── apperr/              国际化错误（i18n key + 参数）
 ├── paging/              最小分页模型（零依赖）
 ├── contrib/restjson/    `{code,data,msg}` 响应信封（单独模块：它依赖 iris，tag `contrib/restjson/v0.1.0`）
-├── contrib/watchdirs/   监听目录的作用域校验与错误码映射（单独模块，tag `contrib/watchdirs/v0.1.0`）
 ├── fs/                  挂载表解析 + 本地 POSIX 数据面（不是总线能力，见 §5.1）
-└── capability/          按域封装的强类型能力（KV、事件、守护进程…）
+└── capability/          按域封装的强类型能力（KV、兴趣点监听、守护进程…）
 
 siyouyun_faas/examples/sdk-demo/   **两个示例应用共用一份源码**（见 §11；FaaS 仓库）
 ├── main.go / checks.go / static/   共享代码与自测面板
@@ -108,12 +107,16 @@ func main() {
 	userKV := app.KV().User(capability.Scope{Username: "alice", Namespace: "main"})
 	value, found, err := userKV.Get(ctx, "config", "theme")
 
-	// 文件事件订阅。
-	sub, err := app.Capabilities().SubscribeFileEvents(ctx, func(ev capability.FileEvent) {
+	// 兴趣点监听：纯总线模式（应用不连 NATS）。
+	listener, err := capability.StartFileEventListener(ctx, app.Bus(), capability.FileEventListenerOptions{
+		Dirs:      []string{"/Photos"},
+		Transport: capability.TransportBus,
+	}, func(ev capability.FileEvent) error {
 		log.Printf("file %s: %s", ev.ActionName, ev.UFI)
+		return nil
 	})
 	if err == nil {
-		defer sub.Close()
+		defer listener.Close()
 	}
 }
 ```
@@ -227,8 +230,8 @@ authorized := err == nil                          // 或：!strings.Contains(err
 | 本地文件 | `app.FS().Pool(...)` / `PoolIn` / `AppData` | **本地 POSIX**，不走总线 |
 | 用户 KV | `app.KV().User(scope).Get/Put/List/Delete` | 总线 `system.kv.*` |
 | 应用 KV | `app.KV().App().Get/Put/List/Delete` | 总线 `system.kv.sys.*` |
-| 文件事件 | `app.Capabilities().SubscribeFileEvents(ctx, handler)` | 总线 `system.file.event` |
-| 任意事件 | `app.Capabilities().Subscribe(ctx, topics...)` | 见 `protocol.Topic*` |
+| 兴趣点监听 | `capability.StartFileEventListener(ctx, app.Bus(), opts, handler)` | NATS 共享流 consumer（nats）或总线 `system.interest.event`（bus），见 §13 |
+| 任意事件 | `capability.Subscribe(ctx, app.Bus(), topics, handler)` | 见 `protocol.Topic*` |
 | 守护进程 | `app.Daemon().Health(ctx)` | 总线 `system.daemon.health` |
 | 媒体信息 | `app.Media().FFmpegInfo(ctx, scope, ufi)` | 总线 `system.media.ffmpeg.info`（daemon→OS） |
 | 设备端点 | `app.Device().ServiceEndpoints(ctx)` | 总线 `system.device.service-endpoints`（daemon→OS） |
@@ -313,16 +316,25 @@ err := app.Capabilities().Call(ctx, &bus.Request{
 
 ## 6. 事件语义
 
-事件是 **at-least-once、不保证顺序、不是持久日志**：
+普通总线订阅推送是 **at-most-once、不保证顺序、不是持久日志**：
 
 - 连接中断期间的推送不会补发；
 - 订阅在重连后会被幂等重放，但重放会给服务端一次重复订阅（服务端幂等）；
 - 事件通道是**有界的**，满了会丢弃并打日志——不能让慢消费者把 reader 拖死，
   否则所有在途调用会一起卡住。
 
+兴趣点监听是例外：NATS 模式由 OS 共享流的 durable consumer 提供 at-least-once（应用
+ACK/NAK，见 §13）；纯总线模式由 daemon 拉取，SDK 通过 `system.interest.ack` 确认/重试。
+
 因此 handler 必须幂等；需要强一致时自行对账（例如按事件里的 UFI 重新拉取状态）。
-`system.file.event` 订阅时只订阅基础主题，daemon 会展开成调用方自己的作用域
-（`system.file.event.<app_id>`）。
+
+订阅时只订阅基础主题（`protocol.Topic*`），daemon 会展开成调用方自己的作用域
+（例如纯总线兴趣点事件的 `system.interest.event.<app_id>`）。同一 `bus.Client` 上的多个
+capability 订阅共享一个事件泵并按 topic 扇出，不会互相抢事件。
+
+纯总线兴趣点事件（`transport:"bus"`）的投递确认在 daemon 侧：daemon 拉取 OS 消费者、
+扇出到总线后等待应用 `system.interest.ack` 才 ACK，应用侧没有 NATS 消息可 ACK/NAK。NATS 模式（`transport:"nats"`）
+则由应用自己对共享流消息 ACK/NAK，并把消费结果回写 `os.interest.result`（见 §13）。
 
 ---
 
@@ -403,7 +415,8 @@ runtime 仓库的聚合目标）。
 | 三 | 容器（v3 / runc） | `admin1-main` | 容器内 `/mnt/userfs/...`，经网关访问 |
 
 断言覆盖：总线三条传输（容器侧只有 UDS）、身份与作用域校验、Core/OS 代理、挂载表解析
-与本地 POSIX 读写、UFI 映射、越界拒绝、跨挂载移动的 `EXDEV` 兜底、文件事件订阅，以及
+与本地 POSIX 读写、UFI 映射、越界拒绝、跨挂载移动的 `EXDEV` 兜底、兴趣点监听（NATS / 纯总线两种
+transport），以及
 "授权空间变化 → daemon 重算存储池 → 重写挂载表 → `App.ReloadFS()` 看到新空间"。
 
 容器阶段额外验证：网关 → 容器路由与就绪探测（`/web/<hash>/health`）、池路径确实是
@@ -661,22 +674,28 @@ DataDir = MINI_APP_DATA_DIR = <poolRoot>/.app/storage/<app_id>   # 声明 storag
 路由对不对"这一段永远空白，真机上的表现就是"代码看着对，事件就是不来"。
 
 `bustest` 是一个最小假 daemon（WebSocket），实现了 subscribe/unsubscribe/call 应答与 event
-推送，并按 daemon 的语义把 `system.file.event` **展开**成 `system.file.event.<AppID>`：
+推送，并按 daemon 的语义把 `system.interest.event` **展开**成 `system.interest.event.<AppID>`：
 
 ```go
-srv := bustest.New(t, bustest.Options{AppID: "music"})
-app := appsdk.NewWithOptions(rt, appsdk.WithBusWS(srv.URL()))
-sub, _ := capability.SubscribeFileEvents(ctx, app.Bus(), handler)
-srv.WaitForSubscription(t, protocol.TopicFileEvent)   // 订阅是异步的，先等它注册上
-srv.Publish(t, protocol.TopicFileEvent, producerPayload)  // 用生产者真实形状发事件
+srv := bustest.New(t, bustest.Options{AppID: "music", OnCall: fakeInterestListen})
+client := bus.New(bus.Options{WSURL: srv.URL()})
+listener, _ := capability.StartFileEventListener(ctx, client, capability.FileEventListenerOptions{
+	Dirs: []string{"/Music"}, Transport: capability.TransportBus,
+}, handler)
+srv.WaitForSubscription(t, protocol.TopicInterestEvent)  // 订阅是异步的，先等它注册上
+srv.Publish(t, protocol.TopicInterestEvent, interestEventPayload)  // 用生产者真实形状发事件
 ```
+
+`fakeInterestListen` 按 `TemplateInterestListen` 返回 `{listenerId, transport:"bus", busTopic}`
+即可；`bustest` 的 `OnCall` 是按模板定制应答的口子。
 
 `WaitForSubscription` 不能省：紧接着 Publish 会偶发"事件先于订阅到达"，看起来像"事件没被
 处理"——真机上这个竞态同样存在，只是被更长的启动时间掩盖了。
 
-三个应用（music/album/movie）现在都有 `TestEventEndToEndOverBus`：假 daemon → 真实
-`bus.Client` → 订阅 → handler → 队列/worker → 按事件 UGN 路由到该空间的库 → 落库，并断言
-幂等、越权空间被拒（`ErrSpaceNotAuthorized`）、无关扩展名不入库。
+应用的事件处理路径现在可以端到端测：假 daemon → 真实 `bus.Client` → listener → handler →
+队列/worker → 按事件 UGN 路由到该空间的库 → 落库，并断言幂等、越权空间被拒
+（`ErrSpaceNotAuthorized`）、无关扩展名不入库。日志/统计（`srv.CallCount`、`srv.LastCall`、
+`srv.Requests`）也在同一个假 daemon 上断言。
 
 ### 12.3 SQLite 元数据库（历史 `module/appsdk/db`）——**已删除，没有迁进本仓库；见上方说明**
 
@@ -746,51 +765,81 @@ r, err := gorm.Open(sqlite.Dialector{DriverName: db.DriverName, Conn: sdb.Read()
 
 ---
 
-## 13. 计划中：监听目录的作用域模型（**设计稿，未实现**）
+## 13. 兴趣点监听（interest listener）
 
-> 本节是**计划**，描述即将落地的权限/作用域模型改造；当前发布版仍按 §6 与 §12.4 的行为工作
-> （事件资格由 `storage.user.file` / `storage.device.file` 隐含授予，目录过滤由应用自己做）。
-> 完整设计见 platform runtime 仓库的 `docs/specs/file-event-permission-model.md`（v4）。
+旧的总线文件事件通道（`system.file.event` + AppStore 中继 + `system.event.scope.get/set`
+监听目录作用域）已经从 SDK v2 删除，替换为 **兴趣点监听（interest listener）**。
+一个 listener 由 `dirs / mediaTypes / actions / excludeExts / qos / ttl` 描述，由 daemon 向
+OS 申请；事件按监听条件在 OS 侧过滤。权限判据是 manifest 的 `event.file`。
 
-### 13.1 权限只剩能力轴，范围全在 `scopes`
+### 13.1 两种 transport
 
-```yaml
-permissions:
-  - storage.file          # 数据访问
-  - event.file            # 文件事件订阅（必须被同声明的 storage.file 覆盖）
+| transport | 谁连 NATS | 事件如何到达应用 | ACK 与消费结果 |
+| --- | --- | --- | --- |
+| `nats`（默认） | 应用自己 | daemon 返回 OS 共享流 consumer + `nats_url`，应用自己 pull Fetch | 应用对共享流消息 ACK/NAK；消费结果回写 `os.interest.result`（JetStream 优先，短超时后回退 core NATS） |
+| `bus`（纯总线） | daemon | daemon 侧 pump 拉 OS consumer，再扇出到 `system.interest.event.<app_id>`，应用只订阅总线 | 应用/SDK 调用 `system.interest.ack`；daemon 收到后才 ACK OS 消息，并在 success/failed 时回写 result |
 
-scopes: [space.photos, space.backup]     # 授权空间 × Photos / Backup
-```
+两种模式相同的地方：
 
-作用域是两级：`<space>[.<path>]`
+- daemon 通过 `system.interest.listen` 向 OS 申请 listener 并返回 `listenerId`；SDK 按 TTL
+  周期 `system.interest.renew` 续租，续租失败会自动重新 listen（NATS 模式同时切换到新 consumer）。
+- 事件体是 OS 兴趣点事件 `{v, eventId, ufi, srcUfi, action, inode, ugn, matched}`；SDK 解码成
+  `capability.FileEvent`（补齐 `actionName` / `receivedAt`），按 `matched.listeners` 过滤，再交给 handler。
+- `listener.Close()` 停止本地消费（bus 模式会退订总线主题），并调 `system.interest.stop` 释放
+  daemon/OS 侧 listener。
+- NATS 模式按 OS 下发的 worker 限制并发回调（`os.interest.control.*` 可动态调整）；bus 模式
+  按事件到达顺序串行回调（daemon 已经接管 OS 侧消费，SDK 不再建 worker 池）。
+- handler 返回 error 的语义取决于 transport：NATS 模式默认按 `retry` 上报并 NAK
+  （at-least-once，`FailOnError:true` 时按终态 `failed` 上报并 ACK）；bus 模式必须调用 `system.interest.ack`（SDK 已封装），
+  SDK 无法重投，handler 必须自行幂等/对账。
 
-| 值 | 含义 |
-| --- | --- |
-| `space` | 该应用**授权空间集合**的全部文件（容器=部署空间；native=`WebNamespaces`） |
-| `space.photos` / `space.photos/2024` | 授权空间 × 该业务目录（可用斜杠继续收窄） |
-| `app` | 应用私有持久化目录（与空间正交） |
-| `all` / `all.photos` | **设备上所有用户空间**（仅受信任产物 + 只能 default + 非 native） |
-
-- 事件范围必须 ⊆ 数据范围；不做"只监听不访问"的应用。
-- 隐式映射（`storage.*` ⇒ 事件资格）会**直接关闭**，届时 manifest 必须显式声明 `event.file`。
-
-### 13.2 应用侧 API（计划）
+### 13.2 用法
 
 ```go
-// 订阅不变；过滤在服务端（daemon）执行
-sub, err := app.Events().Subscribe(ctx, handler)
+listener, err := capability.StartFileEventListener(ctx, app.Bus(), capability.FileEventListenerOptions{
+	Dirs:        []string{"/Photos", "/Movies/2024"},
+	MediaTypes:  []string{"image", "video"},
+	Actions:     []string{"add", "delete", "rename"},
+	ExcludeExts: []string{".tmp", ".part"},
+	QoS:         "medium",
+	Transport:   capability.TransportBus, // 省略或 TransportNATS = NATS 模式
+}, func(ev capability.FileEvent) error {
+	// ev.Space() / ev.Scope() 用来路由到正确的用户空间
+	return nil
+})
+if err != nil {
+	// daemon 不支持 event.file、transport 不合法、或 bus 模式未被 daemon 接受，都会在这里报错
+	return err
+}
+defer listener.Close()
 
-// 作用域读写：走 cap 能力，配置持久化在 AppStore 侧、重启重载
-ceiling, err := app.Events().Ceiling(ctx)                        // 上限（manifest）
-scope,   err := app.Events().Scopes(ctx)                         // 生效集合
-err = app.Events().SetScopes(ctx, scope)                          // 覆盖；越界 → ErrScopeOutOfCeiling
-err = app.Events().AddScopes(ctx, "space.photos/2024")
-err = app.Events().RemoveScopes(ctx, "space.music")
+listener.ListenerID() // OS 颁发的监听 ID
+listener.Transport()  // 生效的 transport
 ```
 
-- 值解析/展开/匹配（`ParseScopeValue` / `ExpandScope` / `MatchScope`）由 SDK 提供唯一实现，
-  应用不必再自己写 `NormalizeDir/InDirs`。
-- 应用把"监听目录"暴露成幂等读写接口（读=当前生效、写=覆盖、越界=400）只需三行，
-  再配 `github.com/siyouyun-open/siyouyun_sdk/contrib/watchdirs` 把校验与错误码映射收掉。
-- 运行时调整**不需要重连或重启**：下一条文件事件即按新集合投递。
-- 老 AppStore/daemon 不支持该 cap 时，SDK 打 warning 并退化为"本地过滤、不可调"。
+不支持的 `Transport` 取值会直接报错，**不会**静默退化到另一种 transport。
+
+### 13.3 主机侧模板
+
+| 模板 / 主题 | 用途 |
+| --- | --- |
+| `system.interest.listen` | 申请 listener；payload 带 `transport`（`nats`/`bus`）。nats 返回 consumer/stream/`natsUrl`，bus 返回 `busTopic` |
+| `system.interest.stop` | 停止 listener 并释放 consumer/pump |
+| `system.interest.renew` | 续租（`ttlSec`） |
+| `system.interest.list` / `get` / `update` | 列出 / 查询 / 更新调用方自己的 listener（update 保持同一个 `listenerId`） |
+| `system.interest.event`（topic） | 纯总线事件主题；订阅基础主题，daemon 展开成 `system.interest.event.<app_id>` |
+
+常量见 `protocol.TemplateInterest*` 与 `protocol.TopicInterestEvent`。
+
+### 13.4 从旧总线文件事件迁移
+
+| 旧 API（已删除） | 现在 |
+| --- | --- |
+| `app.Events()` / `capability.Events` | `capability.StartFileEventListener` |
+| `capability.SubscribeFileEvents(ctx, client, handler)` | `StartFileEventListener(..., TransportNATS, ...)`（需要 NATS） |
+| `capability.SubscribeFileEventsReliable(...)` | 删除（总线可靠 ACK 不在 host 契约内）；改用 `StartFileEventListener(..., TransportNATS, ...)`，at-least-once 由 OS 共享流 consumer 提供 |
+| `contrib/watchdirs` 监听目录作用域 | 删除；监听条件直接在 `FileEventListenerOptions` 里声明 |
+| `system.file.event` / `system.event.scope.get/set` | `system.interest.event` / `system.interest.list/get/update` |
+
+如果应用只需要"文件变化了通知我"、且运行环境不一定能直连 NATS（例如容器/受控网络），
+用 `TransportBus`；需要自己控制消费节奏、重投语义或跨进程共享流 consumer 时用 `TransportNATS`。

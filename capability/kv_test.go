@@ -156,46 +156,6 @@ func TestDecodeListShapes(t *testing.T) {
 	}
 }
 
-// File event subscription: handler receives the decoded event body.
-func TestSubscribeFileEventsDecodes(t *testing.T) {
-	fake := newFakeBusServer(t)
-	fake.callFn = func(protocol.Request) protocol.Response {
-		return protocol.Response{Code: protocol.CodeSuccess}
-	}
-	client := testClient(fake)
-	defer client.Close()
-
-	received := make(chan FileEvent, 1)
-	sub, err := SubscribeFileEvents(context.Background(), client, func(event FileEvent) {
-		received <- event
-	})
-	if err != nil {
-		t.Fatalf("SubscribeFileEvents: %v", err)
-	}
-	defer sub.Close()
-
-	// It subscribes to the base topic; the daemon is responsible for expanding it to the caller's
-	// own scope.
-	reqs := fake.Requests()
-	if len(reqs) != 1 || reqs[0].Type != protocol.TypeSubscribe ||
-		len(reqs[0].Topics) != 1 || reqs[0].Topics[0] != protocol.TopicFileEvent {
-		t.Fatalf("unexpected subscribe request: %#v", reqs)
-	}
-
-	fake.pushEvent(protocol.TopicFileEvent+".com.example.app", map[string]any{
-		"action": 1, "actionName": "add", "ufi": "/ufi/pool-raw/syspool/a.txt",
-	})
-
-	select {
-	case event := <-received:
-		if event.Action != 1 || event.ActionName != "add" || event.UFI == "" {
-			t.Fatalf("unexpected event: %#v", event)
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("timed out waiting for file event")
-	}
-}
-
 // User/app-dimension KV must **unwrap the envelope and check the upstream error code**.
 //
 // This locks down a fail-open defect: KV's call once used bus.Client.CallInto, which looks only at

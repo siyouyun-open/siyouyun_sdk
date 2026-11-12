@@ -6,16 +6,12 @@ import (
 	"time"
 )
 
-// TestFileEventDecodesProducerShape pins down "the event body must be decoded according to the
-// producer's actual shape".
-//
-// The producer is the AppStore file event relay: it POSTs the platform's internal event verbatim to
-// the daemon's /api/v1/bus/publish (the daemon does not re-encode fields), so subscribers receive
-// exactly the shape {ugn, srcUfi, ufi, inode, action, withAvatar, payload}. Without ugn, a native
-// shared instance cannot route the event to the correct user space store; without srcUfi, a rename
-// event cannot find the old record.
-func TestFileEventDecodesProducerShape(t *testing.T) {
+// TestFileEventDecodesInterestShape pins down the decode rules of the interest event payload: the
+// SDK hands application code a FileEvent with the readable fields filled in.
+func TestFileEventDecodesInterestShape(t *testing.T) {
 	raw := json.RawMessage(`{
+		"v": 2,
+		"eventId": "evt-1",
 		"ugn": {"username": "alice", "groupName": "", "namespace": "main"},
 		"srcUfi": "/ufi/pool-raw/syspool/Music/old.flac",
 		"ufi": "/ufi/pool-raw/syspool/Music/new.flac",

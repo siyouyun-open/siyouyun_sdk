@@ -48,7 +48,6 @@ type Client struct {
 	storage  *Storage
 	message  *Message
 	schedule *Schedule
-	events   *Events
 }
 
 // New creates the capability facade. When busClient is nil, calls on the returned facade fail (they
@@ -63,7 +62,6 @@ func New(busClient *bus.Client) *Client {
 		storage:  NewStorage(busClient),
 		message:  NewMessage(busClient),
 		schedule: NewSchedule(busClient),
-		events:   NewEvents(busClient),
 	}
 }
 
@@ -85,34 +83,14 @@ func (c *Client) Storage() *Storage { return c.storage }
 // Message returns the bot message capability.
 func (c *Client) Message() *Message { return c.message }
 
-// Events returns the file event capability (subscribe + watched-scope read/write).
-func (c *Client) Events() *Events { return c.events }
-
 // Schedule returns the scheduled task capability.
 func (c *Client) Schedule() *Schedule { return c.schedule }
 
 // Bus returns the underlying bus client.
 func (c *Client) Bus() *bus.Client { return c.client }
 
-// Subscribe subscribes to event topics.
+// Subscribe subscribes to event topics; push handling goes through the package-level Subscribe
+// helper (which dispatches the decoded event to a Handler).
 func (c *Client) Subscribe(ctx context.Context, topics ...string) error {
 	return c.client.Subscribe(ctx, topics...)
-}
-
-// SubscribeReliable subscribes to event topics with at-least-once delivery; events are read
-// from Bus().ReliableEvents() and must be acknowledged with Bus().Ack. Most applications
-// should use SubscribeFileEventsReliable instead of assembling this by hand.
-func (c *Client) SubscribeReliable(ctx context.Context, topics ...string) error {
-	return c.client.SubscribeReliable(ctx, topics...)
-}
-
-// SubscribeFileEvents subscribes to file events (fire-and-forget, lossy).
-func (c *Client) SubscribeFileEvents(ctx context.Context, handler func(FileEvent)) (*Subscription, error) {
-	return SubscribeFileEvents(ctx, c.client, handler)
-}
-
-// SubscribeFileEventsReliable subscribes to file events with at-least-once delivery; see the
-// package-level function for the handler contract.
-func (c *Client) SubscribeFileEventsReliable(ctx context.Context, handler func(FileEvent) error) (*Subscription, error) {
-	return SubscribeFileEventsReliable(ctx, c.client, handler)
 }

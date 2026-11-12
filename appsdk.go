@@ -37,7 +37,7 @@ import (
 // normalizes them. Use IsNative / IsContainer to tell them apart instead of
 // making callers guess from environment variables.
 type Runtime struct {
-	// AppID is the app id (file event topics are scoped by it).
+	// AppID is the app id (interest event topics are scoped by it).
 	AppID string
 	// AppCode is the install directory name; a container only has the app id, so
 	// this value equals AppID.
@@ -277,17 +277,6 @@ func NewWithOptions(runtime Runtime, opts ...Option) *App {
 	}
 	app.client = bus.New(options)
 	app.caps = capability.New(app.client)
-	// Local filtering of file events needs to know "this instance's authorized
-	// spaces": the space-axis check for `space.*` scope must use the authorized
-	// spaces (native gets them from the mount table) as its baseline, not the
-	// event's own space — the latter is always true.
-	app.caps.Events().WithSpaces(func() []string {
-		table, err := app.FS()
-		if err != nil || table == nil {
-			return nil
-		}
-		return table.Spaces()
-	})
 	return app
 }
 
@@ -332,7 +321,6 @@ func (a *App) Device() *capability.Device     { return a.caps.Device() }
 func (a *App) Storage() *capability.Storage   { return a.caps.Storage() }
 func (a *App) Message() *capability.Message   { return a.caps.Message() }
 func (a *App) Schedule() *capability.Schedule { return a.caps.Schedule() }
-func (a *App) Events() *capability.Events     { return a.caps.Events() }
 
 // FS returns the local file access entry point (POSIX passthrough, not via the
 // bus).
