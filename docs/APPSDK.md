@@ -21,6 +21,20 @@ UDS 协议、身份令牌、并发应答匹配、事件订阅与断线重连。
 
 ---
 
+## 0. Open-with POSIX file grants
+
+Open-with file grants are a runtime contract, not an SDKv2 capability.
+Applications receive a `path` query parameter pointing at
+`/lacx/userfs/grants/<grantPrefix>/<basename>` and read it with ordinary POSIX
+calls through the stable FUSE grants root. The old grant URL and
+`/syy/v2/app/fs/grant/*` HTTP endpoints have been removed.
+
+SDKv2 does not expose an open-with file API and must not be used to translate a
+grant path through the mount table. See:
+
+- [POSIX Open-With](POSIX-OPEN-WITH.md)
+- [Open-With POSIX Migration Specification](POSIX-OPEN-WITH-MIGRATION.md)
+
 ## 1. 模块结构
 
 ```text
