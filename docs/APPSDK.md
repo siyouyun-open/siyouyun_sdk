@@ -156,9 +156,10 @@ func main() {
 - HTTP / WS 上 SDK 自动带 `X-Mini-Caller-Token`（`MINI_APP_CALLER_TOKEN`），daemon
   用它恢复实例身份。这枚令牌只用于**识别**调用者，不是授权凭据。
 
-容器只有 UDS 一个入口（`/lacx/bus/app.sock`，部署期 bind 进去），身份同样来自 socket 与
-源地址；容器没有调用者令牌，也用不着。客户端代码不需要为此分支——`Runtime.BusSocket`
-在两种形态下都是可用的绝对路径。
+Containers expose only one entry point, UDS (`/lacx/bus/app.sock`, bind-mounted at deploy
+time), and identity likewise comes from the socket and the source address; containers have
+no caller token and do not need one. Client code does not need to branch for this —
+`Runtime.BusSocket` is a usable absolute path in both forms.
 
 `app.State()` 返回当前传输与连接状态，适合放进应用自己的健康检查：
 
@@ -274,45 +275,45 @@ daemon 的 `minictl capability list` / `capability/discover` 为准。
 
 未封装的能力都可以用直通调用；缺的这几项需要先决定架构（daemon 直连 vs provider App）。
 
-### 5.1 本地文件（不是总线能力）
+### 5.1 Local files (not a bus capability)
 
-存储权限兑现成"运行时把目录交给进程"，因此文件访问是**本地 POSIX 调用**：
-没有 HTTP 往返，`mmap`/`sqlite`/`sendfile` 都能用。应用按**逻辑 scope** 或
-`(space, pool, 相对路径)` / UFI 寻址，路径一律由 **RuntimeSpec v1** 解析：
-容器内是 `/lacx/...` 逻辑路径，native 是宿主机挂载目标，SDK 代码完全一致
-（`SYY_RUNTIME_SPEC` 指到 spec；容器固定 `/lacx/run/runtime.json`）。
+Storage permissions are realised as "the runtime hands the directory to the process", so file access is a **local POSIX call**:
+there is no HTTP round trip, and `mmap`/`sqlite`/`sendfile` all work. Applications address files by **logical scope** or
+`(space, pool, relative path)` / UFI, and the path is always resolved by **RuntimeSpec v1**:
+inside a container it is a `/lacx/...` logical path, for native it is the host mount target — the SDK code is identical
+(`SYY_RUNTIME_SPEC` points at the spec; in a container it is fixed to `/lacx/run/runtime.json`).
 
 ```go
-table, err := app.FS()                 // 解析 RuntimeSpec，构建 data plane
+table, err := app.FS()                 // parse the RuntimeSpec and build the data plane
 
-mount, err := table.Mount("music")                // 唯一 scope（core scopeKey）
-mount, err = table.MountIn("alice-main", "music") // 多空间实例必须显式
+mount, err := table.Mount("music")                // unique scope (core scopeKey)
+mount, err = table.MountIn("alice-main", "music") // multi-space instances must pass it explicitly
 data, err := mount.ReadFile("2024/a.mp3")
 f, err := mount.OpenFile("cache.db", os.O_RDWR|os.O_CREATE, 0o644)
 
-appData, _ := table.AppData()          // paths.data（应用私有目录，无 grant 概念）
-local, _ := table.LocalPathForUGN("alice", "alice", "main", eventUFI) // UFI → 本地路径
+appData, _ := table.AppData()          // paths.data (app private directory, no grant concept)
+local, _ := table.LocalPathForUGN("alice", "alice", "main", eventUFI) // UFI -> local path
 ```
 
-要点：
+Key points:
 
-- spec 的 `mounts[]` 携带 `scope / path / mode / grantId`，多空间 native 还带
-  `space / pool / root`：`LocalPathForUGN/LocalPathForUFI` 正是用这三者把
-  `/ufi/pool-raw/<pool>/<rel>` 还原成该 scope 挂载下的相对路径；
-- 顶层 `spaces` 是实例被授权服务的空间集合；同一 scope 在每个空间各有一条 mount，
-  因此不带空间调用 `table.Mount(scope)` 会返回 `ErrAmbiguous`；
-- 只读/读写由 `mode`（`ro`/`rw`）与 `grants[].ops` 共同决定：mount 的 mode 必须被
-  grant 允许，否则 spec 校验即失败；写操作提前返回 `ErrReadOnly`；
-- `..`、绝对路径与符号链接逃逸会被拒绝；native 对宿主不是沙箱，边界是挂载根；
-- spec 由 daemon 在启动/授权变化后重新生成，用 `app.ReloadFS()` 重新读取即可
-  （进程环境在启动时固定；旧 `mounts.json` / `MINI_APP_MOUNT_TABLE` /
-  `NATIVE_STORAGE_POOL_*` 已删除，不提供回退）；
-- 跨池移动会自动处理 `EXDEV`（复制 + 删除），语义与本地文件系统一致。
+- the spec's `mounts[]` carries `scope / path / mode / grantId`, and multi-space native mounts also carry
+  `space / pool / root`: `LocalPathForUGN/LocalPathForUFI` use exactly these three to map
+  `/ufi/pool-raw/<pool>/<rel>` back to a path relative to that scope's mount;
+- the top-level `spaces` is the set of spaces the instance is authorised to serve; the same scope has one mount per
+  space, so calling `table.Mount(scope)` without a space returns `ErrAmbiguous`;
+- read-only/read-write is decided jointly by `mode` (`ro`/`rw`) and `grants[].ops`: the mount's mode must be
+  allowed by the grant, otherwise spec validation fails; write operations return `ErrReadOnly` early;
+- `..`, absolute paths and symlink escapes are rejected; native is not a sandbox against the host — the mount root is the boundary;
+- the daemon regenerates the spec on startup / after authorisation changes, and `app.ReloadFS()` re-reads it
+  (the process environment is fixed at startup; the old `mounts.json` / `MINI_APP_MOUNT_TABLE` /
+  `NATIVE_STORAGE_POOL_*` are deleted with no fallback);
+- cross-pool moves handle `EXDEV` automatically (copy + delete), with the same semantics as a local filesystem.
 
-完整契约见 platform runtime 仓库的 `docs/specs/file-provider-runtime-spec-20261117.md`
-与 `docs/specs/runtime-spec-v1.schema.json`。
+The full contract lives in the platform runtime repository at `docs/specs/file-provider-runtime-spec-20261117.md`
+and `docs/specs/runtime-spec-v1.schema.json`.
 
-未封装的能力直接用直通调用：
+Capabilities that are not wrapped can be called directly through passthrough:
 
 ```go
 var spaces []map[string]any
@@ -382,27 +383,27 @@ default:
 
 ---
 
-## 8. 运行环境辅助
+## 8. Runtime environment helpers
 
 ```go
 rt := app.Runtime
 rt.AppID          // com.siyouyun.album
 rt.AppCode        // album
 rt.InstanceID     // native-album-<hash>
-rt.Port           // 本应用监听端口（daemon 分配）
-rt.DataDir        // 平台托管数据目录；未声明 storage.app.file 时为空
-rt.InstallRoot    // 版本化安装目录（不要当持久化目录用）
-rt.Spec           // 解析后的 RuntimeSpec v1（本地开发时为 nil）
-rt.SpecPath       // spec 文件位置（排障/ReloadFS 用）
+rt.Port           // listening port of this app (assigned by the daemon)
+rt.DataDir        // platform-managed data directory; empty when storage.app.file is not declared
+rt.InstallRoot    // versioned install directory (do not use as a persistent directory)
+rt.Spec           // parsed RuntimeSpec v1 (nil during local development)
+rt.SpecPath       // spec file location (for troubleshooting / ReloadFS)
 
-mounts := rt.Spec.Mounts   // scope → path/mode/grant 的原始视图
-spaces := rt.Spec.Spaces   // 实例被授权服务的空间
+mounts := rt.Spec.Mounts   // raw view of scope -> path/mode/grant
+spaces := rt.Spec.Spaces   // spaces the instance is authorised to serve
 ```
 
-应用**必须**从 `MINI_APP_PORT` / `MINI_APP_ENDPOINT` 读取监听端口，向
-`native.health_check.path` 返回 2xx。持久化数据写在 `RuntimeSpec.paths.data`
-（`app.DataDir()` / `SpaceView.AppDataDir()`）下；不要把新的应用生成文件写进用户池 UFI。
-旧的 `rt.MountTable` / `rt.StoragePools` / `FindStoragePool` 已删除。
+An application **must** read its listening port from `MINI_APP_PORT` / `MINI_APP_ENDPOINT`, return
+2xx from `native.health_check.path`, and write persistent data under `RuntimeSpec.paths.data`
+(`app.DataDir()` / `SpaceView.AppDataDir()`); do not write new application-generated files into the user pool UFIs.
+The old `rt.MountTable` / `rt.StoragePools` / `FindStoragePool` are deleted.
 
 ---
 
@@ -543,23 +544,23 @@ SDK 的目标之一是让**同一份应用代码**既能作为 native 宿主机�
 | 应用身份 | `MINI_APP_ID` + `MINI_APP_CODE` | `APPCODE`（取值就是 app id） |
 | 实例 ID | `MINI_APP_INSTANCE_ID` | 无（由部署生成，不注入进程） |
 | 空间 | `MINI_APP_NAMESPACE` 恒为 `default` | `MINI_NAMESPACE=admin1-main`，用户名 `MINI_USERNAME=admin1` |
-| 总线 UDS | `MINI_APP_BUS_SOCKET`（绝对路径） | 固定 `/lacx/bus/app.sock`（部署期 bind） |
+| Bus UDS | `MINI_APP_BUS_SOCKET` (absolute path) | fixed `/lacx/bus/app.sock` (bind-mounted at deploy time) |
 | 总线 HTTP/WS | 注入 `MINI_APP_BUS_HTTP` / `MINI_APP_BUS_WS` | **不注入**（只有 UDS） |
 | 调用者令牌 | `MINI_APP_CALLER_TOKEN` | 无（身份来自 socket 与源地址） |
 | 监听端口 | `MINI_APP_PORT` / `MINI_APP_ENDPOINT` | 不注入；由 manifest 的 `network.http` 声明，应用自己知道 |
-| 数据面契约 | `SYY_RUNTIME_SPEC` 指向 `<root>/<appcode>/run/runtime.json` | 固定 `/lacx/run/runtime.json`（只读 bind） |
-| 存储路径 | 不注入（旧的 `NATIVE_STORAGE_POOL_*` / 挂载表已删除） | 不注入；数据面全部来自 RuntimeSpec 的 `mounts[]` |
+| Data-plane contract | `SYY_RUNTIME_SPEC` points at `<root>/<appcode>/run/runtime.json` | fixed `/lacx/run/runtime.json` (read-only bind) |
+| Storage paths | not injected (the old `NATIVE_STORAGE_POOL_*` / mount table are deleted) | not injected; the whole data plane comes from the RuntimeSpec `mounts[]` |
 
 `Runtime` 上的对应关系：`IsNative()` / `IsContainer()` 判断形态，`DefaultScope()`
 给出各自的作用域（§4）。**不要**用"有没有某个变量"来判断形态——判据是 `APP_RUNTIME`。
 
-### 11.2 数据面：RuntimeSpec v1 是唯一事实来源
+### 11.2 Data plane: RuntimeSpec v1 is the single source of truth
 
-两种形态的本地文件访问都由 `fs` 包统一：应用按逻辑 scope 或
-`(space, pool, 相对路径)` / UFI 寻址，由 RuntimeSpec 的 `mounts[]` 解析成**当前进程
-能直接打开的绝对路径**，然后就是普通 POSIX 调用。差异只在 spec 的投递方式与路径
-前缀（见 §11.1），应用代码不需要分支。旧 `mounts.json` 契约（`MINI_APP_MOUNT_TABLE`
-/ 容器固定 `mounts.json` / `NATIVE_STORAGE_POOL_*`）已随本次迁移删除，不做兼容。
+Local file access in both forms is unified by the `fs` package: applications address files by logical scope or
+`(space, pool, relative path)` / UFI, and the RuntimeSpec's `mounts[]` resolves that into an **absolute path the current
+process can open directly**, after which they are ordinary POSIX calls. The only difference is how the spec is delivered
+and the path prefix (see §11.1); application code needs no branch. The old `mounts.json` contract (`MINI_APP_MOUNT_TABLE`
+/ the fixed container `mounts.json` / `NATIVE_STORAGE_POOL_*`) was removed with this migration and is not supported.
 
 ### 11.3 已知差异与缺口
 
@@ -614,11 +615,11 @@ deploy:
 
 改完需要 `minictl daemon restart`（会短暂重启全部 native 应用）。
 
-**SDK 侧还有一个前置条件**：`SYY_RUNTIME_SPEC`（RuntimeSpec v1）与
-`system.storage.user-spaces` 等 native 契约与能力模板是随 daemon 一起发布的。
-设备上跑旧版 daemon 时，native 应用会表现为"能装能跑，但 RuntimeSpec 缺失
-（`app.FS()` 返回 `fs.ErrNoSpec`）、部分能力报 unknown template"——先把 daemon
-升到包含对应改动的版本。
+**There is one more prerequisite on the SDK side**: `SYY_RUNTIME_SPEC` (RuntimeSpec v1) and
+native contracts such as `system.storage.user-spaces`, together with the capability templates, are released with the daemon.
+With an old daemon on the device, a native app shows up as "it installs and runs, but the RuntimeSpec is missing
+(`app.FS()` returns `fs.ErrNoSpec`) and some capabilities report unknown template" — first upgrade the daemon
+to a version that contains the corresponding changes.
 
 ---
 
@@ -634,49 +635,50 @@ deploy:
 > 依赖已从 SDK 删除。**新应用不要再按这一节选 SQLite**：要用就在自己的 go.mod 里
 > 显式加驱动，别把 SQLite 重新变回 SDK 的默认依赖。
 
-### 12.1 空间校验（`App.Space`）
+### 12.1 Space validation (`App.Space`)
 
-native 是"装一份、服务多空间"的共享实例，请求里的空间必须落到实例被授权的集合内，
-否则会把数据写进或读出**别的用户**的空间。校验链（顺序即优先级）：
+native runs as a shared instance that "installs once and serves many spaces", so the space in a request must fall within
+the set the instance is authorised for; otherwise data would be written to or read from **another user's** space.
+The validation chain (in priority order):
 
 ```go
-space, err := appsdk.SpaceFromHeaders(          // 1. 身份头 → 空间名（只做形状校验）
+space, err := appsdk.SpaceFromHeaders(          // 1. identity headers -> space name (shape validation only)
     ctx.GetHeader(appconst.UsernameHeader),
     ctx.GetHeader(appconst.GroupNameHeader),
     ctx.GetHeader(appconst.NamespaceHeader),
 )
-if err != nil { /* 400：身份信息不完整 */ }
+if err != nil { /* 400: incomplete identity information */ }
 
-view, err := app.Space(space)                    // 2. 授权校验 + 本地视图（无 IO）
+view, err := app.Space(space)                    // 2. authorisation check + local view (no IO)
 switch {
-case errors.Is(err, appsdk.ErrSpaceNotAuthorized): // 403：空间不在授权集合内
-case errors.Is(err, appsdk.ErrInvalidSpace):       // 400：空间名非法（防目录逃逸）
-case errors.Is(err, appsdk.ErrNoSpaceDataDir):     // 500：没声明 storage.app.file
+case errors.Is(err, appsdk.ErrSpaceNotAuthorized): // 403: space not in the authorised set
+case errors.Is(err, appsdk.ErrInvalidSpace):       // 400: invalid space name (prevents directory escape)
+case errors.Is(err, appsdk.ErrNoSpaceDataDir):     // 500: storage.app.file not declared
 }
 
 view.Name()            // alice-main
 view.AppDataDir()      // <DataDir>/spaces/alice-main
-view.Mounts()          // 该空间下的 scope mount（scope/path/ro-rw）
-view.Mount("music")    // core scopeKey（manifest 的 space.music 对应 core key "music"）
-view.Pool("syspool")   // 池只被一个 scope 覆盖时可用；多 scope 覆盖同一池会返回 ErrAmbiguous
-view.LocalPath("syspool", "photos/a.jpg")   // 仍然走 fs 的逃逸校验
-view.LocalPathForUFI(ufi)                    // 用 mount 的 space/pool/root 还原
-view.Ensure()          // 创建 AppDataDir（幂等；只在要落盘时调）
+view.Mounts()          // scope mounts of this space (scope/path/ro-rw)
+view.Mount("music")    // core scopeKey (manifest space.music maps to core key "music")
+view.Pool("syspool")   // usable when the pool is covered by exactly one scope; multiple scopes on the same pool return ErrAmbiguous
+view.LocalPath("syspool", "photos/a.jpg")   // still goes through the fs escape checks
+view.LocalPathForUFI(ufi)                    // resolved with the mount's space/pool/root
+view.Ensure()          // creates AppDataDir (idempotent; only call it when about to write)
 ```
 
-判据是 RuntimeSpec 的 `spaces`（多空间 native 由 daemon 按 `WebNamespaces` 下发），
-以及 `app.namespace`（容器形态）与 `mounts[].space` 的并集；
-`LocalPathForUFI` 再用 `mounts[].space + pool + root` 把 pool UFI 还原成该 scope
-挂载下的相对路径。
+The criterion is the RuntimeSpec `spaces` (for multi-space native the daemon delivers them from `WebNamespaces`),
+together with the union of `app.namespace` (container form) and `mounts[].space`;
+`LocalPathForUFI` then maps the pool UFI back to a path relative to that scope's mount using
+`mounts[].space + pool + root`.
 
-三点必须记住：
+Three points to remember:
 
-1. **它只回答"数据能不能碰"**。总线能力的授权仍然只由 daemon 判定（§4.1）。
-2. **不做 IO**。`App.Space` 只读挂载表，可以按请求调用；目录创建显式交给 `Ensure()`，
-   否则每个请求都要多一次 `mkdir`。
-3. **授权空间变化后要 `ReloadFS()`**。AppStore 按登录用户补齐空间后 daemon 会重新
-   生成 RuntimeSpec，进程不重启，但 SDK 缓存了 spec/table。例如一个请求遇到
-   `ErrSpaceNotAuthorized`，先 `ReloadFS()` 再重试一次是合理的。
+1. **It only answers "can the data be touched"**. Authorisation for bus capabilities is still decided by the daemon alone (§4.1).
+2. **No IO**. `App.Space` only reads the spec, so it can be called per request; directory creation is explicitly left to `Ensure()`,
+   otherwise every request would need one more `mkdir`.
+3. **Call `ReloadFS()` after the authorised spaces change**. After the AppStore fills in spaces for the logged-in user, the daemon
+   regenerates the RuntimeSpec without restarting the process, but the SDK caches the spec/table. For example, when a request hits
+   `ErrSpaceNotAuthorized`, calling `ReloadFS()` and retrying once is reasonable.
 
 ### 12.2 存储落点（为什么在 DataDir 下）
 
@@ -685,14 +687,14 @@ view.Ensure()          // 创建 AppDataDir（幂等；只在要落盘时调）
 DataDir = MINI_APP_DATA_DIR = <poolRoot>/.app/storage/<app_id>   # 声明 storage.app.file
 ```
 
-- **进池**：DataDir 就在用户选的存储池里，`storage.app.file` 负责建目录；
-- **升级保留 / 卸载清空**：daemon 的 purge 精确清理 `<base>/.app/storage/<app_id>`
-  这**一个**目录。把库放到"每个空间自己的池"里看起来更自然，但卸载后不会被清理，
-  数据会永远留在用户盘上；
-- 多空间靠子目录隔离，空间名经过 `ValidSpaceName` 白名单校验（只允许字母数字与
-  `-_.`，禁止 `..` 与分隔符），即使 spec 里出现奇怪空间名也逃不出 DataDir。
-- 新的应用生成文件（封面/缓存/导出）写 `paths.data`；旧环境里散落在用户池
-  `/.siyouyun/appdata/<app>/` 的文件不再有 UFI 解析入口，需要应用一次性迁移或重建。
+- **Into the pool**: DataDir sits in the storage pool chosen by the user, and `storage.app.file` creates the directory;
+- **Kept on upgrade / cleared on uninstall**: the daemon purge cleans up exactly the **one** directory `<base>/.app/storage/<app_id>`.
+  Putting the database in "each space's own pool" looks more natural, but it would not be cleaned up on uninstall and the data would
+  remain on the user disk forever;
+- multi-space isolation uses subdirectories, and space names go through the `ValidSpaceName` allow-list (letters, digits and
+  `-_.` only; `..` and separators are forbidden), so even an odd space name in the spec cannot escape DataDir.
+- new application-generated files (covers/cache/exports) go under `paths.data`; files scattered in the user pool
+  `/.siyouyun/appdata/<app>/` from old environments no longer have a UFI resolution entry and need a one-off migration or rebuild by the app.
 
 ### 12.4 事件路径的端到端测试（`bustest`）
 

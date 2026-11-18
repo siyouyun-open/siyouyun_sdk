@@ -463,8 +463,9 @@ func validateMounts(mounts []Mount) error {
 		if err := validateRuntimePath(fmt.Sprintf("mounts[%d].path", i), mount.Path); err != nil {
 			return err
 		}
-		// mounts.path 是应用实际打开的挂载目标：容器是 /mnt/...，native 是
-		// tmpfs 池里的宿主绝对路径；它不能是根目录。授权 source 不在 spec 中。
+		// mounts.path is the mount target the application actually opens: /mnt/...
+		// in containers, an absolute host path inside a tmpfs pool for native. It
+		// must not be the root directory. The authorised source is not part of the spec.
 		if mount.Path == "/" {
 			return invalid("mounts[%d].path must not be the host root", i)
 		}

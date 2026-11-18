@@ -1,44 +1,46 @@
 package protocol
 
-// ContainerRoot 是容器内 AppStore 运行时的统一父级。
+// ContainerRoot is the common parent of the AppStore runtime inside a container.
 //
-// 应用可见的私有数据、用户文件、RuntimeSpec、secrets、bus 和插件
-// 都收口在 /lacx 下；/lacx 之外的 /tmp 只作为临时缓存。
+// Application-visible private data, user files, the RuntimeSpec, secrets, the bus
+// and plugins all live under /lacx; /tmp outside /lacx is only used as a
+// temporary cache.
 const (
 	ContainerRoot = "/lacx"
 
-	// ContainerDataDir 是应用私有持久化目录（RuntimeSpec paths.data）。
+	// ContainerDataDir is the application's private persistent directory (RuntimeSpec paths.data).
 	ContainerDataDir = ContainerRoot + "/data"
-	// ContainerUserFSDir 是用户空间授权的逻辑根（FileProvider/FUSE 导出）。
+	// ContainerUserFSDir is the logical root of user-space authorisation (FileProvider/FUSE export).
 	ContainerUserFSDir = ContainerRoot + "/userfs"
-	// ContainerRuntimeDir 是只读平台运行资源目录。
+	// ContainerRuntimeDir is the read-only platform runtime resource directory.
 	ContainerRuntimeDir = ContainerRoot + "/run"
-	// ContainerSecretsDir 是平台秘密预留目录（只读）。
+	// ContainerSecretsDir is the reserved platform secrets directory (read-only).
 	ContainerSecretsDir = ContainerRoot + "/secrets"
-	// ContainerBusDir 是平台 bus UDS 目录。
+	// ContainerBusDir is the platform bus UDS directory.
 	ContainerBusDir = ContainerRoot + "/bus"
-	// ContainerPluginsDir 是动态插件池。
+	// ContainerPluginsDir is the dynamic plugin pool.
 	ContainerPluginsDir = ContainerRoot + "/plugins"
-	// ContainerResourceDir 兼容旧名；值已统一到 /lacx/run。
+	// ContainerResourceDir keeps the old name for compatibility; its value is unified to /lacx/run.
 	ContainerResourceDir = ContainerRuntimeDir
-	// UFIPoolPrefix 是 UFI pool 前缀：/ufi/pool-raw/<pool>/<rel>。
+	// UFIPoolPrefix is the UFI pool prefix: /ufi/pool-raw/<pool>/<rel>.
 	UFIPoolPrefix = "/ufi/pool-raw/"
 
-	// RuntimeSpecVersion 是 RuntimeSpec v1 的唯一版本号。
+	// RuntimeSpecVersion is the only version number of RuntimeSpec v1.
 	//
-	// 与 docs/specs/runtime-spec-v1.schema.json 的 const、SDK v2 runtime.Version
-	// 保持一致。多空间/UFI 映射字段是 additive 扩展（不升版本）：
+	// It must stay consistent with the const in docs/specs/runtime-spec-v1.schema.json
+	// and with SDK v2 runtime.Version. The multi-space/UFI mapping fields are
+	// additive extensions (no version bump):
 	//
-	//	spaces          []string   被本实例服务的部署空间列表（仅有 core active scope grants 的空间）
-	//	mounts[].space  string     该 mount 所属部署空间（native 多空间；容器可空）
-	//	mounts[].pool   string     存储池名（如 syspool；非池 scope 为空）
-	//	mounts[].root   string     scope 在池内的相对根（直接来自 core grant UFI 的池内
-	//	                           前缀，如 Music/Photos；整空间为 ""/"；不是按 scope key 猜）
-	//	grants[].space  string     grant 所属部署空间（多空间时用于和 scope 一起定位）
+	//	spaces          []string   deployment spaces served by this instance (only spaces with core active scope grants)
+	//	mounts[].space  string     deployment space this mount belongs to (native multi-space; may be empty in containers)
+	//	mounts[].pool   string     storage pool name (e.g. syspool; empty for non-pool scopes)
+	//	mounts[].root   string     pool-relative root of the scope (taken directly from the pool-internal
+	//	                            prefix of the core grant UFI, e.g. Music/Photos; ""/" for the whole space; never guessed from the scope key)
+	//	grants[].space  string     deployment space the grant belongs to (used together with scope to disambiguate multi-space)
 	//
-	// 注意：mounts[].expiresAt / grants[].expiresAt 是 Unix **毫秒**（与 core grant 同单位），
-	// 0 表示不过期（容器侧 scheduleGrantExpiry 与 native 都按毫秒消费）。
+	// Note: mounts[].expiresAt / grants[].expiresAt are Unix **milliseconds** (the same unit as core grants);
+	// 0 means no expiry (both the container-side scheduleGrantExpiry and native consume milliseconds).
 	//
-	// 老 writer 不写这些字段；reader 必须容忍缺失（回退 app.namespace / 无池信息）。
+	// Older writers do not write these fields; readers must tolerate their absence (fall back to app.namespace / no pool information).
 	RuntimeSpecVersion = 1
 )
