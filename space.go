@@ -15,10 +15,8 @@ import (
 //
 //	<DataDir>/spaces/<space>/metadata.db
 //
-// Why it lives in the app private directory (storage.app.file) rather than the pool root:
-// uninstall semantics. daemon's purge only cleans the single directory
-// `<poolRoot>/.app/storage/<app_id>`; placed anywhere else (such as "a pool per space")
-// it would stay on disk forever after uninstall. See docs/specs/faas-new-sdk-migration.md.
+// The platform manages the private directory's lifecycle (purge on uninstall), so
+// per-space data lives below it instead of inside a user pool.
 const spacesDirName = "spaces"
 
 // Detectable errors related to spaces. Callers test them with errors.Is and map them to
@@ -26,9 +24,11 @@ const spacesDirName = "spaces"
 var (
 	// ErrInvalidSpace indicates that the space name is invalid or the identity information is incomplete.
 	ErrInvalidSpace = errors.New("appsdk: invalid space")
-	// ErrSpaceNotAuthorized indicates that the space is not in the instance's authorized set.
+	// ErrSpaceNotAuthorized indicates that the space is not in the instance's authorized set
+	// (RuntimeSpec.spaces).
 	ErrSpaceNotAuthorized = errors.New("appsdk: space not authorized")
-	// ErrNoSpaceDataDir indicates that the app did not declare storage.app.file, so per-space data cannot be stored.
+	// ErrNoSpaceDataDir indicates that the runtime spec has no paths.data, so per-space data
+	// cannot be stored.
 	ErrNoSpaceDataDir = errors.New("appsdk: no app data directory (declare storage.app.file)")
 )
 
@@ -40,7 +40,7 @@ var (
 // "the space used to resolve paths" do not drift into two algorithms.
 //
 // It only validates the shape and **does not authorize** — authorization is App.Space's job
-// (it needs the mount table).
+// (it needs the RuntimeSpec's spaces list).
 func SpaceFromHeaders(username, groupName, namespace string) (string, error) {
 	owner := strings.TrimSpace(username)
 	if group := strings.TrimSpace(groupName); group != "" && group != owner {
@@ -61,7 +61,7 @@ func SpaceFromHeaders(username, groupName, namespace string) (string, error) {
 // A space name becomes a directory name, so this must be strict: only alphanumerics and
 // `-_.` are allowed, and `..`, path separators, whitespace and control characters are
 // rejected. Authorization (HasSpace) is the main gate; this allowlist is defense in depth —
-// even if an odd space name appeared in the mount table, it could not be joined into a path
+// even if an odd space name appeared in the spec, it could not be joined into a path
 // that escapes DataDir.
 func ValidSpaceName(space string) bool {
 	if space == "" || len(space) > 128 {
@@ -82,16 +82,16 @@ func ValidSpaceName(space string) bool {
 }
 
 // SpaceView is the local view of "a user space" inside the app process: a private directory
-// plus that space's pools.
+// plus that space's RuntimeSpec mounts (scope -> local directory, ro/rw).
 //
 // Obtaining one means the space has already passed authorization; it holds no open files or
-// connections, so it can be acquired cheaply per request (App.Space only reads the mount
-// table and performs no IO).
+// connections, so it can be acquired cheaply per request (App.Space only reads the
+// RuntimeSpec and performs no IO).
 type SpaceView struct {
 	name    string
 	appData string
 	table   *appfs.Table
-	pools   []*appfs.Mount
+	mounts  []*appfs.Mount
 }
 
 // Name returns the deployment space identifier (such as alice-main / team-main).
@@ -100,24 +100,53 @@ func (v *SpaceView) Name() string { return v.name }
 // AppDataDir returns the space's private directory (which may not exist yet; see Ensure).
 func (v *SpaceView) AppDataDir() string { return v.appData }
 
-// Pools returns the storage pools under this space.
-func (v *SpaceView) Pools() []*appfs.Mount { return append([]*appfs.Mount(nil), v.pools...) }
+// Mounts returns this space's scope mounts (RuntimeSpec mounts whose space matches).
+func (v *SpaceView) Mounts() []*appfs.Mount {
+	return append([]*appfs.Mount(nil), v.mounts...)
+}
 
-// Pool resolves a pool by name within this space.
+// Mount resolves a logical scope in this space.
+func (v *SpaceView) Mount(scope string) (*appfs.Mount, error) {
+	return v.table.MountIn(v.name, scope)
+}
+
+// Pools returns this space's grant-backed mounts (the old "storage pools" concept is now
+// expressed by mounts; each mount carries scope/pool/root metadata).
+func (v *SpaceView) Pools() []*appfs.Mount {
+	return append([]*appfs.Mount(nil), v.mounts...)
+}
+
+// Pool resolves the unique mount that advertises the storage pool in this space.
+//
+// A pool may be covered by several scope mounts (e.g. space.music + space.photos in
+// syspool); in that case the pool name alone is ambiguous and the caller must use
+// Mount(scope) or LocalPathForUFI.
 func (v *SpaceView) Pool(name string) (*appfs.Mount, error) {
-	return v.table.PoolIn(v.name, name)
-}
-
-// LocalPath resolves (pool name, relative path) into an absolute local path within this space.
-func (v *SpaceView) LocalPath(pool, rel string) (string, error) {
-	mount, err := v.Pool(pool)
-	if err != nil {
-		return "", err
+	name = strings.TrimSpace(name)
+	var found *appfs.Mount
+	for _, mount := range v.mounts {
+		if mount.Pool() != name {
+			continue
+		}
+		if found != nil {
+			return nil, fmt.Errorf("%w: pool %q in space %q is mounted by several scopes", appfs.ErrAmbiguous, name, v.name)
+		}
+		found = mount
 	}
-	return mount.Resolve(rel)
+	if found == nil {
+		return nil, fmt.Errorf("%w: pool %q in space %q", appfs.ErrNoMount, name, v.name)
+	}
+	return found, nil
 }
 
-// LocalPathForUFI resolves a UFI within this space.
+// LocalPath resolves (pool name, pool-relative path) into an absolute local path within this
+// space, using the scopes' root metadata.
+func (v *SpaceView) LocalPath(pool, rel string) (string, error) {
+	return v.table.PoolResolve(v.name, pool, rel)
+}
+
+// LocalPathForUFI resolves a pool UFI (/ufi/pool-raw/<pool>/<rel>) to a local absolute path
+// within this space.
 func (v *SpaceView) LocalPathForUFI(ufi string) (string, error) {
 	return v.table.LocalPathIn(v.name, ufi)
 }
@@ -142,12 +171,13 @@ func (v *SpaceView) Ensure() error {
 // Validation chain (the order is the priority):
 //
 //  1. the space name has a valid shape (prevents directory escape);
-//  2. the space is in the mount table's authorized set (prevents cross-user privilege
-//     escalation, "option A" of decision 4);
-//  3. the app declared storage.app.file (otherwise there is no location to store per-space data).
+//  2. the space is in the RuntimeSpec's authorised set (prevents cross-user privilege
+//     escalation);
+//  3. the app has a private data directory (paths.data), otherwise there is no location to
+//     store per-space data.
 //
-// It performs no IO: directory creation is left to SpaceView.Ensure. After the authorized
-// spaces change, the mount table must be ReloadFS'd before a new space becomes visible.
+// It performs no IO: directory creation is left to SpaceView.Ensure. After the authorised
+// spaces change, ReloadFS must be called before a new space becomes visible.
 func (a *App) Space(name string) (*SpaceView, error) {
 	name = strings.TrimSpace(name)
 	if !ValidSpaceName(name) {
@@ -169,6 +199,12 @@ func (a *App) Space(name string) (*SpaceView, error) {
 		name:    name,
 		appData: filepath.Join(dataDir, spacesDirName, name),
 		table:   table,
-		pools:   table.SpacePools(name),
+		mounts:  table.SpaceMounts(name),
 	}, nil
+}
+
+// DataDir returns the application's private persistent directory (RuntimeSpec paths.data).
+// New app-generated files (covers, caches, exports) belong here, not in a user pool UFI.
+func (a *App) DataDir() string {
+	return strings.TrimSpace(a.Runtime.DataDir)
 }

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "app": {
+    "id": "com.nas.sys.music",
+    "code": "music",
+    "version": "2.4.1",
+    "instanceId": "native-music-0123456789abcdef",
+    "namespace": "default"
+  },
+  "paths": {
+    "app": "/home/admin1/main/syspool/.app/native/music/2.4.1",
+    "data": "/home/admin1/main/syspool/.app/storage/com.nas.sys.music",
+    "runtime": "/run/lacx/native/music/run",
+    "secrets": "/run/lacx/native/music/run/secrets",
+    "cache": "/run/lacx/native/music/cache"
+  },
+  "bus": {
+    "socket": "/run/lacx/native/music/run/bus.sock",
+    "http": "http://127.0.0.1:8080"
+  },
+  "spaces": ["admin1-main", "alice-main"],
+  "mounts": [
+    {
+      "scope": "space.music",
+      "space": "admin1-main",
+      "pool": "syspool",
+      "root": "Music",
+      "path": "/run/lacx/grantfs/native-music-0123456789abcdef/grants/space.music.admin1-main",
+      "mode": "ro",
+      "grantId": "grant_AAAAAAAAAAAAAAAA",
+      "expiresAt": 0
+    },
+    {
+      "scope": "space.music",
+      "space": "alice-main",
+      "pool": "syspool",
+      "root": "Music",
+      "path": "/run/lacx/grantfs/native-music-0123456789abcdef/grants/space.music.alice-main",
+      "mode": "rw",
+      "grantId": "grant_BBBBBBBBBBBBBBBB",
+      "expiresAt": 0
+    }
+  ],
+  "grants": [
+    {"scope": "space.music", "space": "admin1-main", "ops": ["read"], "expiresAt": 0},
+    {"scope": "space.music", "space": "alice-main", "ops": ["read", "write"], "expiresAt": 0}
+  ]
+}

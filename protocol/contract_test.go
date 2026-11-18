@@ -59,14 +59,6 @@ type contractVectors struct {
 		DaemonProvided bool   `json:"daemon_provided"`
 		AcceptFile     bool   `json:"accept_file"`
 	} `json:"templates"`
-	MountTable struct {
-		FileName     string   `json:"file_name"`
-		Version      int      `json:"version"`
-		ContainerDir string   `json:"container_dir"`
-		EnvKey       string   `json:"env_key"`
-		UFIPrefix    string   `json:"ufi_prefix"`
-		JSONKeys     []string `json:"json_keys"`
-	} `json:"mount_table"`
 	Wire struct {
 		MessageTypes []string `json:"message_types"`
 		FrameTypes   []string `json:"frame_types"`
@@ -225,36 +217,11 @@ func TestContractTemplateCatalog(t *testing.T) {
 	}
 }
 
-func TestContractMountTableAndWire(t *testing.T) {
+// TestContractWireAndRuntime checks the bus frame/message contract and the
+// container runtime kind. The old mounts.json contract was removed together with
+// the RuntimeSpec v1 migration and is no longer part of the vectors.
+func TestContractWireAndRuntime(t *testing.T) {
 	vectors := loadContractVectors(t)
-
-	if MountTableFileName != vectors.MountTable.FileName ||
-		MountTableVersion != vectors.MountTable.Version ||
-		ContainerResourceDir != vectors.MountTable.ContainerDir ||
-		EnvMountTable != vectors.MountTable.EnvKey ||
-		UFIPoolPrefix != vectors.MountTable.UFIPrefix {
-		t.Errorf("mount table constants changed: implementation %q/%d/%q/%q/%q, vectors %q/%d/%q/%q/%q",
-			MountTableFileName, MountTableVersion, ContainerResourceDir, EnvMountTable, UFIPoolPrefix,
-			vectors.MountTable.FileName, vectors.MountTable.Version, vectors.MountTable.ContainerDir,
-			vectors.MountTable.EnvKey, vectors.MountTable.UFIPrefix)
-	}
-
-	zero, err := json.Marshal(MountTable{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	var probe map[string]any
-	if err := json.Unmarshal(zero, &probe); err != nil {
-		t.Fatal(err)
-	}
-	if len(probe) != len(vectors.MountTable.JSONKeys) {
-		t.Errorf("the number of mount table fields changed: vectors %v, implementation %d", vectors.MountTable.JSONKeys, len(probe))
-	}
-	for _, key := range vectors.MountTable.JSONKeys {
-		if _, ok := probe[key]; !ok {
-			t.Errorf("mount table is missing field %q (the runtime writes it, the app reads it: the name is part of the contract)", key)
-		}
-	}
 
 	messageTypes := []string{string(TypeCall), string(TypeSubscribe), string(TypeUnsubscribe), string(TypePing)}
 	sort.Strings(messageTypes)

@@ -55,10 +55,6 @@ const (
 	// EnvLegacyNamespace is the space variable kept for compatibility with old SDKs.
 	EnvLegacyNamespace = "MINI_NAMESPACE"
 
-	// EnvStoragePoolPrefix is the prefix of storage pool path variables:
-	// NATIVE_STORAGE_POOL_<NAME>=<abs path>, injected only when storage.user.file is declared.
-	EnvStoragePoolPrefix = "NATIVE_STORAGE_POOL_"
-
 	// RuntimeNative is the EnvRuntime value for native processes.
 	RuntimeNative = "native"
 	// DefaultNamespace is the space of native instances.
@@ -92,9 +88,9 @@ const (
 	// EnvContainerBusSocket is the fixed path of the bus socket inside the container.
 	//
 	// It is provided by a deploy-time bind-mount (host <base>/bus/<namespace>/<containerID> →
-	// container /bus), so it does **not** need an environment variable to announce it; the
+	// container /lacx/bus), so it does **not** need an environment variable to announce it; the
 	// path is part of the contract.
-	EnvContainerBusSocket = "/bus/app.sock"
+	EnvContainerBusSocket = "/lacx/bus/app.sock"
 
 	// EnvContainerUsername is the username the container belongs to (the result of
 	// namespaceToUsername).

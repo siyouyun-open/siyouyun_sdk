@@ -96,18 +96,6 @@ func (m *Mount) rootForCheck() string {
 	return m.root
 }
 
-// UFI returns the UFI of a relative path inside the mount.
-func (m *Mount) UFI(rel string) string {
-	if m == nil {
-		return ""
-	}
-	clean, err := cleanRelative(rel)
-	if err != nil || clean == "." {
-		return UFI(m.name, "")
-	}
-	return UFI(m.name, clean)
-}
-
 // cleanRelative normalizes a relative path inside the mount.
 // A leading "/" is accepted (common in UFIs), but any form that escapes the mount root is rejected.
 func cleanRelative(rel string) (string, error) {

@@ -526,8 +526,7 @@
       "mode": "call",
       "daemon_provided": true,
       "accept_file": false
-    }
-,
+    },
     {
       "template": "system.interest.ack",
       "mode": "call",
@@ -535,16 +534,6 @@
       "accept_file": false
     }
   ],
-  "mount_table": {
-    "file_name": "mounts.json",
-    "version": 1,
-    "container_dir": "/etc/miniruntime/resources",
-    "env_key": "MINI_APP_MOUNT_TABLE",
-    "ufi_prefix": "/ufi/pool-raw/",
-    "json_keys": [
-      "version"
-    ]
-  },
   "wire": {
     "message_types": [
       "call",

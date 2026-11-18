@@ -17,6 +17,7 @@
 package appsdk
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -27,6 +28,7 @@ import (
 	"github.com/siyouyun-open/siyouyun_sdk/v2/capability"
 	appfs "github.com/siyouyun-open/siyouyun_sdk/v2/fs"
 	"github.com/siyouyun-open/siyouyun_sdk/v2/protocol"
+	"github.com/siyouyun-open/siyouyun_sdk/v2/runtime"
 )
 
 // Runtime is a snapshot of the runtime environment the platform injects into an
@@ -60,14 +62,14 @@ type Runtime struct {
 	Endpoint string
 	Port     int
 
-	// InstallRoot is the install directory (versioned); StaticRoot is the static
-	// asset directory.
+	// InstallRoot is the install directory (RuntimeSpec paths.app); StaticRoot is
+	// the static asset directory.
 	InstallRoot string
 	StaticRoot  string
 	// InstallSpace is the storage space chosen by the user (may be empty).
 	InstallSpace string
-	// DataDir is the platform-managed data directory; empty when storage.app.file
-	// is not declared.
+	// DataDir is the application's private persistent directory (RuntimeSpec
+	// paths.data); empty when the spec is unavailable.
 	DataDir string
 
 	// BusSocket / BusHTTP / BusWS are the bus's three entry points.
@@ -77,28 +79,29 @@ type Runtime struct {
 	// CallerToken is the caller token issued by the daemon (used only to identify
 	// the caller).
 	CallerToken string
-	// MountTable is the mount table file path (injected by the daemon after
-	// storage.* is declared); empty means there is no directly accessible local
-	// directory.
-	MountTable string
 
-	// StoragePools are the storage pools exposed by storage.user.file: normalized
-	// name -> host absolute path. The normalization rules match the daemon's
-	// (uppercase, non-alphanumeric to underscore), so it is not reversible; use
-	// FindStoragePool to look up a pool by its original name.
-	StoragePools map[string]string
+	// Spec is the parsed RuntimeSpec v1 for this process. It is the only source
+	// for the local data plane (paths + scope mounts); nil when the process does
+	// not run under the platform runtime (local development).
+	Spec *runtime.Spec
+	// SpecPath is where Spec was read from (for troubleshooting / reload).
+	SpecPath string
+
+	// specErr keeps the spec loading error so FS() can report it instead of
+	// silently degrading to "no data plane".
+	specErr error
 }
 
-// FromEnv reads the current process environment. A missing field is never an
-// error: callers use Managed() to tell whether they are running under the
-// platform-managed app runtime.
+// FromEnv reads the current process environment and the RuntimeSpec. A missing
+// field is never an error: callers use Managed() to tell whether they are running
+// under the platform-managed app runtime.
 //
 // Both the native and the container variable sets are recognized and normalized
-// into the same Runtime:
-//
-//	native    MINI_APP_* (including instance ID, install directory, caller token, mount table path)
-//	container APP_RUNTIME=RUNC / APPCODE / MINI_NAMESPACE / MINI_USERNAME,
-//	          the bus socket is fixed at /bus/app.sock, the mount table at an agreed path inside the container
+// into the same Runtime. Identity/bus bootstrap values still come from the
+// environment (native MINI_APP_*, container APP_RUNTIME=RUNC / APPCODE /
+// MINI_NAMESPACE / MINI_USERNAME); the local data plane (paths + scope mounts)
+// comes exclusively from the RuntimeSpec v1 (SYY_RUNTIME_SPEC for native,
+// /lacx/run/runtime.json for containers). There is no mounts.json path.
 func FromEnv() Runtime {
 	port, _ := strconv.Atoi(strings.TrimSpace(os.Getenv(protocol.EnvPort)))
 	runtimeKind := normalizeRuntimeKind(os.Getenv(protocol.EnvRuntime), os.Getenv(protocol.EnvContainerRuntime))
@@ -117,7 +120,7 @@ func FromEnv() Runtime {
 		busSocket = protocol.EnvContainerBusSocket
 	}
 
-	return Runtime{
+	appRuntime := Runtime{
 		AppID:        appID,
 		AppCode:      appCode,
 		InstanceID:   strings.TrimSpace(os.Getenv(protocol.EnvInstanceID)),
@@ -126,17 +129,46 @@ func FromEnv() Runtime {
 		RuntimeKind:  runtimeKind,
 		Endpoint:     strings.TrimSpace(os.Getenv(protocol.EnvEndpoint)),
 		Port:         port,
-		InstallRoot:  strings.TrimSpace(os.Getenv(protocol.EnvInstallRoot)),
 		StaticRoot:   strings.TrimSpace(os.Getenv(protocol.EnvStaticRoot)),
 		InstallSpace: strings.TrimSpace(os.Getenv(protocol.EnvInstallSpace)),
-		DataDir:      strings.TrimSpace(os.Getenv(protocol.EnvDataDir)),
 		BusSocket:    busSocket,
 		BusHTTP:      strings.TrimSpace(os.Getenv(protocol.EnvBusHTTP)),
 		BusWS:        strings.TrimSpace(os.Getenv(protocol.EnvBusWS)),
 		CallerToken:  strings.TrimSpace(os.Getenv(protocol.EnvCallerToken)),
-		MountTable:   strings.TrimSpace(os.Getenv(protocol.EnvMountTable)),
-		StoragePools: readStoragePools(),
 	}
+	// The RuntimeSpec is the only local data-plane contract. Loading it here (not
+	// in New) keeps FromEnv side-effect free and lets tests inject a runtime.
+	appRuntime.loadSpec()
+	return appRuntime
+}
+
+// loadSpec reads the RuntimeSpec and fills the fields it owns (identity, paths,
+// bus). A missing spec is not fatal for Engine startup: FS()/Space() report the
+// error, while bus capabilities remain usable.
+func (r *Runtime) loadSpec() {
+	specPath := runtime.Path()
+	if strings.TrimSpace(specPath) == "" {
+		r.specErr = appfs.ErrNoSpec
+		return
+	}
+	spec, err := runtime.LoadFrom(specPath)
+	if err != nil {
+		r.specErr = fmt.Errorf("appsdk: load runtime spec: %w", err)
+		return
+	}
+	r.Spec = spec
+	r.SpecPath = specPath
+	r.specErr = nil
+	// Spec wins over the environment for every field it owns: it is the runtime's
+	// authoritative view, and the daemon no longer injects storage paths into env.
+	r.AppID = firstNonEmpty(spec.App.ID, r.AppID)
+	r.AppCode = firstNonEmpty(spec.App.Code, r.AppCode)
+	r.InstanceID = firstNonEmpty(spec.App.InstanceID, r.InstanceID)
+	r.Namespace = firstNonEmpty(spec.App.Namespace, r.Namespace)
+	r.InstallRoot = firstNonEmpty(spec.Paths.App, r.InstallRoot)
+	r.DataDir = firstNonEmpty(spec.Paths.Data, r.DataDir)
+	r.BusSocket = firstNonEmpty(spec.Bus.Socket, r.BusSocket)
+	r.BusHTTP = firstNonEmpty(spec.Bus.HTTP, r.BusHTTP)
 }
 
 // normalizeRuntimeKind normalizes the runtime kind variables from both sides
@@ -169,7 +201,7 @@ func (r Runtime) IsContainer() bool { return r.RuntimeKind == protocol.Container
 // When it is false (local development, unit tests) the SDK is still usable, but
 // the bus addresses must be configured explicitly.
 func (r Runtime) Managed() bool {
-	return r.RuntimeKind != "" || r.BusSocket != "" || r.BusHTTP != "" || r.BusWS != ""
+	return r.RuntimeKind != "" || r.BusSocket != "" || r.BusHTTP != "" || r.BusWS != "" || r.Spec != nil
 }
 
 // HasBus reports whether at least one bus entry point is configured.
@@ -202,17 +234,6 @@ func (r Runtime) DefaultScope() capability.Scope {
 		userNamespace = strings.TrimPrefix(space, username+"-")
 	}
 	return capability.Scope{Username: username, Namespace: userNamespace}
-}
-
-// FindStoragePool looks up the host path by pool name (names are compared using
-// the daemon's normalization rules).
-func (r Runtime) FindStoragePool(name string) (string, bool) {
-	key := normalizePoolName(name)
-	if key == "" {
-		return "", false
-	}
-	path, ok := r.StoragePools[key]
-	return path, ok
 }
 
 // BusOptions builds the bus client configuration from the runtime environment.
@@ -323,28 +344,36 @@ func (a *App) Message() *capability.Message   { return a.caps.Message() }
 func (a *App) Schedule() *capability.Schedule { return a.caps.Schedule() }
 
 // FS returns the local file access entry point (POSIX passthrough, not via the
-// bus).
+// bus), derived from the RuntimeSpec.
 //
-// When the mount table is missing, it returns an error: this means the app
-// declared no storage.* permission, or the mount table could not be written
-// during deployment. Callers should degrade instead of treating it as fatal — bus
-// capabilities are usually still available.
+// When the spec is missing, it returns an error: this means the process does not
+// run under the platform runtime, or the runtime failed to write the spec.
+// Callers should degrade instead of treating it as fatal — bus capabilities are
+// usually still available.
 func (a *App) FS() (*appfs.Table, error) {
 	a.fsMu.Lock()
 	defer a.fsMu.Unlock()
 	if a.fsLoaded {
 		return a.fsTable, a.fsErr
 	}
-	a.fsTable, a.fsErr = appfs.Load()
+	specPath := strings.TrimSpace(a.Runtime.SpecPath)
+	if specPath == "" {
+		specPath = runtime.Path()
+	}
+	if strings.TrimSpace(specPath) == "" {
+		a.fsTable, a.fsErr = nil, appfs.ErrNoSpec
+	} else {
+		a.fsTable, a.fsErr = appfs.LoadFrom(specPath)
+	}
 	a.fsLoaded = true
 	return a.fsTable, a.fsErr
 }
 
-// ReloadFS discards the cache and re-reads the mount table.
+// ReloadFS discards the cache and re-reads the RuntimeSpec.
 //
-// A native shared instance's mount table may be refreshed by the daemon (when the
-// authorized spaces change); no process restart is needed, one ReloadFS call
-// picks up the new directory view.
+// A native shared instance's spec is regenerated by the runtime when the
+// authorised spaces/scopes change; no process restart is needed, one ReloadFS
+// call picks up the new directory view.
 func (a *App) ReloadFS() (*appfs.Table, error) {
 	a.fsMu.Lock()
 	a.fsLoaded = false
@@ -367,45 +396,6 @@ func (a *App) Close() error {
 		return nil
 	}
 	return a.client.Close()
-}
-
-// readStoragePools reads the NATIVE_STORAGE_POOL_* variables.
-func readStoragePools() map[string]string {
-	pools := map[string]string{}
-	for _, kv := range os.Environ() {
-		idx := strings.IndexByte(kv, '=')
-		if idx <= 0 {
-			continue
-		}
-		key, value := kv[:idx], kv[idx+1:]
-		if !strings.HasPrefix(key, protocol.EnvStoragePoolPrefix) {
-			continue
-		}
-		name := strings.TrimPrefix(key, protocol.EnvStoragePoolPrefix)
-		if name == "" || strings.TrimSpace(value) == "" {
-			continue
-		}
-		pools[name] = value
-	}
-	if len(pools) == 0 {
-		return nil
-	}
-	return pools
-}
-
-// normalizePoolName keeps the same rules as the daemon's storagePoolEnvName.
-func normalizePoolName(name string) string {
-	name = strings.ToUpper(strings.TrimSpace(name))
-	var b strings.Builder
-	for _, r := range name {
-		switch {
-		case r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
-			b.WriteRune(r)
-		default:
-			b.WriteByte('_')
-		}
-	}
-	return strings.Trim(b.String(), "_")
 }
 
 func firstNonEmpty(values ...string) string {

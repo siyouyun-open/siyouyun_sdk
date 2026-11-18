@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "app": {
+    "id": "com.nas.sys.telebook",
+    "code": "telebook",
+    "version": "2.4.1",
+    "instanceId": "native-telebook-fedcba9876543210",
+    "namespace": "default"
+  },
+  "paths": {
+    "app": "/siyouyun/mnt/system/miniapp/host-apps/telebook/install/2.4.1",
+    "data": "/home/admin1/main/syspool/.app/storage/com.nas.sys.telebook",
+    "runtime": "/siyouyun/mnt/system/miniapp/host-apps/telebook/run",
+    "secrets": "/siyouyun/mnt/system/miniapp/host-apps/telebook/run/secrets",
+    "cache": "/siyouyun/mnt/system/miniapp/host-apps/telebook/cache"
+  },
+  "bus": {
+    "socket": "/siyouyun/mnt/system/miniapp/bus/default/native-telebook-fedcba9876543210/app.sock",
+    "http": "http://127.0.0.1:8080"
+  },
+  "mounts": [
+    {
+      "scope": "space",
+      "path": "/run/lacx/grantfs/native-telebook-fedcba9876543210/grants/admin1-main/space",
+      "mode": "ro",
+      "grantId": "grant_CCCCCCCCCCCCCCCC",
+      "expiresAt": 0,
+      "space": "admin1-main",
+      "pool": "syspool",
+      "root": ""
+    },
+    {
+      "scope": "space",
+      "path": "/run/lacx/grantfs/native-telebook-fedcba9876543210/grants/admin1-private/space",
+      "mode": "ro",
+      "grantId": "grant_DDDDDDDDDDDDDDDD",
+      "expiresAt": 0,
+      "space": "admin1-private",
+      "pool": "syspool",
+      "root": ""
+    }
+  ],
+  "grants": [
+    {
+      "scope": "space",
+      "space": "admin1-main",
+      "ops": [
+        "read"
+      ],
+      "expiresAt": 0
+    },
+    {
+      "scope": "space",
+      "space": "admin1-private",
+      "ops": [
+        "read"
+      ],
+      "expiresAt": 0
+    }
+  ],
+  "spaces": [
+    "admin1-main",
+    "admin1-private"
+  ]
+}
